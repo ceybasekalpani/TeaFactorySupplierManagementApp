@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
 import { useTheme } from "../../hooks/useTheme";
@@ -17,11 +17,11 @@ export default function ProfileScreen() {
   const [address, setAddress] = useState(currentUser?.address || "");
   const [phone, setPhone] = useState(currentUser?.phone || "");
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ visible: false, message: "" });
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
-  const showToast = (msg) => {
-    setToast({ visible: true, message: msg });
-    setTimeout(() => setToast({ visible: false, message: "" }), 3000);
+  const showToast = (msg, type = "success") => {
+    setToast({ visible: true, message: msg, type });
+    setTimeout(() => setToast({ visible: false, message: "", type: "success" }), 3000);
   };
 
   const pickImage = async () => {
@@ -31,7 +31,7 @@ export default function ProfileScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -43,7 +43,11 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     if (!address.trim() || !phone.trim()) {
-      showToast("Please fill all fields");
+      showToast("Please fill all fields", "error");
+      return;
+    }
+    if (!/^0\d{9}$/.test(phone.trim())) {
+      showToast("Enter a valid 10-digit phone number", "error");
       return;
     }
     setLoading(true);
@@ -57,7 +61,12 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader title={t.profile} onBack={() => router.back()} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 8}
+      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         {/* Profile Image */}
         <View style={{ alignItems: "center", marginBottom: 24 }}>
           <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
@@ -143,8 +152,9 @@ export default function ProfileScreen() {
           <Button title={t.save} onPress={handleSave} loading={loading} icon="checkmark-circle" />
         </Card>
       </ScrollView>
+      </KeyboardAvoidingView>
 
-      <Toast message={toast.message} visible={toast.visible} />
+      <Toast message={toast.message} visible={toast.visible} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />
     </SafeAreaView>
   );
 }

@@ -124,7 +124,7 @@ const SPECIAL_NEWS = [
 export function AppProvider({ children }) {
   const [theme, setTheme] = useState("light");
   const [language, setLanguage] = useState("english");
-  const [fontSize, setFontSize] = useState("medium");
+  const [fontSize, setFontSize] = useState(50);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeReg, setActiveReg] = useState(null);
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
@@ -177,7 +177,14 @@ export function AppProvider({ children }) {
           const s = JSON.parse(stored);
           if (s.theme) setTheme(s.theme);
           if (s.language) setLanguage(s.language);
-          if (s.fontSize) setFontSize(s.fontSize);
+          if (s.fontSize !== undefined) {
+            const stored = s.fontSize;
+            if (typeof stored === "string") {
+              setFontSize(stored === "small" ? 30 : stored === "large" ? 70 : 50);
+            } else {
+              setFontSize(stored);
+            }
+          }
         }
       } catch (_) {}
     })();

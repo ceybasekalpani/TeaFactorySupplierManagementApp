@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
+import { Button, Card, Input, Picker, ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
@@ -15,8 +15,6 @@ const BANK_OPTIONS = [
   { value: "NSB", label: "National Savings Bank" },
   { value: "Seylan Bank", label: "Seylan Bank" },
 ];
-
-import { Picker } from "../../components/ui";
 
 export default function AccountDetailsScreen() {
   const { colors, fs, t } = useTheme();
@@ -38,6 +36,10 @@ export default function AccountDetailsScreen() {
   const handleSave = async () => {
     if (!bankName || !accountNumber || !accountHolder || !branch) {
       showToast(t.fillAllFields, "error");
+      return;
+    }
+    if (accountNumber.length < 8 || accountNumber.length > 16) {
+      showToast("Account number must be 8–16 digits", "error");
       return;
     }
     setLoading(true);
@@ -101,7 +103,7 @@ export default function AccountDetailsScreen() {
             value={accountNumber}
             onChangeText={setAccountNumber}
             placeholder="Enter account number"
-            keyboardType="numeric"
+            keyboardType="number-pad"
           />
 
           <Input
@@ -123,7 +125,7 @@ export default function AccountDetailsScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Toast message={toast.message} visible={toast.visible} type={toast.type} />
+      <Toast message={toast.message} visible={toast.visible} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />
     </SafeAreaView>
   );
 }

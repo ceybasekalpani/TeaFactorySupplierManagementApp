@@ -95,3 +95,16 @@ export const fontSizes = {
 export const getThemeColors = (isDarkMode) => {
   return isDarkMode ? themes.dark : themes.light;
 };
+
+// Base sizes (value=50 = medium exactly)
+const BASE_FONT_SIZES = { xs: 11, sm: 13, base: 15, md: 17, lg: 19, xl: 22, "2xl": 26, "3xl": 32 };
+
+export function getScaledFontSizes(value) {
+  // value: 10–100, scale range 0.70–1.35, value=50 → scale=1.0
+  const scale = 0.70 + ((value - 10) / 90) * 0.65;
+  const result = {};
+  for (const key in BASE_FONT_SIZES) {
+    result[key] = Math.max(8, Math.round(BASE_FONT_SIZES[key] * scale));
+  }
+  return result;
+}

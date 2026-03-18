@@ -8,6 +8,70 @@ import { Card, ScreenHeader } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
+const SLIDER_MIN = 10;
+const SLIDER_MAX = 100;
+const THUMB_SIZE = 26;
+
+function FontSizeSlider({ value, onChange, colors }) {
+  const [trackWidth, setTrackWidth] = React.useState(0);
+
+  const clamp = (v) => Math.min(SLIDER_MAX, Math.max(SLIDER_MIN, Math.round(v)));
+
+  const handleTouch = (locationX) => {
+    if (trackWidth === 0) return;
+    const usable = trackWidth - THUMB_SIZE;
+    const ratio = (locationX - THUMB_SIZE / 2) / usable;
+    onChange(clamp(SLIDER_MIN + ratio * (SLIDER_MAX - SLIDER_MIN)));
+  };
+
+  const responder = React.useMemo(() => ({
+    onStartShouldSetResponder: () => true,
+    onMoveShouldSetResponder: () => true,
+    onResponderGrant: (e) => handleTouch(e.nativeEvent.locationX),
+    onResponderMove: (e) => handleTouch(e.nativeEvent.locationX),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [trackWidth]);
+
+  const usable = trackWidth - THUMB_SIZE;
+  const thumbLeft = trackWidth > 0
+    ? ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * usable
+    : 0;
+  const fillPercent = ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * 100;
+
+  return (
+    <View
+      onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+      {...responder}
+      style={{ height: 44, justifyContent: "center" }}
+    >
+      {/* Track background */}
+      <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: "hidden" }}>
+        <View style={{ width: `${fillPercent}%`, height: "100%", backgroundColor: colors.primary, borderRadius: 2 }} />
+      </View>
+      {/* Thumb */}
+      {trackWidth > 0 && (
+        <View style={{
+          position: "absolute",
+          left: thumbLeft,
+          width: THUMB_SIZE,
+          height: THUMB_SIZE,
+          borderRadius: THUMB_SIZE / 2,
+          backgroundColor: colors.primary,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.4,
+          shadowRadius: 4,
+          elevation: 4,
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#fff" }} />
+        </View>
+      )}
+    </View>
+  );
+}
+
 function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBg, iconColor }) {
   const { colors, fs } = useTheme();
   return (
@@ -25,7 +89,7 @@ function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBg, icon
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{title}</Text>
-        {subtitle && <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>{subtitle}</Text>}
+        {subtitle ? <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>{subtitle}</Text> : null}
       </View>
       {rightElement || (onPress && <Ionicons name="chevron-forward" size={fs.md} color={colors.textMuted} />)}
     </TouchableOpacity>
@@ -35,7 +99,15 @@ function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBg, icon
 function SectionHeader({ title }) {
   const { colors, fs } = useTheme();
   return (
-    <Text style={{ color: colors.textMuted, fontSize: fs.xs, fontWeight: "700", letterSpacing: 1.2, marginTop: 20, marginBottom: 4, paddingHorizontal: 4 }}>
+    <Text style={{
+      color: colors.textMuted,
+      fontSize: fs.xs,
+      fontWeight: "700",
+      letterSpacing: 1.2,
+      marginTop: 20,
+      marginBottom: 4,
+      paddingHorizontal: 4,
+    }}>
       {title.toUpperCase()}
     </Text>
   );
@@ -43,7 +115,7 @@ function SectionHeader({ title }) {
 
 export default function SettingsScreen() {
   const { colors, fs, t, isDark } = useTheme();
-  const { theme, updateTheme, language, updateLanguage, fontSize, updateFontSize } = useApp();
+  const { theme, updateTheme, language, updateLanguage, fontSize, updateFontSize, currentUser, activeReg } = useApp();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = React.useState(false);
 
@@ -57,6 +129,7 @@ export default function SettingsScreen() {
       />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+
         {/* ACCOUNT */}
         <SectionHeader title="Account" />
         <Card>
@@ -65,7 +138,7 @@ export default function SettingsScreen() {
             iconBg="#dbeafe"
             iconColor="#2563eb"
             title={t.profile}
-            subtitle="Update photo, address & phone"
+            subtitle={currentUser ? `${currentUser.name} · ${currentUser.phone}` : "Update photo, address & phone"}
             onPress={() => router.push("/(app)/profile")}
           />
           <View style={{ height: 1, backgroundColor: colors.border }} />
@@ -74,7 +147,7 @@ export default function SettingsScreen() {
             iconBg="#dcfce7"
             iconColor="#16a34a"
             title={t.accountDetails}
-            subtitle="Bank name, account number"
+            subtitle={currentUser ? `${currentUser.bankName} · ${currentUser.accountNumber}` : "Bank name, account number"}
             onPress={() => router.push("/(app)/account-details")}
           />
         </Card>
@@ -82,7 +155,7 @@ export default function SettingsScreen() {
         {/* APPEARANCE */}
         <SectionHeader title="Appearance" />
         <Card>
-          {/* Theme */}
+          {/* Theme Toggle */}
           <SettingRow
             icon={isDark ? "moon" : "sunny"}
             iconBg={isDark ? "#1e1b4b" : "#fef3c7"}
@@ -102,36 +175,32 @@ export default function SettingsScreen() {
 
           {/* Font Size */}
           <View style={{ paddingVertical: 14 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: "#f3e8ff", alignItems: "center", justifyContent: "center" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <View style={{
+                width: 40, height: 40, borderRadius: 10,
+                backgroundColor: "#f3e8ff",
+                alignItems: "center", justifyContent: "center",
+              }}>
                 <Ionicons name="text" size={fs.lg} color="#7c3aed" />
               </View>
-              <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{t.fontSize}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{t.fontSize}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>
+                  {typeof fontSize === "number" ? `Size ${fontSize}` : t[fontSize]}
+                </Text>
+              </View>
+              <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700", minWidth: 32, textAlign: "right" }}>
+                {typeof fontSize === "number" ? fontSize : 50}
+              </Text>
             </View>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {["small", "medium", "large"].map((size) => (
-                <TouchableOpacity
-                  key={size}
-                  onPress={() => updateFontSize(size)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 10,
-                    backgroundColor: fontSize === size ? colors.primary : colors.surface,
-                    alignItems: "center",
-                    borderWidth: 1,
-                    borderColor: fontSize === size ? colors.primary : colors.border,
-                  }}
-                >
-                  <Text style={{
-                    color: fontSize === size ? "#fff" : colors.textSecondary,
-                    fontWeight: fontSize === size ? "700" : "500",
-                    fontSize: size === "small" ? 11 : size === "medium" ? 13 : 16,
-                  }}>
-                    {t[size]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+
+            <FontSizeSlider
+              value={typeof fontSize === "number" ? fontSize : 50}
+              onChange={updateFontSize}
+              colors={colors}
+            />
+
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
             </View>
           </View>
         </Card>
@@ -143,39 +212,57 @@ export default function SettingsScreen() {
             {[
               { key: "english", label: t.english, flag: "🇬🇧" },
               { key: "sinhala", label: t.sinhala, flag: "🇱🇰" },
-            ].map((lang) => (
-              <TouchableOpacity
-                key={lang.key}
-                onPress={() => updateLanguage(lang.key)}
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  borderRadius: 12,
-                  backgroundColor: language === lang.key ? colors.primary : colors.surface,
-                  borderWidth: 1.5,
-                  borderColor: language === lang.key ? colors.primary : colors.border,
-                }}
-              >
-                <Text style={{ fontSize: fs.lg }}>{lang.flag}</Text>
-                <Text style={{
-                  color: language === lang.key ? "#fff" : colors.text,
-                  fontWeight: language === lang.key ? "700" : "500",
-                  fontSize: fs.sm,
-                  flex: 1,
-                }}>
-                  {lang.label}
-                </Text>
-                {language === lang.key && (
-                  <Ionicons name="checkmark-circle" size={fs.lg} color="#fff" />
-                )}
-              </TouchableOpacity>
-            ))}
+            ].map((lang) => {
+              const isActive = language === lang.key;
+              return (
+                <TouchableOpacity
+                  key={lang.key}
+                  onPress={() => updateLanguage(lang.key)}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 12,
+                    backgroundColor: isActive ? colors.primary : colors.surface,
+                    borderWidth: 1.5,
+                    borderColor: isActive ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: fs.lg }}>{lang.flag}</Text>
+                  <Text style={{
+                    color: isActive ? "#fff" : colors.text,
+                    fontWeight: isActive ? "700" : "500",
+                    fontSize: fs.sm,
+                    flex: 1,
+                  }}>
+                    {lang.label}
+                  </Text>
+                  {isActive && <Ionicons name="checkmark-circle" size={fs.lg} color="#fff" />}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </Card>
+
+        {/* REGISTRATION */}
+        {activeReg && (
+          <>
+            <SectionHeader title="Registration" />
+            <Card>
+              <SettingRow
+                icon="document-text"
+                iconBg="#fef3c7"
+                iconColor="#d97706"
+                title="Active Registration"
+                subtitle={`${activeReg.regNo} · ${activeReg.route}`}
+              />
+            </Card>
+          </>
+        )}
+
       </ScrollView>
 
       <SidebarMenu visible={menuOpen} onClose={() => setMenuOpen(false)} activeKey="settings" />
