@@ -1,20 +1,13 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, EmptyState, Input, Picker, ScreenHeader, StatusBadge, Toast } from "../../components/ui";
-import { useTheme } from "../../hooks/useTheme";
 import { useApp } from "../../context/AppContext";
+import { useTheme } from "../../hooks/useTheme";
 
-const MONTHS = [
-  { value: "Jan 2026", label: "Jan 2026" },
-  { value: "Feb 2026", label: "Feb 2026" },
-  { value: "Mar 2026", label: "Mar 2026" },
-  { value: "Dec 2025", label: "Dec 2025" },
-  { value: "Nov 2025", label: "Nov 2025" },
-];
-
+// Fertilizer types (these are fixed categories)
 const FERTILIZER_TYPES = [
   { value: "Urea", label: "Urea" },
   { value: "Potash", label: "Potash (MOP)" },
@@ -24,17 +17,38 @@ const FERTILIZER_TYPES = [
   { value: "Organic Compost", label: "Organic Compost" },
 ];
 
+// Main component with default export
 export default function FertilizerRequestScreen() {
   const { colors, fs, t } = useTheme();
-  const { fertilizerRequests, addFertilizerRequest } = useApp();
+  const { fertilizerRequests, addFertilizerRequest, currentUser, activeReg } = useApp();
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [month, setMonth] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [fertType, setFertType] = useState("");
   const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+
+  // Generate last 12 months dynamically
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthStr = date.toLocaleString('default', { month: 'short' });
+      const year = date.getFullYear();
+      const value = `${monthStr} ${year}`;
+      
+      options.push({
+        value: value,
+        label: value
+      });
+    }
+    
+    return options;
+  }, []);
 
   const showToast = (message, type = "success") => {
     setToast({ visible: true, message, type });
@@ -42,24 +56,121 @@ export default function FertilizerRequestScreen() {
   };
 
   const handleRequest = async () => {
-    if (!month || !fertType || !quantity) {
-      showToast(t.fillAllFields, "error");
+    if (!selectedMonth) {
+      showToast("Please select a month", "error");
       return;
     }
+    
+    if (!fertType) {
+      showToast("Please select fertilizer type", "error");
+      return;
+    }
+    
+    if (!quantity) {
+      showToast("Please enter quantity", "error");
+      return;
+    }
+    
+    const quantityNum = parseFloat(quantity);
+    if (isNaN(quantityNum) || quantityNum <= 0) {
+      showToast("Please enter a valid quantity greater than 0", "error");
+      return;
+    }
+
+    if (!currentUser) {
+      showToast("Please login to make a request", "error");
+      return;
+    }
+
+    if (!activeReg) {
+      showToast("No active registration found", "error");
+      return;
+    }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    addFertilizerRequest(month, fertType, quantity);
-    setLoading(false);
-    setMonth("");
-    setFertType("");
-    setQuantity("");
-    showToast(t.successRequest);
+    
+    try {
+      const now = new Date();
+      
+      const newRequest = {
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        month: selectedMonth,
+        fertType: fertType,
+        quantity: quantityNum,
+        userId: currentUser.id,
+        regNo: activeReg.regNo,
+        status: "pending",
+        createdAt: now.toISOString(),
+        date: now.toLocaleDateString('en-US', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        updatedAt: now.toISOString()
+      };
+      
+      await addFertilizerRequest(newRequest);
+      
+      setSelectedMonth("");
+      setFertType("");
+      setQuantity("");
+      
+      showToast("Request submitted successfully!");
+      
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      showToast("Failed to submit request. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Sort requests by date (newest first)
+  const sortedRequests = useMemo(() => {
+    return (fertilizerRequests || [])
+      .filter(req => req)
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  }, [fertilizerRequests]);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleDateString('en-US', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateString || "-";
+    }
+  };
+
+  const formatQuantity = (qty) => {
+    if (!qty && qty !== 0) return "0";
+    try {
+      return parseFloat(qty).toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1
+      });
+    } catch {
+      return "0";
+    }
+  };
+
+  const totalQuantity = useMemo(() => {
+    return sortedRequests.reduce((sum, req) => sum + (parseFloat(req.quantity) || 0), 0);
+  }, [sortedRequests]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader
-        title={t.fertilizerRequest}
+        title="Fertilizer Request"
         onBack={() => router.back()}
         rightIcon="menu"
         onRightPress={() => setMenuOpen(true)}
@@ -67,109 +178,167 @@ export default function FertilizerRequestScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         {/* Request Form */}
-        <Card style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <Card style={{ marginBottom: 24 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
             <View style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
+              width: 48,
+              height: 48,
+              borderRadius: 24,
               backgroundColor: "#dcfce7",
               alignItems: "center",
               justifyContent: "center",
             }}>
-              <Text style={{ fontSize: 20 }}>🌿</Text>
+              <Text style={{ fontSize: 24 }}>🌿</Text>
             </View>
-            <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text }}>
-              New Fertilizer Request
-            </Text>
+            <View>
+              <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text }}>
+                New Fertilizer Request
+              </Text>
+              <Text style={{ fontSize: fs.xs, color: colors.textSecondary }}>
+                {currentUser?.name || "Guest"} • {activeReg?.regNo || "No registration"}
+              </Text>
+            </View>
           </View>
 
           <Picker
-            label={t.selectMonth}
-            value={month}
-            options={MONTHS}
-            onSelect={setMonth}
-            placeholder={t.selectMonth}
+            label="Select Month"
+            value={selectedMonth}
+            options={monthOptions}
+            onSelect={setSelectedMonth}
+            placeholder="Choose a month"
           />
 
           <Picker
-            label={t.fertilizerType}
+            label="Fertilizer Type"
             value={fertType}
             options={FERTILIZER_TYPES}
             onSelect={setFertType}
-            placeholder="Select Fertilizer Type"
+            placeholder="Select fertilizer type"
           />
 
           <Input
-            label={`${t.quantity} (kg)`}
+            label="Quantity (kg)"
             value={quantity}
             onChangeText={setQuantity}
-            placeholder="e.g. 50"
+            placeholder="Enter quantity in kg"
             keyboardType="numeric"
           />
 
+          <View style={{
+            backgroundColor: "#dbeafe",
+            borderRadius: 10,
+            padding: 12,
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: 8,
+            marginBottom: 20,
+          }}>
+            <Text style={{ color: "#1e40af", fontSize: fs.xs, flex: 1 }}>
+              ℹ️ Fertilizer requests are subject to availability and will be processed within 3-5 working days.
+            </Text>
+          </View>
+
           <Button
-            title={t.request}
+            title="Submit Request"
             onPress={handleRequest}
             loading={loading}
-            icon="send"
+            icon="send-outline"
           />
         </Card>
 
-        {/* History */}
-        <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
-          Request History
+        {/* Request History */}
+        <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
+          Request History {sortedRequests.length > 0 && `(${sortedRequests.length})`}
         </Text>
 
-        {fertilizerRequests.length === 0 ? (
+        {sortedRequests.length === 0 ? (
           <Card>
-            <EmptyState icon="leaf-outline" message="No fertilizer requests yet" />
+            <EmptyState
+              icon="leaf-outline"
+              message="No fertilizer requests yet"
+              description="Your fertilizer request history will appear here"
+            />
           </Card>
         ) : (
-          <Card style={{ padding: 0, overflow: "hidden" }}>
+          <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
+            {/* Table Header */}
             <View style={{
               flexDirection: "row",
-              backgroundColor: colors.surface,
-              paddingVertical: 10,
+              backgroundColor: colors.primary + "10",
+              paddingVertical: 14,
               paddingHorizontal: 14,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.border,
+              borderBottomWidth: 2,
+              borderBottomColor: colors.primary,
             }}>
-              <Text style={{ flex: 2, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700" }}>{t.date}</Text>
-              <Text style={{ flex: 2, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700" }}>TYPE</Text>
-              <Text style={{ flex: 1.5, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>{t.quantity}</Text>
-              <Text style={{ flex: 2, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>{t.status}</Text>
+              <Text style={{ flex: 1.6, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center"  }}>REQUEST DATE</Text>
+              <Text style={{ flex: 1.6, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center"  }}>TYPE</Text>
+              <Text style={{ flex: 1.6, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>QTY (kg)</Text>
+              <Text style={{ flex: 1.6, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>STATUS</Text>
             </View>
 
-            {fertilizerRequests.map((req, i) => (
+            {/* Table Rows */}
+            {sortedRequests.map((req, i) => (
               <View
                 key={req.id}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  paddingVertical: 12,
+                  paddingVertical: 16,
                   paddingHorizontal: 14,
-                  borderBottomWidth: i < fertilizerRequests.length - 1 ? 1 : 0,
+                  borderBottomWidth: i < sortedRequests.length - 1 ? 1 : 0,
                   borderBottomColor: colors.border,
                   backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40",
                 }}
               >
-                <Text style={{ flex: 2, color: colors.text, fontSize: fs.xs }}>{req.date}</Text>
-                <Text style={{ flex: 2, color: colors.textSecondary, fontSize: fs.xs }}>{req.fertType}</Text>
-                <Text style={{ flex: 1.5, color: colors.text, fontSize: fs.xs, fontWeight: "600", textAlign: "right" }}>
-                  {req.quantity} kg
+                <Text numberOfLines={1} style={{ flex: 1.6, color: colors.text, fontSize: fs.sm, fontWeight: "500" }}>
+                  {formatDate(req.createdAt || req.date)}
                 </Text>
-                <View style={{ flex: 2, alignItems: "flex-end" }}>
-                  <StatusBadge status={req.status} />
+                <Text numberOfLines={1} style={{ flex: 1.6, color: colors.textSecondary, fontSize: fs.sm }}>
+                  {req.fertType || "-"}
+                </Text>
+                <Text style={{ flex: 1, color: colors.text, fontSize: fs.sm, fontWeight: "600", textAlign: "left" }}>
+                  {formatQuantity(req.quantity)}
+                </Text>
+                <View style={{ flex: 1.2, alignItems: "center" }}>
+                  <StatusBadge status={req.status || "pending"} size="small" />
                 </View>
               </View>
             ))}
+
+            {/* Summary Footer */}
+            <View style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingVertical: 14,
+              paddingHorizontal: 14,
+              backgroundColor: colors.surface,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+            }}>
+              <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
+                Total Requests: {sortedRequests.length}
+              </Text>
+              <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
+                Total: {formatQuantity(totalQuantity)} kg
+              </Text>
+            </View>
           </Card>
         )}
       </ScrollView>
 
-      <Toast message={toast.message} visible={toast.visible} type={toast.type} />
-      <SidebarMenu visible={menuOpen} onClose={() => setMenuOpen(false)} activeKey="fertilizerRequest" />
+      <Toast 
+        message={toast.message} 
+        visible={toast.visible} 
+        type={toast.type} 
+        onDismiss={() => setToast({ ...toast, visible: false })}
+      />
+      
+      <SidebarMenu 
+        visible={menuOpen} 
+        onClose={() => setMenuOpen(false)} 
+        activeKey="fertilizerRequest" 
+      />
     </SafeAreaView>
   );
 }

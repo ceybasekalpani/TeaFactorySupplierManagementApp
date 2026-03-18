@@ -100,7 +100,6 @@ export function AppProvider({ children }) {
   const [activeReg, setActiveReg] = useState(null);
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
   
-  // FIXED: Properly structured cash requests with all required fields
   const [cashRequests, setCashRequests] = useState([
     { 
       id: "cr1", 
@@ -129,12 +128,12 @@ export function AppProvider({ children }) {
   ]);
   
   const [fertilizerRequests, setFertilizerRequests] = useState([
-    { id: "fr1", month: "Dec 2025", fertType: "Urea", quantity: 50, date: "2025-12-05", status: "approved" },
-    { id: "fr2", month: "Jan 2026", fertType: "Potash", quantity: 25, date: "2026-01-10", status: "pending" },
+    { id: "fr1", month: "Dec 2025", fertType: "Urea", quantity: 50, date: "2025-12-05", status: "approved", createdAt: "2025-12-05T10:30:00.000Z" },
+    { id: "fr2", month: "Jan 2026", fertType: "Potash", quantity: 25, date: "2026-01-10", status: "pending", createdAt: "2026-01-10T14:20:00.000Z" },
   ]);
   
   const [itemRequests, setItemRequests] = useState([
-    { id: "ir1", month: "Jan 2026", itemType: "Pruning Shears", quantity: 2, date: "2026-01-12", status: "approved" },
+    { id: "ir1", month: "Jan 2026", itemType: "Pruning Shears", quantity: 2, date: "2026-01-12", status: "approved", createdAt: "2026-01-12T09:15:00.000Z" },
   ]);
   
   const [specialNews] = useState(SPECIAL_NEWS);
@@ -216,13 +215,11 @@ export function AppProvider({ children }) {
   
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // FIXED: Cash requests function that properly appends to existing array
+  // Cash requests function
   const addCashRequest = (requestData) => {
-    // Handle both object parameter and individual parameters for backward compatibility
     let newReq;
     
     if (typeof requestData === 'object' && requestData !== null) {
-      // New format: receiving an object with all fields
       newReq = {
         id: requestData.id || `cr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: requestData.type,
@@ -243,7 +240,6 @@ export function AppProvider({ children }) {
         updatedAt: requestData.updatedAt || new Date().toISOString()
       };
     } else {
-      // Old format: receiving (type, month, amount) - for backward compatibility
       const [type, month, amount] = arguments;
       newReq = {
         id: `cr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -263,23 +259,9 @@ export function AppProvider({ children }) {
       };
     }
     
-    // CRITICAL FIX: Use functional update to preserve all existing requests
     setCashRequests(prevRequests => {
-      // Ensure prevRequests is an array
       const currentRequests = Array.isArray(prevRequests) ? prevRequests : [];
-      
-      // Add new request to the beginning (newest first)
-      const updatedRequests = [newReq, ...currentRequests];
-      
-      // Log for debugging
-      console.log('Previous requests count:', currentRequests.length);
-      console.log('New request added:', newReq);
-      console.log('Total requests now:', updatedRequests.length);
-      
-      // Optional: Save to AsyncStorage
-      // AsyncStorage.setItem('cashRequests', JSON.stringify(updatedRequests));
-      
-      return updatedRequests;
+      return [newReq, ...currentRequests];
     });
     
     // Auto-reject advance after 24h simulation
@@ -292,51 +274,115 @@ export function AppProvider({ children }) {
               : r
           )
         );
-      }, 86400000); // 24 hours
+      }, 86400000);
     }
     
     return newReq;
   };
 
-  // Fertilizer requests
-  const addFertilizerRequest = (month, fertType, quantity) => {
-    const newReq = {
-      id: `fr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      month,
-      fertType,
-      quantity: parseFloat(quantity),
-      date: new Date().toISOString().split('T')[0],
-      status: "pending",
-      createdAt: new Date().toISOString(),
-      requestedDate: new Date().toLocaleDateString('en-US', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      }),
-    };
+  // Fertilizer requests function - UPDATED to accept object parameter
+  const addFertilizerRequest = (requestData) => {
+    let newReq;
     
-    setFertilizerRequests(prev => [newReq, ...prev]);
+    if (typeof requestData === 'object' && requestData !== null) {
+      // New format: receiving an object with all fields
+      newReq = {
+        id: requestData.id || `fr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        month: requestData.month,
+        fertType: requestData.fertType,
+        quantity: typeof requestData.quantity === 'number' ? requestData.quantity : parseFloat(requestData.quantity),
+        date: requestData.date || new Date().toISOString().split('T')[0],
+        status: requestData.status || "pending",
+        createdAt: requestData.createdAt || new Date().toISOString(),
+        requestedDate: requestData.requestedDate || new Date().toLocaleDateString('en-US', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        userId: requestData.userId,
+        regNo: requestData.regNo,
+        updatedAt: requestData.updatedAt || new Date().toISOString()
+      };
+    } else {
+      // Old format: receiving (month, fertType, quantity)
+      const [month, fertType, quantity] = arguments;
+      newReq = {
+        id: `fr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        month,
+        fertType,
+        quantity: parseFloat(quantity),
+        date: new Date().toISOString().split('T')[0],
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        requestedDate: new Date().toLocaleDateString('en-US', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+      };
+    }
+    
+    setFertilizerRequests(prevRequests => {
+      const currentRequests = Array.isArray(prevRequests) ? prevRequests : [];
+      return [newReq, ...currentRequests];
+    });
+    
     return newReq;
   };
 
   // Item requests
-  const addItemRequest = (month, itemType, quantity) => {
-    const newReq = {
-      id: `ir${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      month,
-      itemType,
-      quantity: parseFloat(quantity),
-      date: new Date().toISOString().split('T')[0],
-      status: "pending",
-      createdAt: new Date().toISOString(),
-      requestedDate: new Date().toLocaleDateString('en-US', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      }),
-    };
+  const addItemRequest = (requestData) => {
+    let newReq;
     
-    setItemRequests(prev => [newReq, ...prev]);
+    if (typeof requestData === 'object' && requestData !== null) {
+      newReq = {
+        id: requestData.id || `ir${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        month: requestData.month,
+        itemType: requestData.itemType,
+        quantity: typeof requestData.quantity === 'number' ? requestData.quantity : parseFloat(requestData.quantity),
+        date: requestData.date || new Date().toISOString().split('T')[0],
+        status: requestData.status || "pending",
+        createdAt: requestData.createdAt || new Date().toISOString(),
+        requestedDate: requestData.requestedDate || new Date().toLocaleDateString('en-US', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        userId: requestData.userId,
+        regNo: requestData.regNo,
+        updatedAt: requestData.updatedAt || new Date().toISOString()
+      };
+    } else {
+      const [month, itemType, quantity] = arguments;
+      newReq = {
+        id: `ir${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        month,
+        itemType,
+        quantity: parseFloat(quantity),
+        date: new Date().toISOString().split('T')[0],
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        requestedDate: new Date().toLocaleDateString('en-US', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+      };
+    }
+    
+    setItemRequests(prevRequests => {
+      const currentRequests = Array.isArray(prevRequests) ? prevRequests : [];
+      return [newReq, ...currentRequests];
+    });
+    
     return newReq;
   };
 
@@ -358,26 +404,45 @@ export function AppProvider({ children }) {
 
   const isDark = theme === "dark";
 
+  // Create the context value object
+  const contextValue = {
+    // Theme
+    theme, 
+    isDark, 
+    updateTheme,
+    language, 
+    updateLanguage,
+    fontSize, 
+    updateFontSize,
+    // Auth
+    currentUser, 
+    activeReg,
+    signIn, 
+    login, 
+    logout, 
+    updateProfile,
+    suppliers: MOCK_SUPPLIERS,
+    // Data
+    getLeafData, 
+    getTodayLeaf, 
+    getSixMonthHistory,
+    notifications, 
+    unreadCount, 
+    markNotificationRead, 
+    markAllRead,
+    cashRequests, 
+    addCashRequest,
+    fertilizerRequests, 
+    addFertilizerRequest,
+    itemRequests, 
+    addItemRequest,
+    specialNews, 
+    newsShown, 
+    setNewsShown,
+  };
+
   return (
-    <AppContext.Provider
-      value={{
-        // Theme
-        theme, isDark, updateTheme,
-        language, updateLanguage,
-        fontSize, updateFontSize,
-        // Auth
-        currentUser, activeReg,
-        signIn, login, logout, updateProfile,
-        suppliers: MOCK_SUPPLIERS,
-        // Data
-        getLeafData, getTodayLeaf, getSixMonthHistory,
-        notifications, unreadCount, markNotificationRead, markAllRead,
-        cashRequests, addCashRequest,
-        fertilizerRequests, addFertilizerRequest,
-        itemRequests, addItemRequest,
-        specialNews, newsShown, setNewsShown,
-      }}
-    >
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );
@@ -385,6 +450,8 @@ export function AppProvider({ children }) {
 
 export const useApp = () => {
   const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useApp must be used inside AppProvider");
+  if (!ctx) {
+    throw new Error("useApp must be used inside AppProvider");
+  }
   return ctx;
 };
