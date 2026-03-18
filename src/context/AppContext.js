@@ -40,6 +40,25 @@ const MOCK_SUPPLIERS = [
 
 const MOCK_LEAF_DATA = {
   "SUP001-REG-2021-001": {
+    "2025-10": [
+      { day: 3, gross: 108, bags: 2, water: 9, netWeight: 99 },
+      { day: 6, gross: 125, bags: 2, water: 10, netWeight: 115 },
+      { day: 10, gross: 92, bags: 1, water: 7, netWeight: 85 },
+      { day: 14, gross: 138, bags: 3, water: 12, netWeight: 126 },
+      { day: 18, gross: 115, bags: 2, water: 9, netWeight: 106 },
+      { day: 22, gross: 101, bags: 2, water: 8, netWeight: 93 },
+      { day: 27, gross: 130, bags: 2, water: 11, netWeight: 119 },
+    ],
+    "2025-11": [
+      { day: 2, gross: 118, bags: 2, water: 10, netWeight: 108 },
+      { day: 5, gross: 97, bags: 1, water: 8, netWeight: 89 },
+      { day: 9, gross: 142, bags: 3, water: 12, netWeight: 130 },
+      { day: 13, gross: 110, bags: 2, water: 9, netWeight: 101 },
+      { day: 17, gross: 128, bags: 2, water: 11, netWeight: 117 },
+      { day: 21, gross: 95, bags: 1, water: 8, netWeight: 87 },
+      { day: 25, gross: 135, bags: 3, water: 11, netWeight: 124 },
+      { day: 28, gross: 107, bags: 2, water: 9, netWeight: 98 },
+    ],
     "2025-12": [
       { day: 1, gross: 120, bags: 2, water: 10, netWeight: 110 },
       { day: 3, gross: 95, bags: 1, water: 8, netWeight: 87 },

@@ -13,7 +13,7 @@ import { useTheme } from "../../hooks/useTheme";
 
 export default function HistoryScreen() {
   const { colors, fs, t } = useTheme();
-  const { getSixMonthHistory, currentUser, activeReg, cashRequests } = useApp();
+  const { getSixMonthHistory, currentUser, activeReg } = useApp();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -187,15 +187,15 @@ export default function HistoryScreen() {
           <View style={{ flexDirection: "row", alignItems: "flex-end", height: 150, gap: 8 }}>
             {historyArray.length > 0 ? (
               historyArray.map((month, index) => {
-                const totalNet = month?.totalNet || 0;
+                const totalNet = month?.totalNet ?? 0;
                 const barHeight = maxNet > 0 ? (totalNet / maxNet) * 130 : 0;
                 const monthLabel = month?.label || `Month ${index + 1}`;
-                const shortMonth = monthLabel.split(" ")[0] || monthLabel.substring(0, 3);
-                
+                const shortMonth = monthLabel.split(" ")[0];
+
                 return (
                   <View key={month?.key || index} style={{ flex: 1, alignItems: "center" }}>
                     <Text style={{ color: colors.primary, fontSize: fs.xs, fontWeight: "700", marginBottom: 4 }}>
-                      {totalNet || "-"}
+                      {totalNet > 0 ? totalNet : ""}
                     </Text>
                     <View style={{
                       width: "100%",
@@ -224,19 +224,40 @@ export default function HistoryScreen() {
         </Text>
 
         <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", backgroundColor: colors.surface, paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <Text style={{ flex: 2, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700" }}>MONTH</Text>
-            <Text style={{ flex: 1.5, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>GROSS</Text>
-            <Text style={{ flex: 1.5, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>NET</Text>
-            <Text style={{ flex: 1, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>DAYS</Text>
+          {/* Table Header */}
+          <View style={{
+            flexDirection: "row",
+            backgroundColor: colors.primary + "10",
+            paddingVertical: 14,
+            paddingHorizontal: 14,
+            borderBottomWidth: 2,
+            borderBottomColor: colors.primary,
+          }}>
+            <Text style={{ flex: 2, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>MONTH</Text>
+            <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>GROSS (kg)</Text>
+            <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>NET (kg)</Text>
+            <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>DAYS</Text>
           </View>
+
+          {/* Table Rows */}
           {historyArray.length > 0 ? (
             historyArray.map((m, i) => (
-              <View key={m?.key || i} style={{ flexDirection: "row", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: i < historyArray.length - 1 ? 1 : 0, borderBottomColor: colors.border, backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40" }}>
-                <Text style={{ flex: 2, color: colors.text, fontSize: fs.xs, fontWeight: "600" }}>{m?.label || "-"}</Text>
-                <Text style={{ flex: 1.5, color: colors.text, fontSize: fs.xs, textAlign: "right" }}>{m?.totalGross || "-"}</Text>
-                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>{m?.totalNet || "-"}</Text>
-                <Text style={{ flex: 1, color: colors.textMuted, fontSize: fs.xs, textAlign: "right" }}>{m?.days || "-"}</Text>
+              <View
+                key={m?.key || i}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 16,
+                  paddingHorizontal: 14,
+                  borderBottomWidth: i < historyArray.length - 1 ? 1 : 0,
+                  borderBottomColor: colors.border,
+                  backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40",
+                }}
+              >
+                <Text style={{ flex: 2, color: colors.text, fontSize: fs.sm, fontWeight: "600" }}>{m?.label ?? "-"}</Text>
+                <Text style={{ flex: 1.5, color: colors.text, fontSize: fs.sm, textAlign: "right" }}>{m?.totalGross ?? 0}</Text>
+                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>{m?.totalNet ?? 0}</Text>
+                <Text style={{ flex: 1, color: colors.textSecondary, fontSize: fs.sm, textAlign: "right" }}>{m?.days ?? 0}</Text>
               </View>
             ))
           ) : (
@@ -244,6 +265,25 @@ export default function HistoryScreen() {
               <Text style={{ color: colors.textSecondary }}>No monthly data available</Text>
             </View>
           )}
+
+          {/* Summary Footer */}
+          <View style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingVertical: 14,
+            paddingHorizontal: 14,
+            backgroundColor: colors.surface,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}>
+            <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
+              Total Days: {historyArray.reduce((s, m) => s + (m?.days ?? 0), 0)}
+            </Text>
+            <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
+              Total Net: {historyArray.reduce((s, m) => s + (m?.totalNet ?? 0), 0)} kg
+            </Text>
+          </View>
         </Card>
 
         {/* Download Statement */}
