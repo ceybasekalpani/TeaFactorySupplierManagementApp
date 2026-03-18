@@ -75,6 +75,16 @@ const MOCK_LEAF_DATA = {
       { day: 8, gross: 97, bags: 1, water: 8, netWeight: 89 },
       { day: 10, gross: 118, bags: 2, water: 10, netWeight: 108 },
     ],
+    "2026-03": [
+      { day: 2, gross: 130, bags: 2, water: 11, netWeight: 119 },
+      { day: 4, gross: 112, bags: 2, water: 9, netWeight: 103 },
+      { day: 6, gross: 148, bags: 3, water: 13, netWeight: 135 },
+      { day: 9, gross: 95, bags: 1, water: 8, netWeight: 87 },
+      { day: 11, gross: 122, bags: 2, water: 10, netWeight: 112 },
+      { day: 13, gross: 158, bags: 3, water: 14, netWeight: 144 },
+      { day: 16, gross: 104, bags: 2, water: 8, netWeight: 96 },
+      { day: 18, gross: 137, bags: 2, water: 12, netWeight: 125 },
+    ],
   },
 };
 

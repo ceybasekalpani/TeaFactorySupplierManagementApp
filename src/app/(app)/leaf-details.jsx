@@ -1,9 +1,9 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-    ScrollView,
-    Text,
-    View
+  ScrollView,
+  Text,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
@@ -11,14 +11,6 @@ import { Card, EmptyState, Picker, ScreenHeader, ToggleTabs } from "../../compon
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
-const MONTH_OPTIONS = [
-  { value: "2026-02", label: "Feb 2026" },
-  { value: "2026-01", label: "Jan 2026" },
-  { value: "2025-12", label: "Dec 2025" },
-  { value: "2025-11", label: "Nov 2025" },
-  { value: "2025-10", label: "Oct 2025" },
-  { value: "2025-09", label: "Sep 2025" },
-];
 
 function getDaysInMonth(yearMonth) {
   const [year, month] = yearMonth.split("-").map(Number);
@@ -32,7 +24,21 @@ export default function LeafDetailsScreen() {
 
   const [activeTab, setActiveTab] = useState("monthly");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("2026-01");
+
+  const monthOptions = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const label = date.toLocaleString("default", { month: "short", year: "numeric" });
+      return { value, label };
+    });
+  }, []);
+
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   const leafData = getLeafData(selectedMonth);
 
@@ -60,7 +66,7 @@ export default function LeafDetailsScreen() {
         <Picker
           label={t.selectMonthView}
           value={selectedMonth}
-          options={MONTH_OPTIONS}
+          options={monthOptions}
           onSelect={setSelectedMonth}
           placeholder="Select Month"
         />
