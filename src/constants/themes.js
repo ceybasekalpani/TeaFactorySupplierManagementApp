@@ -1,49 +1,61 @@
+// Remove globalColors completely and use themes instead
+
 export const themes = {
   light: {
-    bg: "#f8faf9",
-    card: "#ffffff",
-    cardBorder: "#e8f0eb",
-    surface: "#f0f7f2",
-    primary: "#2d5a3d",
-    primaryLight: "#4a7c59",
-    primaryDark: "#1a4731",
-    accent: "#f59e0b",
-    text: "#1a2e23",
-    textSecondary: "#5a7a65",
-    textMuted: "#8fa89a",
-    border: "#d4e6da",
-    success: "#16a34a",
-    warning: "#d97706",
-    error: "#dc2626",
-    info: "#0891b2",
-    white: "#ffffff",
-    inputBg: "#f4f9f5",
+    bg: "#f5f1ea",        // Warm cream background (like tea color)
+    card: "#FFFFFF",
+    cardBorder: "#E0E0E0",
+    surface: "#F5F5F5",
+    primary: "#2E7D32",    // Dark green - tea leaf color
+    primaryLight: "#4CAF50",
+    primaryDark: "#1B5E20",
+    accent: "#795548",     // Brown - tea color
+    text: "#212121",
+    textSecondary: "#757575",
+    textMuted: "#9E9E9E",
+    border: "#E0E0E0",
+    success: "#388E3C",
+    warning: "#FFA000",
+    error: "#B71C1C",
+    info: "#0288D1",
+    white: "#FFFFFF",
+    inputBg: "#F5F5F5",
     statusBar: "dark-content",
-    tabBar: "#ffffff",
-    shadow: "#00000015",
+    tabBar: "#FFFFFF",
+    shadow: "#3a2a1a15",
+    disabled: "#BDBDBD",
+    placeholder: "#9E9E9E",
+    backdrop: "rgba(0,0,0,0.5)",
+    notification: "#F57C00",
+    secondary: "#FF8F00", // Amber - for accents
   },
   dark: {
-    bg: "#0f1f16",
-    card: "#1a2e23",
-    cardBorder: "#2d4a38",
-    surface: "#152a1e",
-    primary: "#4ade80",
-    primaryLight: "#86efac",
-    primaryDark: "#22c55e",
-    accent: "#fbbf24",
-    text: "#e8f5ec",
-    textSecondary: "#9dc4ab",
-    textMuted: "#5a8a68",
-    border: "#2d4a38",
-    success: "#4ade80",
-    warning: "#fbbf24",
-    error: "#f87171",
-    info: "#38bdf8",
-    white: "#ffffff",
-    inputBg: "#1e3828",
+    bg: "#121212",        // True dark background
+    card: "#242424",
+    cardBorder: "#333333",
+    surface: "#1E1E1E",
+    primary: "#66BB6A",    // Lighter green for dark mode
+    primaryLight: "#81C784",
+    primaryDark: "#388E3C",
+    accent: "#8D6E63",     // Light brown
+    text: "#FFFFFF",
+    textSecondary: "#B0B0B0",
+    textMuted: "#9E9E9E",
+    border: "#333333",
+    success: "#4CAF50",
+    warning: "#FFB74D",
+    error: "#EF5350",
+    info: "#4FC3F7",
+    white: "#f5f5f5",
+    inputBg: "#252525",
     statusBar: "light-content",
-    tabBar: "#1a2e23",
-    shadow: "#00000040",
+    tabBar: "#242424",
+    shadow: "#00000080",
+    disabled: "#757575",
+    placeholder: "#9E9E9E",
+    backdrop: "rgba(0,0,0,0.8)",
+    notification: "#FFA726",
+    secondary: "#FFB74D", // Amber for dark mode
   },
 };
 
@@ -78,4 +90,8 @@ export const fontSizes = {
     "2xl": 31,
     "3xl": 38,
   },
+};
+
+export const getThemeColors = (isDarkMode) => {
+  return isDarkMode ? themes.dark : themes.light;
 };

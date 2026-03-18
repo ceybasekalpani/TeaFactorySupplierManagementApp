@@ -1,12 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Print from "expo-print";
 import { useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
 import { useState } from "react";
 import { Alert, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, ScreenHeader } from "../../components/ui";
-import { useTheme } from "../../hooks/useTheme";
 import { useApp } from "../../context/AppContext";
+import { useTheme } from "../../hooks/useTheme";
 
 export default function HistoryScreen() {
   const { colors, fs, t } = useTheme();
@@ -16,23 +19,125 @@ export default function HistoryScreen() {
   const [downloadLoading, setDownloadLoading] = useState(false);
 
   const history = getSixMonthHistory();
-  const maxNet = Math.max(...history.map((h) => h.totalNet), 1);
+  
+  // Ensure history is an array and has data
+  const historyArray = Array.isArray(history) ? history : [];
+  const maxNet = Math.max(...historyArray.map((h) => h?.totalNet || 0), 1);
 
   const handleDownloadPDF = async () => {
-    setDownloadLoading(true);
-    // Simulate PDF generation
-    await new Promise((r) => setTimeout(r, 1500));
-    setDownloadLoading(false);
+    try {
+      setDownloadLoading(true);
 
-    // In a real app, use expo-print + expo-sharing
-    Alert.alert(
-      "PDF Ready",
-      "Your annual statement has been generated and is ready to share.\n\n(In production, this uses expo-print and expo-sharing to create and share a real PDF.)",
-      [
-        { text: "Share", onPress: () => Alert.alert("Share", "Sharing PDF...") },
-        { text: "OK" },
-      ]
-    );
+      if (!historyArray || historyArray.length === 0) {
+        Alert.alert("No Data", "No history available to generate PDF");
+        setDownloadLoading(false);
+        return;
+      }
+
+      const totalNet = historyArray.reduce((s, h) => s + (h?.totalNet || 0), 0);
+      const totalDays = historyArray.reduce((s, h) => s + (h?.days || 0), 0);
+
+      const tableRows = historyArray
+        .map(
+          (m) => `
+          <tr>
+            <td>${m?.label ?? "-"}</td>
+            <td>${m?.totalGross ?? "-"}</td>
+            <td>${m?.totalNet ?? "-"}</td>
+            <td>${m?.days ?? "-"}</td>
+          </tr>
+        `
+        )
+        .join("");
+
+      const html = `
+        <html>
+          <head>
+            <style>
+              body{
+                font-family: Arial;
+                padding:20px;
+              }
+              h1{
+                text-align:center;
+              }
+              table{
+                width:100%;
+                border-collapse:collapse;
+                margin-top:20px;
+              }
+              th,td{
+                border:1px solid #ccc;
+                padding:8px;
+                text-align:center;
+              }
+              th{
+                background:#f2f2f2;
+              }
+            </style>
+          </head>
+
+          <body>
+
+            <h1>Annual Leaf Collection Statement</h1>
+
+            <p><b>Name:</b> ${currentUser?.name ?? "-"}</p>
+            <p><b>Registration No:</b> ${activeReg?.regNo ?? "-"}</p>
+
+            <h3>6 Month Summary</h3>
+            <p>Total Net KG: ${totalNet}</p>
+            <p>Total Collection Days: ${totalDays}</p>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Gross</th>
+                  <th>Net</th>
+                  <th>Days</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+
+            <p style="margin-top:30px">
+              Generated on ${new Date().toLocaleDateString()}
+            </p>
+
+          </body>
+        </html>
+      `;
+
+      const { uri } = await Print.printToFileAsync({
+        html: html,
+      });
+
+      const fileName = `LeafStatement_${activeReg?.regNo || "supplier"}_${Date.now()}.pdf`;
+      const fileUri = FileSystem.documentDirectory + fileName;
+
+      await FileSystem.moveAsync({
+        from: uri,
+        to: fileUri,
+      });
+
+      setDownloadLoading(false);
+
+      const canShare = await Sharing.isAvailableAsync();
+
+      if (canShare) {
+        await Sharing.shareAsync(fileUri);
+      } else {
+        Alert.alert("PDF Saved", `Saved to: ${fileUri}`);
+      }
+
+    } catch (error) {
+      console.log(error);
+      setDownloadLoading(false);
+      Alert.alert("Error", "Failed to generate PDF");
+    }
   };
 
   return (
@@ -60,13 +165,13 @@ export default function HistoryScreen() {
           <View style={{ flexDirection: "row", gap: 12 }}>
             <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, alignItems: "center" }}>
               <Text style={{ color: colors.primary, fontSize: fs.xl, fontWeight: "800" }}>
-                {history.reduce((s, h) => s + h.totalNet, 0)}
+                {historyArray.reduce((s, h) => s + (h?.totalNet || 0), 0)}
               </Text>
               <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center", marginTop: 2 }}>Total kg (6 months)</Text>
             </View>
             <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, alignItems: "center" }}>
               <Text style={{ color: colors.accent, fontSize: fs.xl, fontWeight: "800" }}>
-                {history.reduce((s, h) => s + h.days, 0)}
+                {historyArray.reduce((s, h) => s + (h?.days || 0), 0)}
               </Text>
               <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center", marginTop: 2 }}>Collection Days</Text>
             </View>
@@ -80,26 +185,36 @@ export default function HistoryScreen() {
 
         <Card style={{ marginBottom: 16 }}>
           <View style={{ flexDirection: "row", alignItems: "flex-end", height: 150, gap: 8 }}>
-            {history.map((month) => {
-              const barHeight = maxNet > 0 ? (month.totalNet / maxNet) * 130 : 0;
-              return (
-                <View key={month.key} style={{ flex: 1, alignItems: "center" }}>
-                  <Text style={{ color: colors.primary, fontSize: fs.xs, fontWeight: "700", marginBottom: 4 }}>
-                    {month.totalNet || "-"}
-                  </Text>
-                  <View style={{
-                    width: "100%",
-                    height: Math.max(barHeight, 4),
-                    backgroundColor: colors.primary,
-                    borderRadius: 6,
-                    opacity: month.totalNet > 0 ? 1 : 0.2,
-                  }} />
-                  <Text style={{ color: colors.textMuted, fontSize: 9, marginTop: 4, textAlign: "center" }}>
-                    {month.label.split(" ")[0]}
-                  </Text>
-                </View>
-              );
-            })}
+            {historyArray.length > 0 ? (
+              historyArray.map((month, index) => {
+                const totalNet = month?.totalNet || 0;
+                const barHeight = maxNet > 0 ? (totalNet / maxNet) * 130 : 0;
+                const monthLabel = month?.label || `Month ${index + 1}`;
+                const shortMonth = monthLabel.split(" ")[0] || monthLabel.substring(0, 3);
+                
+                return (
+                  <View key={month?.key || index} style={{ flex: 1, alignItems: "center" }}>
+                    <Text style={{ color: colors.primary, fontSize: fs.xs, fontWeight: "700", marginBottom: 4 }}>
+                      {totalNet || "-"}
+                    </Text>
+                    <View style={{
+                      width: "100%",
+                      height: Math.max(barHeight, 4),
+                      backgroundColor: colors.primary,
+                      borderRadius: 6,
+                      opacity: totalNet > 0 ? 1 : 0.2,
+                    }} />
+                    <Text style={{ color: colors.textMuted, fontSize: 9, marginTop: 4, textAlign: "center" }}>
+                      {shortMonth}
+                    </Text>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={{ flex: 1, alignItems: "center", padding: 20 }}>
+                <Text style={{ color: colors.textSecondary }}>No monthly data available</Text>
+              </View>
+            )}
           </View>
         </Card>
 
@@ -115,14 +230,20 @@ export default function HistoryScreen() {
             <Text style={{ flex: 1.5, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>NET</Text>
             <Text style={{ flex: 1, color: colors.textSecondary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>DAYS</Text>
           </View>
-          {history.map((m, i) => (
-            <View key={m.key} style={{ flexDirection: "row", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: i < history.length - 1 ? 1 : 0, borderBottomColor: colors.border, backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40" }}>
-              <Text style={{ flex: 2, color: colors.text, fontSize: fs.xs, fontWeight: "600" }}>{m.label}</Text>
-              <Text style={{ flex: 1.5, color: colors.text, fontSize: fs.xs, textAlign: "right" }}>{m.totalGross || "-"}</Text>
-              <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>{m.totalNet || "-"}</Text>
-              <Text style={{ flex: 1, color: colors.textMuted, fontSize: fs.xs, textAlign: "right" }}>{m.days || "-"}</Text>
+          {historyArray.length > 0 ? (
+            historyArray.map((m, i) => (
+              <View key={m?.key || i} style={{ flexDirection: "row", paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: i < historyArray.length - 1 ? 1 : 0, borderBottomColor: colors.border, backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40" }}>
+                <Text style={{ flex: 2, color: colors.text, fontSize: fs.xs, fontWeight: "600" }}>{m?.label || "-"}</Text>
+                <Text style={{ flex: 1.5, color: colors.text, fontSize: fs.xs, textAlign: "right" }}>{m?.totalGross || "-"}</Text>
+                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>{m?.totalNet || "-"}</Text>
+                <Text style={{ flex: 1, color: colors.textMuted, fontSize: fs.xs, textAlign: "right" }}>{m?.days || "-"}</Text>
+              </View>
+            ))
+          ) : (
+            <View style={{ padding: 20, alignItems: "center" }}>
+              <Text style={{ color: colors.textSecondary }}>No monthly data available</Text>
             </View>
-          ))}
+          )}
         </Card>
 
         {/* Download Statement */}

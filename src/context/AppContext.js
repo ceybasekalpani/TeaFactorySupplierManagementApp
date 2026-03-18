@@ -93,23 +93,50 @@ const SPECIAL_NEWS = [
 
 // ── Provider ───────────────────────────────────────────────────────────────────
 export function AppProvider({ children }) {
-  const [theme, setTheme] = useState("light"); // "light" | "dark"
-  const [language, setLanguage] = useState("english"); // "english" | "sinhala"
-  const [fontSize, setFontSize] = useState("medium"); // "small" | "medium" | "large"
-  const [currentUser, setCurrentUser] = useState(null); // full supplier object
-  const [activeReg, setActiveReg] = useState(null); // { regNo, route }
+  const [theme, setTheme] = useState("light");
+  const [language, setLanguage] = useState("english");
+  const [fontSize, setFontSize] = useState("medium");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeReg, setActiveReg] = useState(null);
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  
+  // FIXED: Properly structured cash requests with all required fields
   const [cashRequests, setCashRequests] = useState([
-    { id: "cr1", type: "advance", month: "Jan 2026", amount: 5000, date: "2026-01-05", status: "approved" },
-    { id: "cr2", type: "loan", month: "Jan 2026", amount: 20000, date: "2026-01-08", status: "pending" },
+    { 
+      id: "cr1", 
+      type: "advance", 
+      month: "Jan 2026", 
+      amount: 5000, 
+      date: "2026-01-05", 
+      status: "approved",
+      createdAt: "2026-01-05T10:30:00.000Z",
+      requestedDate: "05 Jan 2026",
+      userId: "SUP001",
+      regNo: "REG-2021-001"
+    },
+    { 
+      id: "cr2", 
+      type: "loan", 
+      month: "Jan 2026", 
+      amount: 20000, 
+      date: "2026-01-08", 
+      status: "pending",
+      createdAt: "2026-01-08T14:20:00.000Z",
+      requestedDate: "08 Jan 2026",
+      userId: "SUP001",
+      regNo: "REG-2021-001"
+    },
   ]);
+  
   const [fertilizerRequests, setFertilizerRequests] = useState([
     { id: "fr1", month: "Dec 2025", fertType: "Urea", quantity: 50, date: "2025-12-05", status: "approved" },
     { id: "fr2", month: "Jan 2026", fertType: "Potash", quantity: 25, date: "2026-01-10", status: "pending" },
   ]);
+  
   const [itemRequests, setItemRequests] = useState([
     { id: "ir1", month: "Jan 2026", itemType: "Pruning Shears", quantity: 2, date: "2026-01-12", status: "approved" },
   ]);
+  
   const [specialNews] = useState(SPECIAL_NEWS);
   const [newsShown, setNewsShown] = useState(false);
 
@@ -182,25 +209,81 @@ export function AppProvider({ children }) {
   const markNotificationRead = (id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
+  
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
+  
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Cash requests
-  const addCashRequest = (type, month, amount) => {
-    const newReq = {
-      id: `cr${Date.now()}`,
-      type,
-      month,
-      amount: parseFloat(amount),
-      date: new Date().toISOString().split("T")[0],
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-    setCashRequests((prev) => [newReq, ...prev]);
-    // Auto-reject advance after 24h simulation flag
-    if (type === "advance") {
+  // FIXED: Cash requests function that properly appends to existing array
+  const addCashRequest = (requestData) => {
+    // Handle both object parameter and individual parameters for backward compatibility
+    let newReq;
+    
+    if (typeof requestData === 'object' && requestData !== null) {
+      // New format: receiving an object with all fields
+      newReq = {
+        id: requestData.id || `cr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: requestData.type,
+        month: requestData.month,
+        amount: typeof requestData.amount === 'number' ? requestData.amount : parseFloat(requestData.amount),
+        date: requestData.date || new Date().toISOString().split('T')[0],
+        status: requestData.status || "pending",
+        createdAt: requestData.createdAt || new Date().toISOString(),
+        requestedDate: requestData.requestedDate || new Date().toLocaleDateString('en-US', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        userId: requestData.userId,
+        regNo: requestData.regNo,
+        updatedAt: requestData.updatedAt || new Date().toISOString()
+      };
+    } else {
+      // Old format: receiving (type, month, amount) - for backward compatibility
+      const [type, month, amount] = arguments;
+      newReq = {
+        id: `cr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type,
+        month,
+        amount: parseFloat(amount),
+        date: new Date().toISOString().split('T')[0],
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        requestedDate: new Date().toLocaleDateString('en-US', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+      };
+    }
+    
+    // CRITICAL FIX: Use functional update to preserve all existing requests
+    setCashRequests(prevRequests => {
+      // Ensure prevRequests is an array
+      const currentRequests = Array.isArray(prevRequests) ? prevRequests : [];
+      
+      // Add new request to the beginning (newest first)
+      const updatedRequests = [newReq, ...currentRequests];
+      
+      // Log for debugging
+      console.log('Previous requests count:', currentRequests.length);
+      console.log('New request added:', newReq);
+      console.log('Total requests now:', updatedRequests.length);
+      
+      // Optional: Save to AsyncStorage
+      // AsyncStorage.setItem('cashRequests', JSON.stringify(updatedRequests));
+      
+      return updatedRequests;
+    });
+    
+    // Auto-reject advance after 24h simulation
+    if (newReq.type === "advance") {
       setTimeout(() => {
         setCashRequests((prev) =>
           prev.map((r) =>
@@ -211,34 +294,49 @@ export function AppProvider({ children }) {
         );
       }, 86400000); // 24 hours
     }
+    
     return newReq;
   };
 
   // Fertilizer requests
   const addFertilizerRequest = (month, fertType, quantity) => {
     const newReq = {
-      id: `fr${Date.now()}`,
+      id: `fr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       month,
       fertType,
       quantity: parseFloat(quantity),
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toISOString().split('T')[0],
       status: "pending",
+      createdAt: new Date().toISOString(),
+      requestedDate: new Date().toLocaleDateString('en-US', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      }),
     };
-    setFertilizerRequests((prev) => [newReq, ...prev]);
+    
+    setFertilizerRequests(prev => [newReq, ...prev]);
     return newReq;
   };
 
   // Item requests
   const addItemRequest = (month, itemType, quantity) => {
     const newReq = {
-      id: `ir${Date.now()}`,
+      id: `ir${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       month,
       itemType,
       quantity: parseFloat(quantity),
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toISOString().split('T')[0],
       status: "pending",
+      createdAt: new Date().toISOString(),
+      requestedDate: new Date().toLocaleDateString('en-US', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      }),
     };
-    setItemRequests((prev) => [newReq, ...prev]);
+    
+    setItemRequests(prev => [newReq, ...prev]);
     return newReq;
   };
 
