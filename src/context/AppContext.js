@@ -107,12 +107,13 @@ const MOCK_LEAF_DATA = {
   },
 };
 
+const _now = Date.now();
 const MOCK_NOTIFICATIONS = [
-  { id: "n1", title: "Cash Request Approved", message: "Your advance request of Rs. 5,000 for January has been approved.", time: "2 hours ago", read: false, type: "success" },
-  { id: "n2", title: "Fertilizer Ready", message: "Your fertilizer request (50kg Urea) is ready for collection.", time: "1 day ago", read: false, type: "info" },
-  { id: "n3", title: "Loan Request Pending", message: "Your loan request of Rs. 20,000 is under review.", time: "2 days ago", read: true, type: "warning" },
-  { id: "n4", title: "Tea Collection Tomorrow", message: "Collection vehicle will arrive at 8:00 AM tomorrow.", time: "3 days ago", read: true, type: "info" },
-  { id: "n5", title: "Payment Processed", message: "Your December leaf payment of Rs. 28,450 has been credited.", time: "5 days ago", read: true, type: "success" },
+  { id: "n1", title: "Cash Request Approved", message: "Your advance request of Rs. 5,000 for January has been approved.", createdAt: new Date(_now - 2 * 60 * 60 * 1000).toISOString(), read: false, type: "success" },
+  { id: "n2", title: "Fertilizer Ready", message: "Your fertilizer request (50kg Urea) is ready for collection.", createdAt: new Date(_now - 24 * 60 * 60 * 1000).toISOString(), read: false, type: "info" },
+  { id: "n3", title: "Loan Request Pending", message: "Your loan request of Rs. 20,000 is under review.", createdAt: new Date(_now - 2 * 24 * 60 * 60 * 1000).toISOString(), read: true, type: "warning" },
+  { id: "n4", title: "Tea Collection Tomorrow", message: "Collection vehicle will arrive at 8:00 AM tomorrow.", createdAt: new Date(_now - 3 * 24 * 60 * 60 * 1000).toISOString(), read: true, type: "info" },
+  { id: "n5", title: "Payment Processed", message: "Your December leaf payment of Rs. 28,450 has been credited.", createdAt: new Date(_now - 5 * 24 * 60 * 60 * 1000).toISOString(), read: true, type: "success" },
 ];
 
 const SPECIAL_NEWS = [
