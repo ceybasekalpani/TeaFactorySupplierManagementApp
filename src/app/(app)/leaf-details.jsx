@@ -12,6 +12,18 @@ import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
 
+// Fallback mock data — shown only when real data is empty (for UI preview)
+const MOCK_LEAF_FALLBACK = [
+  { day: 2,  gross: 130, bags: 2, water: 11, netWeight: 119 },
+  { day: 4,  gross: 112, bags: 2, water: 9,  netWeight: 103 },
+  { day: 6,  gross: 148, bags: 3, water: 13, netWeight: 135 },
+  { day: 9,  gross: 95,  bags: 1, water: 8,  netWeight: 87  },
+  { day: 11, gross: 122, bags: 2, water: 10, netWeight: 112 },
+  { day: 13, gross: 158, bags: 3, water: 14, netWeight: 144 },
+  { day: 16, gross: 104, bags: 2, water: 8,  netWeight: 96  },
+  { day: 18, gross: 137, bags: 2, water: 12, netWeight: 125 },
+];
+
 function getDaysInMonth(yearMonth) {
   const [year, month] = yearMonth.split("-").map(Number);
   return new Date(year, month, 0).getDate();
@@ -40,7 +52,8 @@ export default function LeafDetailsScreen() {
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   });
 
-  const leafData = getLeafData(selectedMonth);
+  const rawLeaf = getLeafData(selectedMonth);
+  const leafData = rawLeaf.length > 0 ? rawLeaf : MOCK_LEAF_FALLBACK;
 
   const tabs = [
     { key: "monthly", label: t.monthLeafDetails },

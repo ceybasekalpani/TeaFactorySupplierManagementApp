@@ -293,10 +293,10 @@ export default function FertilizerRequestScreen() {
                 <Text numberOfLines={1} style={{ flex: 1.6, color: colors.text, fontSize: fs.sm, fontWeight: "500" }}>
                   {formatDate(req.createdAt || req.date)}
                 </Text>
-                <Text numberOfLines={1} style={{ flex: 1.6, color: colors.textSecondary, fontSize: fs.sm }}>
+                <Text numberOfLines={1} style={{ flex: 1, color: colors.textSecondary, fontSize: fs.sm,textAlign: "left" }}>
                   {req.fertType || "-"}
                 </Text>
-                <Text style={{ flex: 1, color: colors.text, fontSize: fs.sm, fontWeight: "600", textAlign: "left" }}>
+                <Text style={{ flex: 1, color: colors.text, fontSize: fs.sm, fontWeight: "600", textAlign: "center" }}>
                   {formatQuantity(req.quantity)}
                 </Text>
                 <View style={{ flex: 1.2, alignItems: "center" }}>

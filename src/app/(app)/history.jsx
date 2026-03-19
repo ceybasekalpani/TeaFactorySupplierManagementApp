@@ -11,6 +11,16 @@ import { Button, Card, ScreenHeader } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
+// Fallback mock data — shown only when real data is empty (for UI preview)
+const MOCK_HISTORY = [
+  { key: "2025-10", label: "Oct 2025", totalNet: 743,  totalGross: 809,  days: 7 },
+  { key: "2025-11", label: "Nov 2025", totalNet: 754,  totalGross: 832,  days: 8 },
+  { key: "2025-12", label: "Dec 2025", totalNet: 1299, totalGross: 1418, days: 13 },
+  { key: "2026-01", label: "Jan 2026", totalNet: 1099, totalGross: 1205, days: 9 },
+  { key: "2026-02", label: "Feb 2026", totalNet: 543,  totalGross: 592,  days: 5 },
+  { key: "2026-03", label: "Mar 2026", totalNet: 821,  totalGross: 909,  days: 8 },
+];
+
 export default function HistoryScreen() {
   const { colors, fs, t } = useTheme();
   const { getSixMonthHistory, currentUser, activeReg } = useApp();
@@ -19,9 +29,11 @@ export default function HistoryScreen() {
   const [downloadLoading, setDownloadLoading] = useState(false);
 
   const history = getSixMonthHistory();
-  
-  // Ensure history is an array and has data
-  const historyArray = Array.isArray(history) ? history : [];
+
+  // Ensure history is an array and has data; fall back to mock for UI preview
+  const raw = Array.isArray(history) ? history : [];
+  const hasRealData = raw.some((h) => h?.totalNet > 0);
+  const historyArray = hasRealData ? raw : MOCK_HISTORY;
   const maxNet = Math.max(...historyArray.map((h) => h?.totalNet || 0), 1);
 
   const handleDownloadPDF = async () => {
