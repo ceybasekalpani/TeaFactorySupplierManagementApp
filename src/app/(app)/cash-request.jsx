@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
-import { Button, Card, EmptyState, Input, Picker, ScreenHeader, StatusBadge, Toast, ToggleTabs } from "../../components/ui";
+import { Button, Card, EmptyState, Input, ScreenHeader, StatusBadge, Toast, ToggleTabs } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
@@ -15,30 +15,11 @@ export default function CashRequestScreen() {
 
   const [activeTab, setActiveTab] = useState("advance");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
-  // Generate last 12 months dynamically
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const today = new Date();
-    
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const monthStr = date.toLocaleString('default', { month: 'short' });
-      const year = date.getFullYear();
-      const value = `${monthStr} ${year}`;
-      
-      options.push({
-        value: value,
-        label: value
-      });
-    }
-    
-    return options;
-  }, []);
+  const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
   const showToast = (message, type = "success") => {
     setToast({ visible: true, message, type });
@@ -46,11 +27,6 @@ export default function CashRequestScreen() {
   };
 
   const handleRequest = async () => {
-    if (!selectedMonth) {
-      showToast("Please select a month", "error");
-      return;
-    }
-    
     if (!amount) {
       showToast("Please enter amount", "error");
       return;
@@ -81,7 +57,7 @@ export default function CashRequestScreen() {
       const newRequest = {
         id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: activeTab,
-        month: selectedMonth,
+        month: currentMonth,
         amount: amountNum,
         userId: currentUser.id,
         regNo: activeReg.regNo,
@@ -100,8 +76,6 @@ export default function CashRequestScreen() {
       // Add the cash request to context
       await addCashRequest(newRequest);
       
-      // Reset form
-      setSelectedMonth("");
       setAmount("");
       
       showToast("Request submitted successfully!");
@@ -182,13 +156,23 @@ export default function CashRequestScreen() {
             {activeTab === "advance" ? "New Advance Request" : "New Loan Request"}
           </Text>
 
-          <Picker
-            label="Select Month"
-            value={selectedMonth}
-            options={monthOptions}
-            onSelect={setSelectedMonth}
-            placeholder="Choose a month"
-          />
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>Month</Text>
+            <View style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.surface,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: colors.border,
+              paddingHorizontal: 14,
+              paddingVertical: 13,
+            }}>
+              <Ionicons name="calendar-outline" size={fs.lg} color={colors.primary} />
+              <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{currentMonth}</Text>
+            </View>
+          </View>
 
           <Input
             label="Amount (Rs)"

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
@@ -24,31 +25,12 @@ export default function FertilizerRequestScreen() {
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("");
   const [fertType, setFertType] = useState("");
   const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
-  // Generate last 12 months dynamically
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const today = new Date();
-    
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const monthStr = date.toLocaleString('default', { month: 'short' });
-      const year = date.getFullYear();
-      const value = `${monthStr} ${year}`;
-      
-      options.push({
-        value: value,
-        label: value
-      });
-    }
-    
-    return options;
-  }, []);
+  const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
   const showToast = (message, type = "success") => {
     setToast({ visible: true, message, type });
@@ -56,11 +38,6 @@ export default function FertilizerRequestScreen() {
   };
 
   const handleRequest = async () => {
-    if (!selectedMonth) {
-      showToast("Please select a month", "error");
-      return;
-    }
-    
     if (!fertType) {
       showToast("Please select fertilizer type", "error");
       return;
@@ -94,7 +71,7 @@ export default function FertilizerRequestScreen() {
       
       const newRequest = {
         id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        month: selectedMonth,
+        month: currentMonth,
         fertType: fertType,
         quantity: quantityNum,
         userId: currentUser.id,
@@ -112,8 +89,6 @@ export default function FertilizerRequestScreen() {
       };
       
       await addFertilizerRequest(newRequest);
-      
-      setSelectedMonth("");
       setFertType("");
       setQuantity("");
       
@@ -200,13 +175,23 @@ export default function FertilizerRequestScreen() {
             </View>
           </View>
 
-          <Picker
-            label="Select Month"
-            value={selectedMonth}
-            options={monthOptions}
-            onSelect={setSelectedMonth}
-            placeholder="Choose a month"
-          />
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>Month</Text>
+            <View style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.surface,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: colors.border,
+              paddingHorizontal: 14,
+              paddingVertical: 13,
+            }}>
+              <Ionicons name="calendar-outline" size={fs.lg} color={colors.primary} />
+              <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{currentMonth}</Text>
+            </View>
+          </View>
 
           <Picker
             label="Fertilizer Type"

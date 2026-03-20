@@ -196,7 +196,7 @@ export default function HistoryScreen() {
         </Text>
 
         <Card style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "flex-end", height: 150, gap: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "flex-end", height: 175, gap: 8 }}>
             {historyArray.length > 0 ? (
               historyArray.map((month, index) => {
                 const totalNet = month?.totalNet ?? 0;

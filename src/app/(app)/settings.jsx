@@ -1,12 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import SidebarMenu from "../../components/SidebarMenu";
-import { Card, ScreenHeader } from "../../components/ui";
-import { useApp } from "../../context/AppContext";
-import { useTheme } from "../../hooks/useTheme";
+import { PanResponder, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 
 const SLIDER_MIN = 10;
 const SLIDER_MAX = 100;
@@ -17,38 +12,36 @@ function FontSizeSlider({ value, onChange, colors }) {
 
   const clamp = (v) => Math.min(SLIDER_MAX, Math.max(SLIDER_MIN, Math.round(v)));
 
-  const handleTouch = (locationX) => {
-    if (trackWidth === 0) return;
-    const usable = trackWidth - THUMB_SIZE;
-    const ratio = (locationX - THUMB_SIZE / 2) / usable;
-    onChange(clamp(SLIDER_MIN + ratio * (SLIDER_MAX - SLIDER_MIN)));
-  };
-
-  const responder = React.useMemo(() => ({
-    onStartShouldSetResponder: () => true,
-    onMoveShouldSetResponder: () => true,
-    onResponderGrant: (e) => handleTouch(e.nativeEvent.locationX),
-    onResponderMove: (e) => handleTouch(e.nativeEvent.locationX),
+  const panResponder = React.useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (e) => {
+      if (trackWidth === 0) return;
+      const ratio = (e.nativeEvent.locationX - THUMB_SIZE / 2) / (trackWidth - THUMB_SIZE);
+      onChange(clamp(SLIDER_MIN + ratio * (SLIDER_MAX - SLIDER_MIN)));
+    },
+    onPanResponderMove: (e) => {
+      if (trackWidth === 0) return;
+      const ratio = (e.nativeEvent.locationX - THUMB_SIZE / 2) / (trackWidth - THUMB_SIZE);
+      onChange(clamp(SLIDER_MIN + ratio * (SLIDER_MAX - SLIDER_MIN)));
+    },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [trackWidth]);
 
-  const usable = trackWidth - THUMB_SIZE;
   const thumbLeft = trackWidth > 0
-    ? ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * usable
+    ? ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * (trackWidth - THUMB_SIZE)
     : 0;
   const fillPercent = ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * 100;
 
   return (
     <View
       onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
-      {...responder}
+      {...panResponder.panHandlers}
       style={{ height: 44, justifyContent: "center" }}
     >
-      {/* Track background */}
       <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: "hidden" }}>
         <View style={{ width: `${fillPercent}%`, height: "100%", backgroundColor: colors.primary, borderRadius: 2 }} />
       </View>
-      {/* Thumb */}
       {trackWidth > 0 && (
         <View style={{
           position: "absolute",
@@ -71,6 +64,13 @@ function FontSizeSlider({ value, onChange, colors }) {
     </View>
   );
 }
+
+import { SafeAreaView } from "react-native-safe-area-context";
+import SidebarMenu from "../../components/SidebarMenu";
+import { Card, ScreenHeader } from "../../components/ui";
+import { useApp } from "../../context/AppContext";
+import { useTheme } from "../../hooks/useTheme";
+
 
 function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBg, iconColor }) {
   const { colors, fs } = useTheme();
@@ -199,9 +199,6 @@ export default function SettingsScreen() {
               onChange={updateFontSize}
               colors={colors}
             />
-
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
-            </View>
           </View>
         </Card>
 

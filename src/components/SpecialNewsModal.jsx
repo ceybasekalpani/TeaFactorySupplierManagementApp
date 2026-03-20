@@ -3,8 +3,12 @@ import { useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../hooks/useTheme";
 
+const RED = "#920704";
+const RED_SOFT = "#ffebee";
+const RED_BORDER = "#ef9a9a";
+
 export default function SpecialNewsModal({ news, visible, onClose }) {
-  const { colors, fs, t } = useTheme();
+  const { fs, t } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!news || news.length === 0 || !visible) return null;
@@ -15,38 +19,60 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={{
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: "rgba(0,0,0,0.55)",
         justifyContent: "center",
         padding: 24,
       }}>
         <View style={{
-          backgroundColor: colors.card,
+          backgroundColor: "#fff",
           borderRadius: 20,
           overflow: "hidden",
-          maxHeight: 400,
+          maxHeight: 420,
+          borderWidth: 1.5,
+          borderColor: RED_BORDER,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 12,
+          elevation: 8,
         }}>
           {/* Header */}
           <View style={{
-            backgroundColor: colors.accent,
+            backgroundColor: RED,
             paddingHorizontal: 20,
-            paddingVertical: 14,
+            paddingVertical: 16,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
           }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Ionicons name="megaphone" size={fs.lg} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: fs.md }}>
-                {t.specialNews}
-              </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+                <Ionicons name="megaphone" size={fs.lg} color="#fff" />
+              </View>
+              <View>
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: fs.md, letterSpacing: 0.5 }}>
+                  {t.specialNews}
+                </Text>
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: fs.xs, marginTop: 1 }}>
+                  Important Announcement
+                </Text>
+              </View>
             </View>
+
             <TouchableOpacity
               onPress={onClose}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 14,
-                backgroundColor: "rgba(255,255,255,0.3)",
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                backgroundColor: "rgba(255,255,255,0.25)",
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -56,10 +82,24 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
           </View>
 
           {/* Content */}
-          <ScrollView style={{ padding: 20 }}>
-            <Text style={{ color: colors.text, fontSize: fs.base, lineHeight: fs.base * 1.6 }}>
-              {current?.message}
-            </Text>
+          <ScrollView style={{ padding: 20, backgroundColor: RED_SOFT }}>
+            <View style={{
+              flexDirection: "row",
+              alignItems: "flex-start",
+              gap: 10,
+              marginBottom: 4,
+            }}>
+              <Ionicons name="alert-circle" size={fs.lg} color={RED} style={{ marginTop: 2 }} />
+              <Text style={{
+                color: "#1a1a1a",
+                fontSize: fs.base,
+                lineHeight: fs.base * 1.7,
+                flex: 1,
+                fontWeight: "500",
+              }}>
+                {current?.message}
+              </Text>
+            </View>
           </ScrollView>
 
           {/* Navigation and close */}
@@ -68,8 +108,9 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
             alignItems: "center",
             justifyContent: "space-between",
             padding: 16,
+            backgroundColor: "#fff",
             borderTopWidth: 1,
-            borderTopColor: colors.border,
+            borderTopColor: "#e5e7eb",
           }}>
             {news.length > 1 ? (
               <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
@@ -79,7 +120,7 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
                       width: i === currentIndex ? 20 : 8,
                       height: 8,
                       borderRadius: 4,
-                      backgroundColor: i === currentIndex ? colors.primary : colors.border,
+                      backgroundColor: i === currentIndex ? RED : "#d1d5db",
                     }} />
                   </TouchableOpacity>
                 ))}
@@ -89,10 +130,11 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
             <TouchableOpacity
               onPress={onClose}
               style={{
-                backgroundColor: colors.primary,
-                paddingHorizontal: 20,
+                backgroundColor: RED,
+                paddingHorizontal: 24,
                 paddingVertical: 10,
                 borderRadius: 10,
+                elevation: 2,
               }}
             >
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: fs.sm }}>

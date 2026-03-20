@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
@@ -24,23 +25,12 @@ export default function ItemRequestScreen() {
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("");
   const [itemType, setItemType] = useState("");
   const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
-  // Generate last 12 months dynamically
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const today = new Date();
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const value = date.toLocaleString("default", { month: "short", year: "numeric" });
-      options.push({ value, label: value });
-    }
-    return options;
-  }, []);
+  const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
   const showToast = (message, type = "success") => {
     setToast({ visible: true, message, type });
@@ -48,10 +38,6 @@ export default function ItemRequestScreen() {
   };
 
   const handleRequest = async () => {
-    if (!selectedMonth) {
-      showToast("Please select a month", "error");
-      return;
-    }
     if (!itemType) {
       showToast("Please select item type", "error");
       return;
@@ -79,7 +65,7 @@ export default function ItemRequestScreen() {
       const now = new Date();
       const newRequest = {
         id: `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
-        month: selectedMonth,
+        month: currentMonth,
         itemType,
         quantity: quantityNum,
         userId: currentUser.id,
@@ -89,7 +75,6 @@ export default function ItemRequestScreen() {
         updatedAt: now.toISOString(),
       };
       await addItemRequest(newRequest);
-      setSelectedMonth("");
       setItemType("");
       setQuantity("");
       showToast("Request submitted successfully!");
@@ -158,13 +143,23 @@ export default function ItemRequestScreen() {
             </View>
           </View>
 
-          <Picker
-            label="Select Month"
-            value={selectedMonth}
-            options={monthOptions}
-            onSelect={setSelectedMonth}
-            placeholder="Choose a month"
-          />
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>Month</Text>
+            <View style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.surface,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: colors.border,
+              paddingHorizontal: 14,
+              paddingVertical: 13,
+            }}>
+              <Ionicons name="calendar-outline" size={fs.lg} color={colors.primary} />
+              <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{currentMonth}</Text>
+            </View>
+          </View>
           <Picker
             label="Item Type"
             value={itemType}
