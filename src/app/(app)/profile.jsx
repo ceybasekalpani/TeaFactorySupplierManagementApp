@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
 import { useTheme } from "../../hooks/useTheme";
 import { useApp } from "../../context/AppContext";
+import { authApi, tokenStorage } from "../../utils/api";
 
 export default function ProfileScreen() {
   const { colors, fs, t } = useTheme();
@@ -18,6 +19,14 @@ export default function ProfileScreen() {
   const [phone, setPhone] = useState(currentUser?.phone || "");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
 
   const showToast = (msg, type = "success") => {
     setToast({ visible: true, message: msg, type });
@@ -38,6 +47,34 @@ export default function ProfileScreen() {
     });
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      showToast("Please fill all password fields", "error");
+      return;
+    }
+    if (newPassword.length < 6) {
+      showToast("New password must be at least 6 characters", "error");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast("New passwords do not match", "error");
+      return;
+    }
+    setPwLoading(true);
+    try {
+      const token = await tokenStorage.get();
+      await authApi.changePassword(token, currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      showToast("Password changed successfully!");
+    } catch (err) {
+      showToast(err.message || "Failed to change password", "error");
+    } finally {
+      setPwLoading(false);
     }
   };
 
@@ -154,6 +191,54 @@ export default function ProfileScreen() {
           />
 
           <Button title={t.save} onPress={handleSave} loading={loading} icon="checkmark-circle" />
+        </Card>
+
+        {/* Change Password */}
+        <Card style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
+            Change Password
+          </Text>
+
+          <Input
+            label="Current Password"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            placeholder="Enter current password"
+            secureTextEntry={!showCurrentPw}
+            right={
+              <TouchableOpacity onPress={() => setShowCurrentPw(p => !p)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name={showCurrentPw ? "eye-off-outline" : "eye-outline"} size={fs.lg} color={colors.textMuted} />
+              </TouchableOpacity>
+            }
+          />
+
+          <Input
+            label="New Password"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            placeholder="At least 6 characters"
+            secureTextEntry={!showNewPw}
+            right={
+              <TouchableOpacity onPress={() => setShowNewPw(p => !p)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name={showNewPw ? "eye-off-outline" : "eye-outline"} size={fs.lg} color={colors.textMuted} />
+              </TouchableOpacity>
+            }
+          />
+
+          <Input
+            label="Confirm New Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Re-enter new password"
+            secureTextEntry={!showConfirmPw}
+            right={
+              <TouchableOpacity onPress={() => setShowConfirmPw(p => !p)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name={showConfirmPw ? "eye-off-outline" : "eye-outline"} size={fs.lg} color={colors.textMuted} />
+              </TouchableOpacity>
+            }
+          />
+
+          <Button title="Change Password" onPress={handleChangePassword} loading={pwLoading} icon="lock-closed-outline" />
         </Card>
       </ScrollView>
       </KeyboardAvoidingView>

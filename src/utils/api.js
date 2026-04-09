@@ -59,6 +59,9 @@ export const authApi = {
 
   selectRegistration: (token, regNo) =>
     request("POST", "/api/auth/select-registration", { regNo }, token),
+
+  changePassword: (token, currentPassword, newPassword) =>
+    request("POST", "/api/auth/change-password", { currentPassword, newPassword }, token),
 };
 
 // ── Leaf API ───────────────────────────────────────────────────────────────────
