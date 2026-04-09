@@ -29,7 +29,8 @@ const menuItems = (t) => [
 
 export default function SidebarMenu({ visible, onClose, activeKey }) {
   const { colors, fs, t } = useTheme();
-  const { currentUser, activeReg, logout } = useApp();
+  const { currentUser, activeReg, logout, getFeatureFlags } = useApp();
+  const featureFlags = getFeatureFlags();
   const router = useRouter();
   const slideAnim = useRef(new Animated.Value(-MENU_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -55,8 +56,8 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
 
   const handleLogout = () => {
     onClose();
-    setTimeout(() => {
-      logout();
+    setTimeout(async () => {
+      await logout();
       router.replace("/(auth)/landing");
     }, 300);
   };
@@ -144,11 +145,16 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
             <View style={{ paddingVertical: 8 }}>
               {menuItems(t).map((item) => {
                 const isActive = item.key === activeKey;
+                const isDisabled =
+                  (item.key === "cashRequest"       && !featureFlags.cash) ||
+                  (item.key === "fertilizerRequest" && !featureFlags.fertilizer) ||
+                  (item.key === "itemRequest"       && !featureFlags.item);
                 return (
                   <TouchableOpacity
                     key={item.key}
-                    onPress={() => navigate(item.route)}
-                    activeOpacity={0.7}
+                    onPress={() => !isDisabled && navigate(item.route)}
+                    activeOpacity={isDisabled ? 1 : 0.7}
+                    disabled={isDisabled}
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
@@ -159,6 +165,7 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
                       marginVertical: 2,
                       borderRadius: 12,
                       backgroundColor: isActive ? colors.surface : "transparent",
+                      opacity: isDisabled ? 0.4 : 1,
                     }}
                   >
                     <View style={{
@@ -172,11 +179,11 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
                       <Ionicons
                         name={item.icon}
                         size={fs.lg}
-                        color={isActive ? "#fff" : colors.textSecondary}
+                        color={isActive ? "#fff" : isDisabled ? colors.textMuted : colors.textSecondary}
                       />
                     </View>
                     <Text style={{
-                      color: isActive ? colors.primary : colors.text,
+                      color: isActive ? colors.primary : isDisabled ? colors.textMuted : colors.text,
                       fontSize: fs.base,
                       fontWeight: isActive ? "700" : "500",
                       flex: 1,

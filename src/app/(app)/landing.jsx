@@ -51,7 +51,7 @@ function Field({ icon, placeholder, value, onChangeText, secureTextEntry, right,
 
 export default function LandingScreen() {
   const { colors, fs, t } = useTheme();
-  const { signIn, login, suppliers } = useApp();
+  const { signIn, login } = useApp();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -67,28 +67,24 @@ export default function LandingScreen() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    const supplier = signIn(username.trim(), password);
-    setLoading(false);
-
-    if (!supplier) {
-      setError(t.loginError);
-      return;
-    }
-
-    if (supplier.registrations.length > 1) {
-      router.push({ pathname: "/(auth)/select-account", params: { supplierId: supplier.id } });
-    } else {
-      login(supplier, supplier.registrations[0]);
-      router.replace("/(app)/home");
+    try {
+      const result = await signIn(username.trim(), password);
+      if (!result) {
+        setError(t.loginError || "Invalid username or password");
+        return;
+      }
+      if (result.registrations.length > 1) {
+        router.push("/(auth)/select-account");
+      } else {
+        await login(result.registrations[0]);
+        router.replace("/(app)/home");
+      }
+    } catch (err) {
+      setError(err.message || t.loginError || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Derive demo hints dynamically from suppliers context (no hardcoding)
-  const demoSuppliers = suppliers?.map((s) => ({
-    username: s.username,
-    label: s.registrations.length > 1 ? "Multiple registrations" : "Single registration",
-  })) ?? [];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -265,74 +261,6 @@ export default function LandingScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* ── Demo Hint (dynamic from suppliers in context) ─── */}
-            {demoSuppliers.length > 0 && (
-              <View style={{
-                marginTop: 20,
-                backgroundColor: colors.surface,
-                borderRadius: 16,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <View style={{
-                    width: 28, height: 28, borderRadius: 14,
-                    backgroundColor: colors.accent + "20",
-                    alignItems: "center", justifyContent: "center",
-                  }}>
-                    <Ionicons name="information-circle" size={fs.md} color={colors.accent} />
-                  </View>
-                  <Text style={{ color: colors.text, fontSize: fs.sm, fontWeight: "700" }}>
-                    Demo Accounts
-                  </Text>
-                </View>
-
-                {demoSuppliers.map((s, i) => (
-                  <TouchableOpacity
-                    key={s.username}
-                    onPress={() => { setUsername(s.username); setPassword("1234"); setError(""); }}
-                    activeOpacity={0.7}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      paddingVertical: 8,
-                      paddingHorizontal: 10,
-                      borderRadius: 10,
-                      backgroundColor: colors.card,
-                      borderWidth: 1,
-                      borderColor: colors.cardBorder,
-                      marginBottom: i < demoSuppliers.length - 1 ? 6 : 0,
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Ionicons name="person-circle-outline" size={fs.xl} color={colors.primary} />
-                      <View>
-                        <Text style={{ color: colors.text, fontSize: fs.sm, fontWeight: "600" }}>
-                          {s.username}
-                        </Text>
-                        <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>
-                          {s.label}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={{
-                      flexDirection: "row", alignItems: "center", gap: 4,
-                      backgroundColor: colors.primary + "15",
-                      paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
-                    }}>
-                      <Text style={{ color: colors.primary, fontSize: fs.xs, fontWeight: "700" }}>Tap to fill</Text>
-                      <Ionicons name="chevron-forward" size={fs.xs} color={colors.primary} />
-                    </View>
-                  </TouchableOpacity>
-                ))}
-
-                <Text style={{ color: colors.textMuted, fontSize: fs.xs, marginTop: 8, textAlign: "center" }}>
-                  Password for all demo accounts: 1234
-                </Text>
-              </View>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

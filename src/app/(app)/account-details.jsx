@@ -43,10 +43,14 @@ export default function AccountDetailsScreen() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    updateProfile({ bankName, accountNumber, accountHolder, branch });
-    setLoading(false);
-    showToast("Account details updated successfully!");
+    try {
+      await updateProfile({ bankName, accountNumber, accountHolder, branch });
+      showToast("Account details updated successfully!");
+    } catch (_) {
+      showToast("Failed to update account details. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

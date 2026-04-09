@@ -37,7 +37,7 @@ function timeAgo(isoString) {
 
 export default function HomeScreen() {
   const { colors, fs, t } = useTheme();
-  const { currentUser, activeReg, notifications, unreadCount, getTodayLeaf, specialNews, newsShown, setNewsShown } = useApp();
+  const { currentUser, activeReg, notifications, unreadCount, getTodayLeaf, getTodayLeafData, getFeatureFlags, specialNews, newsShown, setNewsShown, dismissNews } = useApp();
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,15 +65,17 @@ export default function HomeScreen() {
   };
 
   const totalLeaf = getTodayLeaf();
+  const todayLeafData = getTodayLeafData();
+  const featureFlags = getFeatureFlags();
   const recentNotifications = notifications.slice(0, 3);
 
   const quickActions = [
-    { label: t.cashRequest,       icon: "cash-outline",       route: "/(app)/cash-request",       color: "#22c55e" },
-    { label: t.fertilizerRequest, icon: "leaf-outline",       route: "/(app)/fertilizer-request", color: "#0891b2" },
-    { label: t.itemRequest,       icon: "cube-outline",       route: "/(app)/item-request",       color: "#d97706" },
-    { label: t.leafCard,          icon: "card-outline",       route: "/(app)/leaf-details",       color: "#7c3aed" },
-    { label: t.history,           icon: "bar-chart-outline",  route: "/(app)/history",            color: "#e11d48" },
-    { label: t.settings,          icon: "settings-outline",   route: "/(app)/settings",           color: "#64748b" },
+    { label: t.cashRequest,       icon: "cash-outline",       route: "/(app)/cash-request",       color: "#22c55e", enabled: featureFlags.cash },
+    { label: t.fertilizerRequest, icon: "leaf-outline",       route: "/(app)/fertilizer-request", color: "#0891b2", enabled: featureFlags.fertilizer },
+    { label: t.itemRequest,       icon: "cube-outline",       route: "/(app)/item-request",       color: "#d97706", enabled: featureFlags.item },
+    { label: t.leafCard,          icon: "card-outline",       route: "/(app)/leaf-details",       color: "#7c3aed", enabled: true },
+    { label: t.history,           icon: "bar-chart-outline",  route: "/(app)/history",            color: "#e11d48", enabled: true },
+    { label: t.settings,          icon: "settings-outline",   route: "/(app)/settings",           color: "#64748b", enabled: true },
   ];
 
   return (
@@ -184,55 +186,61 @@ export default function HomeScreen() {
         </View>
 
         {/* Stats Row */}
-        <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 16, marginBottom: 16 }}>
-          {/* Monthly Leaf */}
-          <TouchableOpacity
-            style={{ flex: 1 }}
-            onPress={() => router.push("/(app)/leaf-details")}
-            activeOpacity={0.8}
-          >
-            <Card style={{ alignItems: "center", paddingVertical: 16 }}>
-              <View style={{
-                width: 48, height: 48, borderRadius: 24,
-                backgroundColor: "#dcfce7",
-                alignItems: "center", justifyContent: "center", marginBottom: 8,
-              }}>
-                <Text style={{ fontSize: 22 }}>🍃</Text>
-              </View>
-              <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>
-                {t.totalLeaf}
-              </Text>
-              <Text style={{ color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>
-                {totalLeaf}
-              </Text>
-              <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>kg · this month</Text>
-            </Card>
-          </TouchableOpacity>
-
-          {/* Unread Notifications */}
-          <TouchableOpacity
-            style={{ flex: 1 }}
-            onPress={() => router.push("/(app)/notifications")}
-            activeOpacity={0.8}
-          >
-            <Card style={{ alignItems: "center", paddingVertical: 16 }}>
-              <View style={{
-                width: 48, height: 48, borderRadius: 24,
-                backgroundColor: "#dbeafe",
-                alignItems: "center", justifyContent: "center", marginBottom: 8,
-              }}>
-                <Ionicons name="notifications" size={22} color="#2563eb" />
-              </View>
-              <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>
-                Notifications
-              </Text>
-              <Text style={{ color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>
-                {unreadCount}
-              </Text>
-              <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>unread</Text>
-            </Card>
-          </TouchableOpacity>
-        </View>
+        {todayLeafData.hasSuper ? (
+          /* Super leaf enabled — 3 equal cards in one row */
+          <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 16, alignItems: "stretch" }}>
+            {[
+              { label: "Normal", value: todayLeafData.normalNet, sub: "kg · today", bg: "#dcfce7", route: "/(app)/leaf-details", content: <Text style={{ fontSize: 18 }}>🍃</Text> },
+              { label: "Super",  value: todayLeafData.superNet,  sub: "kg · today", bg: "#fef9c3", route: "/(app)/leaf-details", content: <Text style={{ fontSize: 18 }}>⭐</Text> },
+              { label: "Alerts", value: unreadCount,             sub: "unread",     bg: "#dbeafe", route: "/(app)/notifications", content: <Ionicons name="notifications" size={18} color="#2563eb" /> },
+            ].map((item) => (
+              <TouchableOpacity key={item.label} style={{ flex: 1 }} onPress={() => router.push(item.route)} activeOpacity={0.8}>
+                <View style={{
+                  flex: 1,
+                  backgroundColor: colors.card,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.cardBorder,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingVertical: 14,
+                  paddingHorizontal: 4,
+                }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: item.bg, alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
+                    {item.content}
+                  </View>
+                  <Text style={{ color: colors.textSecondary, fontSize: 9, textAlign: "center" }}>{item.label}</Text>
+                  <Text style={{ color: colors.text, fontSize: fs.lg, fontWeight: "800", marginTop: 2 }}>{item.value}</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 9 }}>{item.sub}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          /* No super — two equal cards side by side */
+          <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 16, marginBottom: 16 }}>
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push("/(app)/leaf-details")} activeOpacity={0.8}>
+              <Card style={{ alignItems: "center", paddingVertical: 16 }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#dcfce7", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+                  <Text style={{ fontSize: 22 }}>🍃</Text>
+                </View>
+                <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>{t.totalLeaf}</Text>
+                <Text style={{ color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>{totalLeaf}</Text>
+                <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>kg · this month</Text>
+              </Card>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push("/(app)/notifications")} activeOpacity={0.8}>
+              <Card style={{ alignItems: "center", paddingVertical: 16 }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#dbeafe", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+                  <Ionicons name="notifications" size={22} color="#2563eb" />
+                </View>
+                <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>Notifications</Text>
+                <Text style={{ color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>{unreadCount}</Text>
+                <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>unread</Text>
+              </Card>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Active Registration */}
         {activeReg && (
@@ -274,8 +282,9 @@ export default function HomeScreen() {
             {quickActions.map((action) => (
               <TouchableOpacity
                 key={action.route}
-                onPress={() => router.push(action.route)}
-                activeOpacity={0.75}
+                onPress={() => action.enabled && router.push(action.route)}
+                activeOpacity={action.enabled ? 0.75 : 1}
+                disabled={!action.enabled}
                 style={{
                   width: "47%",
                   backgroundColor: colors.card,
@@ -291,6 +300,7 @@ export default function HomeScreen() {
                   shadowOpacity: 0.05,
                   shadowRadius: 4,
                   elevation: 2,
+                  opacity: action.enabled ? 1 : 0.4,
                 }}
               >
                 <View style={{
@@ -298,9 +308,9 @@ export default function HomeScreen() {
                   backgroundColor: action.color + "18",
                   alignItems: "center", justifyContent: "center",
                 }}>
-                  <Ionicons name={action.icon} size={fs.lg} color={action.color} />
+                  <Ionicons name={action.icon} size={fs.lg} color={action.enabled ? action.color : colors.textMuted} />
                 </View>
-                <Text style={{ color: colors.text, fontSize: fs.xs, fontWeight: "600", flex: 1 }}>
+                <Text style={{ color: action.enabled ? colors.text : colors.textMuted, fontSize: fs.xs, fontWeight: "600", flex: 1 }}>
                   {action.label}
                 </Text>
               </TouchableOpacity>
@@ -375,7 +385,14 @@ export default function HomeScreen() {
       </ScrollView>
 
       <SidebarMenu visible={menuOpen} onClose={() => setMenuOpen(false)} activeKey="home" />
-      <SpecialNewsModal news={specialNews} visible={newsVisible} onClose={() => setNewsVisible(false)} />
+      <SpecialNewsModal
+        news={specialNews}
+        visible={newsVisible}
+        onClose={(id) => {
+          setNewsVisible(false);
+          if (id) dismissNews(id);
+        }}
+      />
     </SafeAreaView>
   );
 }

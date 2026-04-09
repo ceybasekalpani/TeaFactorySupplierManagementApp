@@ -51,30 +51,11 @@ export default function CashRequestScreen() {
     setLoading(true);
     
     try {
-      const now = new Date();
-      
-      // Create new request object with all required fields
-      const newRequest = {
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      await addCashRequest({
         type: activeTab,
         month: currentMonth,
         amount: amountNum,
-        userId: currentUser.id,
-        regNo: activeReg.regNo,
-        status: "pending",
-        createdAt: now.toISOString(),
-        requestedDate: now.toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        updatedAt: now.toISOString()
-      };
-      
-      // Add the cash request to context
-      await addCashRequest(newRequest);
+      });
       
       setAmount("");
       

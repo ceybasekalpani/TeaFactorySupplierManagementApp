@@ -16,7 +16,7 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
   const current = news[currentIndex];
 
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={() => onClose(current?.id)}>
       <View style={{
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.55)",
@@ -67,7 +67,7 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
             </View>
 
             <TouchableOpacity
-              onPress={onClose}
+              onPress={() => onClose(current?.id)}
               style={{
                 width: 30,
                 height: 30,
@@ -128,7 +128,7 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
             ) : <View />}
 
             <TouchableOpacity
-              onPress={onClose}
+              onPress={() => onClose(current?.id)}
               style={{
                 backgroundColor: RED,
                 paddingHorizontal: 24,

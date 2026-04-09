@@ -51,10 +51,14 @@ export default function ProfileScreen() {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    updateProfile({ image, address, phone });
-    setLoading(false);
-    showToast("Profile updated successfully!");
+    try {
+      await updateProfile({ image, address, phone });
+      showToast("Profile updated successfully!");
+    } catch (_) {
+      showToast("Failed to update profile. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

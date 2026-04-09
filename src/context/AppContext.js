@@ -1,485 +1,430 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  authApi,
+  cashApi,
+  fertilizerApi,
+  itemApi,
+  leafApi,
+  newsApi,
+  notificationApi,
+  settingsApi,
+  tokenStorage,
+} from "../utils/api";
 
 const AppContext = createContext(null);
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
-const MOCK_SUPPLIERS = [
-  {
-    id: "SUP001",
-    name: "Kamal Perera",
-    username: "kamal.perera",
-    password: "1234",
-    image: null,
-    address: "123 Tea Garden Road, Kandy",
-    phone: "0771234567",
-    bankName: "Bank of Ceylon",
-    accountNumber: "1234567890",
-    accountHolder: "Kamal Perera",
-    branch: "Kandy",
-    registrations: [
-      { regNo: "REG-2021-001", route: "Route A - Peradeniya" },
-      { regNo: "REG-2022-015", route: "Route B - Katugastota" },
-    ],
-  },
-  {
-    id: "SUP002",
-    name: "Saman Silva",
-    username: "saman.silva",
-    password: "1234",
-    image: null,
-    address: "45 Hill Street, Nuwara Eliya",
-    phone: "0779876543",
-    bankName: "Peoples Bank",
-    accountNumber: "9876543210",
-    accountHolder: "Saman Silva",
-    branch: "Nuwara Eliya",
-    registrations: [{ regNo: "REG-2020-007", route: "Route C - Ramboda" }],
-  },
-];
-
-const MOCK_LEAF_DATA = {
-  "SUP001-REG-2021-001": {
-    "2025-10": [
-      { day: 3, gross: 108, bags: 2, water: 9, netWeight: 99 },
-      { day: 6, gross: 125, bags: 2, water: 10, netWeight: 115 },
-      { day: 10, gross: 92, bags: 1, water: 7, netWeight: 85 },
-      { day: 14, gross: 138, bags: 3, water: 12, netWeight: 126 },
-      { day: 18, gross: 115, bags: 2, water: 9, netWeight: 106 },
-      { day: 22, gross: 101, bags: 2, water: 8, netWeight: 93 },
-      { day: 27, gross: 130, bags: 2, water: 11, netWeight: 119 },
-    ],
-    "2025-11": [
-      { day: 2, gross: 118, bags: 2, water: 10, netWeight: 108 },
-      { day: 5, gross: 97, bags: 1, water: 8, netWeight: 89 },
-      { day: 9, gross: 142, bags: 3, water: 12, netWeight: 130 },
-      { day: 13, gross: 110, bags: 2, water: 9, netWeight: 101 },
-      { day: 17, gross: 128, bags: 2, water: 11, netWeight: 117 },
-      { day: 21, gross: 95, bags: 1, water: 8, netWeight: 87 },
-      { day: 25, gross: 135, bags: 3, water: 11, netWeight: 124 },
-      { day: 28, gross: 107, bags: 2, water: 9, netWeight: 98 },
-    ],
-    "2025-12": [
-      { day: 1, gross: 120, bags: 2, water: 10, netWeight: 110 },
-      { day: 3, gross: 95, bags: 1, water: 8, netWeight: 87 },
-      { day: 5, gross: 140, bags: 3, water: 12, netWeight: 128 },
-      { day: 8, gross: 110, bags: 2, water: 9, netWeight: 101 },
-      { day: 10, gross: 130, bags: 2, water: 11, netWeight: 119 },
-      { day: 12, gross: 88, bags: 1, water: 7, netWeight: 81 },
-      { day: 15, gross: 155, bags: 3, water: 14, netWeight: 141 },
-      { day: 18, gross: 102, bags: 2, water: 8, netWeight: 94 },
-      { day: 20, gross: 118, bags: 2, water: 10, netWeight: 108 },
-      { day: 22, gross: 96, bags: 1, water: 8, netWeight: 88 },
-      { day: 25, gross: 142, bags: 3, water: 13, netWeight: 129 },
-      { day: 28, gross: 107, bags: 2, water: 9, netWeight: 98 },
-      { day: 30, gross: 125, bags: 2, water: 10, netWeight: 115 },
-    ],
-    "2026-01": [
-      { day: 2, gross: 132, bags: 2, water: 11, netWeight: 121 },
-      { day: 4, gross: 98, bags: 1, water: 8, netWeight: 90 },
-      { day: 6, gross: 148, bags: 3, water: 13, netWeight: 135 },
-      { day: 9, gross: 115, bags: 2, water: 9, netWeight: 106 },
-      { day: 11, gross: 127, bags: 2, water: 10, netWeight: 117 },
-      { day: 14, gross: 93, bags: 1, water: 7, netWeight: 86 },
-      { day: 16, gross: 161, bags: 3, water: 15, netWeight: 146 },
-      { day: 19, gross: 109, bags: 2, water: 9, netWeight: 100 },
-      { day: 21, gross: 122, bags: 2, water: 10, netWeight: 112 },
-      { day: 24, gross: 88, bags: 1, water: 7, netWeight: 81 },
-      { day: 26, gross: 138, bags: 3, water: 12, netWeight: 126 },
-    ],
-    "2026-02": [
-      { day: 1, gross: 125, bags: 2, water: 10, netWeight: 115 },
-      { day: 3, gross: 109, bags: 2, water: 9, netWeight: 100 },
-      { day: 5, gross: 143, bags: 3, water: 12, netWeight: 131 },
-      { day: 8, gross: 97, bags: 1, water: 8, netWeight: 89 },
-      { day: 10, gross: 118, bags: 2, water: 10, netWeight: 108 },
-    ],
-    "2026-03": [
-      { day: 2, gross: 130, bags: 2, water: 11, netWeight: 119 },
-      { day: 4, gross: 112, bags: 2, water: 9, netWeight: 103 },
-      { day: 6, gross: 148, bags: 3, water: 13, netWeight: 135 },
-      { day: 9, gross: 95, bags: 1, water: 8, netWeight: 87 },
-      { day: 11, gross: 122, bags: 2, water: 10, netWeight: 112 },
-      { day: 13, gross: 158, bags: 3, water: 14, netWeight: 144 },
-      { day: 16, gross: 104, bags: 2, water: 8, netWeight: 96 },
-      { day: 18, gross: 137, bags: 2, water: 12, netWeight: 125 },
-    ],
-  },
-};
-
-const _now = Date.now();
-const MOCK_NOTIFICATIONS = [
-  { id: "n1", title: "Cash Request Approved", message: "Your advance request of Rs. 5,000 for January has been approved.", createdAt: new Date(_now - 2 * 60 * 60 * 1000).toISOString(), read: false, type: "success" },
-  { id: "n2", title: "Fertilizer Ready", message: "Your fertilizer request (50kg Urea) is ready for collection.", createdAt: new Date(_now - 24 * 60 * 60 * 1000).toISOString(), read: false, type: "info" },
-  { id: "n3", title: "Loan Request Pending", message: "Your loan request of Rs. 20,000 is under review.", createdAt: new Date(_now - 2 * 24 * 60 * 60 * 1000).toISOString(), read: true, type: "warning" },
-  { id: "n4", title: "Tea Collection Tomorrow", message: "Collection vehicle will arrive at 8:00 AM tomorrow.", createdAt: new Date(_now - 3 * 24 * 60 * 60 * 1000).toISOString(), read: true, type: "info" },
-  { id: "n5", title: "Payment Processed", message: "Your December leaf payment of Rs. 28,450 has been credited.", createdAt: new Date(_now - 5 * 24 * 60 * 60 * 1000).toISOString(), read: true, type: "success" },
-];
-
-const SPECIAL_NEWS = [
-  { id: "sn1", message: "🍃 New fertilizer subsidy program starts February 2026. Apply through the app to avail 30% discount on Urea orders." },
-  { id: "sn2", message: "📢 Factory maintenance scheduled for Jan 15. No collection on that day. Please plan accordingly." },
-];
-
 // ── Provider ───────────────────────────────────────────────────────────────────
 export function AppProvider({ children }) {
+  // ── Auth / session ───────────────────────────────────────────────────────────
+  const [token, setToken] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeReg, setActiveReg] = useState(null);
+  const [registrations, setRegistrations] = useState([]);
+
+  // ── Settings / theme ─────────────────────────────────────────────────────────
   const [theme, setTheme] = useState("light");
   const [language, setLanguage] = useState("english");
   const [fontSize, setFontSize] = useState(50);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [activeReg, setActiveReg] = useState(null);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
-  
-  const [cashRequests, setCashRequests] = useState([
-    { 
-      id: "cr1", 
-      type: "advance", 
-      month: "Jan 2026", 
-      amount: 5000, 
-      date: "2026-01-05", 
-      status: "approved",
-      createdAt: "2026-01-05T10:30:00.000Z",
-      requestedDate: "05 Jan 2026",
-      userId: "SUP001",
-      regNo: "REG-2021-001"
-    },
-    { 
-      id: "cr2", 
-      type: "loan", 
-      month: "Jan 2026", 
-      amount: 20000, 
-      date: "2026-01-08", 
-      status: "pending",
-      createdAt: "2026-01-08T14:20:00.000Z",
-      requestedDate: "08 Jan 2026",
-      userId: "SUP001",
-      regNo: "REG-2021-001"
-    },
-  ]);
-  
-  const [fertilizerRequests, setFertilizerRequests] = useState([
-    { id: "fr1", month: "Dec 2025", fertType: "Urea", quantity: 50, date: "2025-12-05", status: "approved", createdAt: "2025-12-05T10:30:00.000Z" },
-    { id: "fr2", month: "Jan 2026", fertType: "Potash", quantity: 25, date: "2026-01-10", status: "pending", createdAt: "2026-01-10T14:20:00.000Z" },
-  ]);
-  
-  const [itemRequests, setItemRequests] = useState([
-    { id: "ir1", month: "Jan 2026", itemType: "Pruning Shears", quantity: 2, date: "2026-01-12", status: "approved", createdAt: "2026-01-12T09:15:00.000Z" },
-  ]);
-  
-  const [specialNews] = useState(SPECIAL_NEWS);
+
+  // ── App data ─────────────────────────────────────────────────────────────────
+  const [leafCache, setLeafCache] = useState({});
+  const [sixMonthHistory, setSixMonthHistory] = useState([]);
+  const [todayLeafTotal, setTodayLeafTotal] = useState(0);
+  const [todayLeafData, setTodayLeafData] = useState({ normalNet: 0, superNet: 0, hasSuper: false });
+  const [featureFlags, setFeatureFlags] = useState({ cash: true, fertilizer: true, item: true });
+  const [notifications, setNotifications] = useState([]);
+  const [cashRequests, setCashRequests] = useState([]);
+  const [fertilizerRequests, setFertilizerRequests] = useState([]);
+  const [itemRequests, setItemRequests] = useState([]);
+  const [specialNews, setSpecialNews] = useState([]);
   const [newsShown, setNewsShown] = useState(false);
 
-  // Load persisted settings
+  // Keep a ref so async callbacks always see the latest token
+  const tokenRef = useRef(null);
+  tokenRef.current = token;
+
+  // ── Restore session on startup ───────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
-        const stored = await AsyncStorage.getItem("appSettings");
-        if (stored) {
-          const s = JSON.parse(stored);
-          if (s.theme) setTheme(s.theme);
-          if (s.language) setLanguage(s.language);
-          if (s.fontSize !== undefined) {
-            const stored = s.fontSize;
-            if (typeof stored === "string") {
-              setFontSize(stored === "small" ? 30 : stored === "large" ? 70 : 50);
-            } else {
-              setFontSize(stored);
-            }
-          }
+        const savedToken = await tokenStorage.get();
+        if (!savedToken) return;
+
+        // Validate token by fetching user
+        const user = await authApi.me(savedToken);
+        const regs = await authApi.registrations(savedToken);
+
+        setToken(savedToken);
+        setCurrentUser(mapUser(user));
+        setRegistrations(regs || []);
+
+        // Restore active registration from AsyncStorage
+        const savedRegJson = await AsyncStorage.getItem("activeReg");
+        if (savedRegJson) {
+          setActiveReg(JSON.parse(savedRegJson));
         }
-      } catch (_) {}
+
+        // Load settings from backend
+        await loadSettings(savedToken);
+      } catch (_) {
+        // Token expired or invalid — clear it
+        await tokenStorage.remove();
+      }
     })();
   }, []);
 
-  const saveSettings = useCallback(async (settings) => {
+  // Load settings and apply them
+  const loadSettings = async (tok) => {
     try {
-      await AsyncStorage.setItem("appSettings", JSON.stringify(settings));
+      const s = await settingsApi.get(tok);
+      if (!s) return;
+      if (s.theme) setTheme(s.theme);
+      if (s.language) setLanguage(s.language);
+      if (s.fontSize !== undefined) setFontSize(Number(s.fontSize) || 50);
+      // Merge profile fields stored in settings into currentUser
+      setCurrentUser((prev) => prev ? {
+        ...prev,
+        address: s.address ?? prev.address ?? "",
+        phone: s.phone ?? prev.phone ?? "",
+        bankName: s.bankName ?? prev.bankName ?? "",
+        accountNumber: s.accountNumber ?? prev.accountNumber ?? "",
+        accountHolder: s.accountHolder ?? prev.accountHolder ?? "",
+        branch: s.branch ?? prev.branch ?? "",
+        image: s.profileImage ?? prev.image,
+      } : prev);
     } catch (_) {}
+  };
+
+  // Load all app data after a registration is selected
+  const loadAppData = useCallback(async (tok) => {
+    if (!tok) return;
+    await Promise.allSettled([
+      loadNotifications(tok),
+      loadCashRequests(tok),
+      loadFertilizerRequests(tok),
+      loadItemRequests(tok),
+      loadSpecialNews(tok),
+      loadTodayLeaf(tok),
+      loadHistory(tok),
+      loadFeatureFlags(tok),
+    ]);
   }, []);
 
-  const updateTheme = (t) => { setTheme(t); saveSettings({ theme: t, language, fontSize }); };
-  const updateLanguage = (l) => { setLanguage(l); saveSettings({ theme, language: l, fontSize }); };
-  const updateFontSize = (f) => { setFontSize(f); saveSettings({ theme, language, fontSize: f }); };
-
-  // Auth
-  const signIn = (username, password) => {
-    const supplier = MOCK_SUPPLIERS.find(
-      (s) => s.username === username && s.password === password
-    );
-    return supplier || null;
+  // ── Data loaders ─────────────────────────────────────────────────────────────
+  const loadNotifications = async (tok) => {
+    try {
+      const data = await notificationApi.list(tok);
+      setNotifications(
+        Array.isArray(data)
+          ? data.map((n) => ({
+              id:        n.id,
+              title:     n.title     ?? "",
+              message:   n.message   ?? "",
+              type:      n.type      ?? "info",
+              createdAt: n.createdAt ?? null,
+              read:      n.isRead    ?? n.read ?? false,
+            }))
+          : []
+      );
+    } catch (_) {}
   };
 
-  const login = (supplier, reg) => {
-    setCurrentUser(supplier);
+  const loadCashRequests = async (tok) => {
+    try {
+      const data = await cashApi.list(tok);
+      setCashRequests(Array.isArray(data) ? data.map(mapCashRequest) : []);
+    } catch (_) {}
+  };
+
+  const loadFertilizerRequests = async (tok) => {
+    try {
+      const data = await fertilizerApi.list(tok);
+      setFertilizerRequests(Array.isArray(data) ? data.map(mapFertilizerRequest) : []);
+    } catch (_) {}
+  };
+
+  const loadItemRequests = async (tok) => {
+    try {
+      const data = await itemApi.list(tok);
+      setItemRequests(Array.isArray(data) ? data.map(mapItemRequest) : []);
+    } catch (_) {}
+  };
+
+  const mapNews = (n) => ({
+    id:      String(n.id),
+    title:   n.title   || "",
+    message: n.content || n.message || "",
+  });
+
+  const loadSpecialNews = async (tok) => {
+    try {
+      const data = await newsApi.activePopup(tok);
+      // Backend returns a single NewsDto object (or null), not an array
+      if (!data) {
+        setSpecialNews([]);
+      } else if (Array.isArray(data)) {
+        setSpecialNews(data.map(mapNews));
+      } else {
+        setSpecialNews([mapNews(data)]);
+      }
+    } catch (_) {}
+  };
+
+  const loadTodayLeaf = async (tok) => {
+    try {
+      const data = await leafApi.today(tok);
+      // Backend returns TodayLeafDto: { normalNet, superNet, hasSuper, bagCount }
+      const normalNet = data?.normalNet ?? 0;
+      const superNet  = data?.superNet  ?? 0;
+      const hasSuper  = data?.hasSuper  ?? false;
+      setTodayLeafData({ normalNet, superNet, hasSuper });
+      setTodayLeafTotal(normalNet + superNet);
+    } catch (_) {}
+  };
+
+  const loadFeatureFlags = async (tok) => {
+    try {
+      const [cash, fertilizer, item] = await Promise.allSettled([
+        cashApi.featureEnabled(tok),
+        fertilizerApi.featureEnabled(tok),
+        itemApi.featureEnabled(tok),
+      ]);
+      setFeatureFlags({
+        cash:       cash.status       === "fulfilled" ? !!(cash.value?.enabled       ?? cash.value?.isEnabled       ?? true) : true,
+        fertilizer: fertilizer.status === "fulfilled" ? !!(fertilizer.value?.enabled ?? fertilizer.value?.isEnabled ?? true) : true,
+        item:       item.status       === "fulfilled" ? !!(item.value?.enabled        ?? item.value?.isEnabled        ?? true) : true,
+      });
+    } catch (_) {}
+  };
+
+  const loadHistory = async (tok) => {
+    try {
+      const data = await leafApi.history(tok);
+      setSixMonthHistory(
+        Array.isArray(data)
+          ? data.map((h) => ({
+              key:        h.monthKey   ?? h.key   ?? "",
+              label:      h.monthLabel ?? h.label ?? "",
+              totalGross: h.totalGross ?? 0,
+              totalNet:   h.totalNet   ?? 0,
+              days:       h.days       ?? 0,
+            }))
+          : []
+      );
+    } catch (_) {}
+  };
+
+  // ── Auth functions ───────────────────────────────────────────────────────────
+
+  // Returns { user, registrations } on success, throws on error
+  const signIn = async (username, password) => {
+    const result = await authApi.login(username, password);
+    if (!result?.token) return null;
+
+    await tokenStorage.set(result.token);
+    setToken(result.token);
+
+    const [user, regs] = await Promise.all([
+      authApi.me(result.token),
+      authApi.registrations(result.token),
+    ]);
+
+    const mappedUser = mapUser(user);
+    setCurrentUser(mappedUser);
+    setRegistrations(Array.isArray(regs) ? regs : []);
+    await loadSettings(result.token);
+
+    return { user: mappedUser, registrations: Array.isArray(regs) ? regs : [] };
+  };
+
+  // Call after registration is chosen — loads all app data
+  const login = async (reg) => {
     setActiveReg(reg);
     setNewsShown(false);
+    await AsyncStorage.setItem("activeReg", JSON.stringify(reg));
+    await loadAppData(tokenRef.current);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await tokenStorage.remove();
+    await AsyncStorage.removeItem("activeReg");
+    setToken(null);
     setCurrentUser(null);
     setActiveReg(null);
+    setRegistrations([]);
+    setLeafCache({});
+    setSixMonthHistory([]);
+    setTodayLeafTotal(0);
+    setNotifications([]);
+    setCashRequests([]);
+    setFertilizerRequests([]);
+    setItemRequests([]);
+    setSpecialNews([]);
     setNewsShown(false);
   };
 
-  // Profile update
-  const updateProfile = (data) => {
+  const updateProfile = async (data) => {
     setCurrentUser((prev) => ({ ...prev, ...data }));
+
+    if (data.image) {
+      try { await settingsApi.updateProfileImage(tokenRef.current, data.image); } catch (_) {}
+    }
+
+    if (data.address !== undefined || data.phone !== undefined) {
+      await settingsApi.updateSettings(tokenRef.current, {
+        address: data.address,
+        phone: data.phone,
+      });
+    }
+
+    if (data.bankName !== undefined || data.accountNumber !== undefined ||
+        data.accountHolder !== undefined || data.branch !== undefined) {
+      await settingsApi.updateAccountDetails(tokenRef.current, {
+        bankName: data.bankName,
+        accountNumber: data.accountNumber,
+        accountHolder: data.accountHolder,
+        branch: data.branch,
+      });
+    }
   };
 
-  // Leaf data
-  const getLeafData = (monthKey) => {
-    if (!currentUser || !activeReg) return [];
-    const key = `${currentUser.id}-${activeReg.regNo}`;
-    return MOCK_LEAF_DATA[key]?.[monthKey] || [];
+  // ── Leaf data ────────────────────────────────────────────────────────────────
+
+  // Sync read from cache — returns [] if not yet loaded
+  const getLeafData = (monthKey) => leafCache[monthKey] || [];
+
+  // Async fetch — call from screens when month changes
+  // Backend returns MonthlyLeafSummaryDto: { month, year, totalGross, totalNet, totalSuperNet, totalDays, collections[], hasSuper }
+  const fetchLeafData = async (monthKey) => {
+    const tok = tokenRef.current;
+    if (!tok) return;
+    try {
+      const [year, month] = monthKey.split("-").map(Number);
+      const data = await leafApi.monthly(tok, year, month);
+      // Store the full summary object; screens extract .collections and .hasSuper
+      setLeafCache((prev) => ({ ...prev, [monthKey]: data ?? null }));
+    } catch (_) {}
   };
 
-  // Total leaf this month
-  const getTodayLeaf = () => {
-    const now = new Date();
-    const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const data = getLeafData(key);
-    return data.reduce((sum, d) => sum + d.netWeight, 0);
-  };
+  const getTodayLeaf = () => todayLeafTotal;
+  const getTodayLeafData = () => todayLeafData;
+  const getSixMonthHistory = () => sixMonthHistory;
+  const getFeatureFlags = () => featureFlags;
 
-  // Notifications
-  const markNotificationRead = (id) => {
+  // ── Notification actions ─────────────────────────────────────────────────────
+  const markNotificationRead = async (id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await notificationApi.markRead(tokenRef.current, id);
+    } catch (_) {}
   };
-  
-  const markAllRead = () => {
+
+  const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await notificationApi.markAllRead(tokenRef.current);
+    } catch (_) {}
   };
-  
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Cash requests function
-  const addCashRequest = (requestData) => {
-    let newReq;
-    
-    if (typeof requestData === 'object' && requestData !== null) {
-      newReq = {
-        id: requestData.id || `cr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: requestData.type,
-        month: requestData.month,
-        amount: typeof requestData.amount === 'number' ? requestData.amount : parseFloat(requestData.amount),
-        date: requestData.date || new Date().toISOString().split('T')[0],
-        status: requestData.status || "pending",
-        createdAt: requestData.createdAt || new Date().toISOString(),
-        requestedDate: requestData.requestedDate || new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        userId: requestData.userId,
-        regNo: requestData.regNo,
-        updatedAt: requestData.updatedAt || new Date().toISOString()
-      };
-    } else {
-      const [type, month, amount] = arguments;
-      newReq = {
-        id: `cr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type,
-        month,
-        amount: parseFloat(amount),
-        date: new Date().toISOString().split('T')[0],
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        requestedDate: new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-      };
-    }
-    
-    setCashRequests(prevRequests => {
-      const currentRequests = Array.isArray(prevRequests) ? prevRequests : [];
-      return [newReq, ...currentRequests];
-    });
-    
-    // Auto-reject advance after 24h simulation
-    if (newReq.type === "advance") {
-      setTimeout(() => {
-        setCashRequests((prev) =>
-          prev.map((r) =>
-            r.id === newReq.id && r.status === "pending"
-              ? { ...r, status: "rejected", rejectedReason: "Auto-rejected: Not approved within 24 hours" }
-              : r
-          )
-        );
-      }, 86400000);
-    }
-    
-    return newReq;
+  // ── News actions ─────────────────────────────────────────────────────────────
+  const dismissNews = async (id) => {
+    // Optimistically remove from local state so it won't re-show this session
+    setSpecialNews((prev) => prev.filter((n) => n.id !== String(id)));
+    try {
+      await newsApi.dismiss(tokenRef.current, id);
+    } catch (_) {}
   };
 
-  // Fertilizer requests function - UPDATED to accept object parameter
-  const addFertilizerRequest = (requestData) => {
-    let newReq;
-    
-    if (typeof requestData === 'object' && requestData !== null) {
-      // New format: receiving an object with all fields
-      newReq = {
-        id: requestData.id || `fr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  // ── Request actions ──────────────────────────────────────────────────────────
+  const addCashRequest = async (requestData) => {
+    try {
+      const result = await cashApi.create(tokenRef.current, {
+        requestType: requestData.type,
         month: requestData.month,
-        fertType: requestData.fertType,
-        quantity: typeof requestData.quantity === 'number' ? requestData.quantity : parseFloat(requestData.quantity),
-        date: requestData.date || new Date().toISOString().split('T')[0],
-        status: requestData.status || "pending",
-        createdAt: requestData.createdAt || new Date().toISOString(),
-        requestedDate: requestData.requestedDate || new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        userId: requestData.userId,
-        regNo: requestData.regNo,
-        updatedAt: requestData.updatedAt || new Date().toISOString()
-      };
-    } else {
-      // Old format: receiving (month, fertType, quantity)
-      const [month, fertType, quantity] = arguments;
-      newReq = {
-        id: `fr${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        month,
-        fertType,
-        quantity: parseFloat(quantity),
-        date: new Date().toISOString().split('T')[0],
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        requestedDate: new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-      };
+        amount: Number(requestData.amount),
+      });
+      const mapped = mapCashRequest(result);
+      setCashRequests((prev) => [mapped, ...prev]);
+      return mapped;
+    } catch (err) {
+      throw err;
     }
-    
-    setFertilizerRequests(prevRequests => {
-      const currentRequests = Array.isArray(prevRequests) ? prevRequests : [];
-      return [newReq, ...currentRequests];
-    });
-    
-    return newReq;
   };
 
-  // Item requests
-  const addItemRequest = (requestData) => {
-    let newReq;
-    
-    if (typeof requestData === 'object' && requestData !== null) {
-      newReq = {
-        id: requestData.id || `ir${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  const addFertilizerRequest = async (requestData) => {
+    try {
+      const result = await fertilizerApi.create(tokenRef.current, {
+        fertilizerType: requestData.fertilizerType ?? requestData.fertType,
         month: requestData.month,
+        quantity: Number(requestData.quantity),
+      });
+      const mapped = mapFertilizerRequest(result);
+      setFertilizerRequests((prev) => [mapped, ...prev]);
+      return mapped;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const addItemRequest = async (requestData) => {
+    try {
+      const result = await itemApi.create(tokenRef.current, {
         itemType: requestData.itemType,
-        quantity: typeof requestData.quantity === 'number' ? requestData.quantity : parseFloat(requestData.quantity),
-        date: requestData.date || new Date().toISOString().split('T')[0],
-        status: requestData.status || "pending",
-        createdAt: requestData.createdAt || new Date().toISOString(),
-        requestedDate: requestData.requestedDate || new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        userId: requestData.userId,
-        regNo: requestData.regNo,
-        updatedAt: requestData.updatedAt || new Date().toISOString()
-      };
-    } else {
-      const [month, itemType, quantity] = arguments;
-      newReq = {
-        id: `ir${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        month,
-        itemType,
-        quantity: parseFloat(quantity),
-        date: new Date().toISOString().split('T')[0],
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        requestedDate: new Date().toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-      };
+        month: requestData.month,
+        quantity: Number(requestData.quantity),
+      });
+      const mapped = mapItemRequest(result);
+      setItemRequests((prev) => [mapped, ...prev]);
+      return mapped;
+    } catch (err) {
+      throw err;
     }
-    
-    setItemRequests(prevRequests => {
-      const currentRequests = Array.isArray(prevRequests) ? prevRequests : [];
-      return [newReq, ...currentRequests];
-    });
-    
-    return newReq;
   };
 
-  // 6-month history summary
-  const getSixMonthHistory = () => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = d.toLocaleString("default", { month: "short", year: "numeric" });
-      const data = getLeafData(key);
-      const totalNet = data.reduce((s, r) => s + r.netWeight, 0);
-      const totalGross = data.reduce((s, r) => s + r.gross, 0);
-      months.push({ key, label, totalNet, totalGross, days: data.length });
-    }
-    return months;
+  // ── Settings actions ─────────────────────────────────────────────────────────
+  const updateTheme = async (t) => {
+    setTheme(t);
+    try { await settingsApi.updateTheme(tokenRef.current, t); } catch (_) {}
   };
 
+  const updateLanguage = async (l) => {
+    setLanguage(l);
+    try { await settingsApi.updateLanguage(tokenRef.current, l); } catch (_) {}
+  };
+
+  const updateFontSize = async (f) => {
+    setFontSize(f);
+    try { await settingsApi.updateFontSize(tokenRef.current, f); } catch (_) {}
+  };
+
+  // ── Context value ────────────────────────────────────────────────────────────
   const isDark = theme === "dark";
 
-  // Create the context value object
-  const contextValue = {
-    // Theme
-    theme, 
-    isDark, 
-    updateTheme,
-    language, 
-    updateLanguage,
-    fontSize, 
-    updateFontSize,
-    // Auth
-    currentUser, 
-    activeReg,
-    signIn, 
-    login, 
-    logout, 
-    updateProfile,
-    suppliers: MOCK_SUPPLIERS,
-    // Data
-    getLeafData, 
-    getTodayLeaf, 
-    getSixMonthHistory,
-    notifications, 
-    unreadCount, 
-    markNotificationRead, 
-    markAllRead,
-    cashRequests, 
-    addCashRequest,
-    fertilizerRequests, 
-    addFertilizerRequest,
-    itemRequests, 
-    addItemRequest,
-    specialNews, 
-    newsShown, 
-    setNewsShown,
-  };
-
   return (
-    <AppContext.Provider value={contextValue}>
+    <AppContext.Provider value={{
+      // Theme
+      theme, isDark, updateTheme,
+      language, updateLanguage,
+      fontSize, updateFontSize,
+      // Auth
+      currentUser, activeReg, registrations,
+      signIn, login, logout, updateProfile,
+      // Leaf
+      getLeafData, fetchLeafData, getTodayLeaf, getTodayLeafData, getSixMonthHistory,
+      // Feature flags
+      getFeatureFlags,
+      // Notifications
+      notifications, unreadCount, markNotificationRead, markAllRead,
+      // Requests
+      cashRequests, addCashRequest,
+      fertilizerRequests, addFertilizerRequest,
+      itemRequests, addItemRequest,
+      // News
+      specialNews, newsShown, setNewsShown, dismissNews,
+    }}>
       {children}
     </AppContext.Provider>
   );
@@ -487,8 +432,73 @@ export function AppProvider({ children }) {
 
 export const useApp = () => {
   const ctx = useContext(AppContext);
-  if (!ctx) {
-    throw new Error("useApp must be used inside AppProvider");
-  }
+  if (!ctx) throw new Error("useApp must be used inside AppProvider");
   return ctx;
 };
+
+// ── Field mappers (backend → frontend shape) ───────────────────────────────────
+
+function mapUser(u) {
+  if (!u) return null;
+  return {
+    id: String(u.regNo ?? u.id ?? ""),
+    name: u.name ?? u.regName ?? "",
+    username: u.username ?? "",
+    image: u.profileImage ?? u.image ?? null,
+    address: u.address ?? "",
+    phone: u.phone ?? u.telNo ?? "",
+    idNo: u.idNo ?? "",
+    bankName: u.bankName ?? "",
+    accountNumber: u.accountNumber ?? "",
+    accountHolder: u.accountHolder ?? "",
+    branch: u.branch ?? "",
+  };
+}
+
+function mapCashRequest(r) {
+  if (!r) return r;
+  return {
+    id: r.id,
+    type: r.requestType ?? r.type ?? "",
+    month: r.month ?? "",
+    amount: Number(r.amount ?? 0),
+    date: r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
+    status: r.status ?? "pending",
+    createdAt: r.createdAt ?? new Date().toISOString(),
+    requestedDate: r.requestDate ?? r.requestedDate ?? "",
+    regNo: r.regNo,
+    remarks: r.remarks ?? "",
+  };
+}
+
+function mapFertilizerRequest(r) {
+  if (!r) return r;
+  return {
+    id: r.id,
+    month: r.month ?? "",
+    fertType: r.fertilizerType ?? r.fertType ?? "",
+    quantity: Number(r.quantity ?? 0),
+    date: r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
+    status: r.status ?? "pending",
+    createdAt: r.createdAt ?? new Date().toISOString(),
+    requestedDate: r.requestDate ?? r.requestedDate ?? "",
+    regNo: r.regNo,
+    remarks: r.remarks ?? "",
+  };
+}
+
+function mapItemRequest(r) {
+  if (!r) return r;
+  return {
+    id: r.id,
+    month: r.month ?? "",
+    itemType: r.itemType ?? "",
+    quantity: Number(r.quantity ?? 0),
+    date: r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
+    status: r.status ?? "pending",
+    createdAt: r.createdAt ?? new Date().toISOString(),
+    requestedDate: r.requestDate ?? r.requestedDate ?? "",
+    regNo: r.regNo,
+    remarks: r.remarks ?? "",
+  };
+}

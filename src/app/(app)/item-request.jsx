@@ -62,19 +62,11 @@ export default function ItemRequestScreen() {
 
     setLoading(true);
     try {
-      const now = new Date();
-      const newRequest = {
-        id: `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+      await addItemRequest({
         month: currentMonth,
         itemType,
         quantity: quantityNum,
-        userId: currentUser.id,
-        regNo: activeReg.regNo,
-        status: "pending",
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      };
-      await addItemRequest(newRequest);
+      });
       setItemType("");
       setQuantity("");
       showToast("Request submitted successfully!");

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,42 +9,39 @@ import { useTheme } from "../../hooks/useTheme";
 
 export default function SelectAccountScreen() {
   const { colors, fs, t } = useTheme();
-  const { suppliers, login } = useApp();
+  const { currentUser, registrations, login } = useApp();
   const router = useRouter();
-  const { supplierId } = useLocalSearchParams();
 
-  const supplier = suppliers.find((s) => s.id === supplierId);
   const [selectedRegNo, setSelectedRegNo] = useState("");
-  const [selectedRoute, setSelectedRoute] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  if (!supplier) return null;
-
-  const regOptions = supplier.registrations.map((r) => ({
-    value: r.regNo,
-    label: r.regNo,
+  const regOptions = registrations.map((r) => ({
+    value: r.regNo ?? r.regNo,
+    label: String(r.regNo),
   }));
 
-  const routeOptions = supplier.registrations
-    .filter((r) => !selectedRegNo || r.regNo === selectedRegNo)
-    .map((r) => ({ value: r.route, label: r.route }));
+  const selectedReg = registrations.find((r) => String(r.regNo) === String(selectedRegNo));
 
   const handleRegSelect = (val) => {
     setSelectedRegNo(val);
-    // Auto-fill route if only one route for this reg
-    const reg = supplier.registrations.find((r) => r.regNo === val);
-    if (reg) setSelectedRoute(reg.route);
     setError("");
   };
 
-  const handleOpen = () => {
-    if (!selectedRegNo || !selectedRoute) {
-      setError("Please select registration number and route");
+  const handleOpen = async () => {
+    if (!selectedReg) {
+      setError("Please select a registration number");
       return;
     }
-    const reg = supplier.registrations.find((r) => r.regNo === selectedRegNo);
-    login(supplier, reg);
-    router.replace("/(app)/home");
+    setLoading(true);
+    try {
+      await login(selectedReg);
+      router.replace("/(app)/home");
+    } catch (err) {
+      setError(err.message || "Failed to load account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,12 +57,9 @@ export default function SelectAccountScreen() {
             alignItems: "center",
           }}>
             <View style={{
-              width: 72,
-              height: 72,
-              borderRadius: 36,
+              width: 72, height: 72, borderRadius: 36,
               backgroundColor: "rgba(255,255,255,0.2)",
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: "center", justifyContent: "center",
               marginBottom: 12,
             }}>
               <Ionicons name="person" size={36} color="#fff" />
@@ -74,7 +68,7 @@ export default function SelectAccountScreen() {
               {t.welcome}
             </Text>
             <Text style={{ fontSize: fs["2xl"], fontWeight: "800", color: "#fff", marginTop: 4 }}>
-              {supplier.name}
+              {currentUser?.name ?? ""}
             </Text>
           </View>
 
@@ -94,13 +88,18 @@ export default function SelectAccountScreen() {
               placeholder={t.selectRegNo}
             />
 
-            <Picker
-              label={t.selectRoute}
-              value={selectedRoute}
-              options={routeOptions}
-              onSelect={setSelectedRoute}
-              placeholder={t.selectRoute}
-            />
+            {selectedReg?.route ? (
+              <View style={{
+                flexDirection: "row", alignItems: "center", gap: 8,
+                backgroundColor: colors.surface, borderRadius: 10,
+                padding: 12, marginBottom: 16,
+              }}>
+                <Ionicons name="map-outline" size={fs.md} color={colors.primary} />
+                <Text style={{ color: colors.text, fontSize: fs.sm }}>
+                  {selectedReg.route}
+                </Text>
+              </View>
+            ) : null}
 
             {error ? (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 }}>
@@ -109,7 +108,12 @@ export default function SelectAccountScreen() {
               </View>
             ) : null}
 
-            <Button title={t.open} onPress={handleOpen} icon="checkmark-circle-outline" />
+            <Button
+              title={loading ? "Loading..." : t.open}
+              onPress={handleOpen}
+              icon="checkmark-circle-outline"
+              disabled={loading}
+            />
           </Card>
         </ScrollView>
       </KeyboardAvoidingView>

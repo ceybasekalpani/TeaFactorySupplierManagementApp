@@ -42,58 +42,21 @@ export default function FertilizerRequestScreen() {
       showToast("Please select fertilizer type", "error");
       return;
     }
-    
-    if (!quantity) {
-      showToast("Please enter quantity", "error");
-      return;
-    }
-    
-    const quantityNum = parseFloat(quantity);
-    if (isNaN(quantityNum) || quantityNum <= 0) {
-      showToast("Please enter a valid quantity greater than 0", "error");
-      return;
-    }
-
-    if (!currentUser) {
-      showToast("Please login to make a request", "error");
-      return;
-    }
-
     if (!activeReg) {
       showToast("No active registration found", "error");
       return;
     }
-
+    const quantityNum = parseFloat(quantity) || 0;
     setLoading(true);
-    
     try {
-      const now = new Date();
-      
-      const newRequest = {
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      await addFertilizerRequest({
         month: currentMonth,
-        fertType: fertType,
+        fertilizerType: fertType,
         quantity: quantityNum,
-        userId: currentUser.id,
-        regNo: activeReg.regNo,
-        status: "pending",
-        createdAt: now.toISOString(),
-        date: now.toLocaleDateString('en-US', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        updatedAt: now.toISOString()
-      };
-      
-      await addFertilizerRequest(newRequest);
+      });
       setFertType("");
       setQuantity("");
-      
       showToast("Request submitted successfully!");
-      
     } catch (error) {
       console.error("Error submitting request:", error);
       showToast("Failed to submit request. Please try again.", "error");
