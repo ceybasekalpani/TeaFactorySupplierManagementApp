@@ -1,23 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, EmptyState, Input, Picker, ScreenHeader, StatusBadge, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
-
-const ITEM_TYPES = [
-  { value: "Pruning Shears", label: "Pruning Shears" },
-  { value: "Harvesting Bag", label: "Harvesting Bag" },
-  { value: "Gloves", label: "Protective Gloves" },
-  { value: "Rain Coat", label: "Rain Coat" },
-  { value: "Basket", label: "Bamboo Basket" },
-  { value: "Knife", label: "Harvesting Knife" },
-  { value: "Weighing Bag", label: "Weighing Bag" },
-  { value: "Sun Hat", label: "Sun Hat" },
-];
+import { itemApi, tokenStorage } from "../../utils/api";
 
 export default function ItemRequestScreen() {
   const { colors, fs } = useTheme();
@@ -28,7 +18,27 @@ export default function ItemRequestScreen() {
   const [itemType, setItemType] = useState("");
   const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
+  const [itemTypes, setItemTypes] = useState([]);
+  const [typesLoading, setTypesLoading] = useState(true);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const token = await tokenStorage.get();
+        const types = await itemApi.types(token);
+        if (mounted && Array.isArray(types)) {
+          setItemTypes(types.map((t) => ({ value: t, label: t })));
+        }
+      } catch (err) {
+        console.error("Failed to load item types:", err);
+      } finally {
+        if (mounted) setTypesLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
@@ -155,9 +165,9 @@ export default function ItemRequestScreen() {
           <Picker
             label="Item Type"
             value={itemType}
-            options={ITEM_TYPES}
+            options={itemTypes}
             onSelect={setItemType}
-            placeholder="Select item type"
+            placeholder={typesLoading ? "Loading types..." : "Select item type"}
           />
           <Input
             label="Quantity (units)"

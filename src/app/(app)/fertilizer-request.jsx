@@ -1,24 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, EmptyState, Input, Picker, ScreenHeader, StatusBadge, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
+import { fertilizerApi, tokenStorage } from "../../utils/api";
 
-// Fertilizer types (these are fixed categories)
-const FERTILIZER_TYPES = [
-  { value: "Urea", label: "Urea" },
-  { value: "Potash", label: "Potash (MOP)" },
-  { value: "TSP", label: "TSP (Triple Super Phosphate)" },
-  { value: "Dolomite", label: "Dolomite" },
-  { value: "NPK Mixture", label: "NPK Mixture" },
-  { value: "Organic Compost", label: "Organic Compost" },
-];
-
-// Main component with default export
 export default function FertilizerRequestScreen() {
   const { colors, fs, t } = useTheme();
   const { fertilizerRequests, addFertilizerRequest, currentUser, activeReg } = useApp();
@@ -28,7 +18,27 @@ export default function FertilizerRequestScreen() {
   const [fertType, setFertType] = useState("");
   const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fertilizerTypes, setFertilizerTypes] = useState([]);
+  const [typesLoading, setTypesLoading] = useState(true);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const token = await tokenStorage.get();
+        const types = await fertilizerApi.types(token);
+        if (mounted && Array.isArray(types)) {
+          setFertilizerTypes(types.map((t) => ({ value: t, label: t })));
+        }
+      } catch (err) {
+        console.error("Failed to load fertilizer types:", err);
+      } finally {
+        if (mounted) setTypesLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
@@ -159,9 +169,9 @@ export default function FertilizerRequestScreen() {
           <Picker
             label="Fertilizer Type"
             value={fertType}
-            options={FERTILIZER_TYPES}
+            options={fertilizerTypes}
             onSelect={setFertType}
-            placeholder="Select fertilizer type"
+            placeholder={typesLoading ? "Loading types..." : "Select fertilizer type"}
           />
 
           <Input
