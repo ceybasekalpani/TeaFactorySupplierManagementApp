@@ -21,8 +21,8 @@ const menuItems = (t) => [
   { key: "cashRequest", label: t.cashRequest, icon: "cash", route: "/(app)/cash-request" },
   { key: "fertilizerRequest", label: t.fertilizerRequest, icon: "leaf", route: "/(app)/fertilizer-request" },
   { key: "itemRequest", label: t.itemRequest, icon: "cube", route: "/(app)/item-request" },
-  { key: "leafCard", label: t.leafCard, icon: "card", route: "/(app)/leaf-details" },
-  { key: "monthLeafDetails", label: t.monthLeafDetails, icon: "calendar", route: "/(app)/leaf-details" },
+  { key: "leafCard", label: t.leafCard, icon: "card", route: "/(app)/leaf-details?tab=card" },
+  { key: "monthLeafDetails", label: t.monthLeafDetails, icon: "calendar", route: "/(app)/leaf-details?tab=monthly" },
   { key: "history", label: t.history, icon: "time", route: "/(app)/history" },
   { key: "settings", label: t.settings, icon: "settings", route: "/(app)/settings" },
 ];

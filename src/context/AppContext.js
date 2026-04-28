@@ -65,8 +65,14 @@ export function AppProvider({ children }) {
           setActiveReg(JSON.parse(savedRegJson));
         }
 
-        // Load settings from backend
+        // Load settings first — this sets profileImage from DB into context
         await loadSettings(savedToken);
+
+        // Guaranteed fallback: if the API returned no profileImage, use AsyncStorage cache
+        const cachedImage = await AsyncStorage.getItem("profileImage");
+        if (cachedImage) {
+          setCurrentUser((prev) => prev ? { ...prev, image: prev.image || cachedImage } : prev);
+        }
       } catch (_) {
         // Token expired or invalid — clear it
         await tokenStorage.remove();
@@ -82,18 +88,32 @@ export function AppProvider({ children }) {
       if (s.theme) setTheme(s.theme);
       if (s.language) setLanguage(s.language);
       if (s.fontSize !== undefined) setFontSize(Number(s.fontSize) || 50);
-      // Merge profile fields stored in settings into currentUser
-      setCurrentUser((prev) => prev ? {
-        ...prev,
-        address: s.address ?? prev.address ?? "",
-        phone: s.phone ?? prev.phone ?? "",
-        bankName: s.bankName ?? prev.bankName ?? "",
-        accountNumber: s.accountNumber ?? prev.accountNumber ?? "",
-        accountHolder: s.accountHolder ?? prev.accountHolder ?? "",
-        branch: s.branch ?? prev.branch ?? "",
-        image: s.profileImage ?? prev.image,
-      } : prev);
-    } catch (_) {}
+
+      const profileImage = s.profileImage || s.imageUrl || s.profileImageUrl || s.image || null;
+
+      // Always cache if we got a URL — this is the source of truth for persistence
+      if (profileImage) {
+        await AsyncStorage.setItem("profileImage", profileImage);
+      }
+
+      setCurrentUser((prev) => {
+        if (!prev) return prev;
+        // Never clear an existing image — only update it when API returns one
+        const nextImage = profileImage || prev.image;
+        return {
+          ...prev,
+          address: s.address ?? prev.address ?? "",
+          phone: s.phone ?? prev.phone ?? "",
+          bankName: s.bankName ?? prev.bankName ?? "",
+          accountNumber: s.accountNumber ?? prev.accountNumber ?? "",
+          accountHolder: s.accountHolder ?? prev.accountHolder ?? "",
+          branch: s.branch ?? prev.branch ?? "",
+          image: nextImage,
+        };
+      });
+    } catch (err) {
+      console.log("[loadSettings] error:", err?.message || err);
+    }
   };
 
   // Load all app data after a registration is selected
@@ -249,6 +269,7 @@ export function AppProvider({ children }) {
   const logout = async () => {
     await tokenStorage.remove();
     await AsyncStorage.removeItem("activeReg");
+    await AsyncStorage.removeItem("profileImage");
     setToken(null);
     setCurrentUser(null);
     setActiveReg(null);
@@ -265,10 +286,36 @@ export function AppProvider({ children }) {
   };
 
   const updateProfile = async (data) => {
-    setCurrentUser((prev) => ({ ...prev, ...data }));
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        address: data.address ?? prev.address,
+        phone: data.phone ?? prev.phone,
+        bankName: data.bankName ?? prev.bankName,
+        accountNumber: data.accountNumber ?? prev.accountNumber,
+        accountHolder: data.accountHolder ?? prev.accountHolder,
+        branch: data.branch ?? prev.branch,
+      };
+    });
 
-    if (data.image) {
-      try { await settingsApi.updateProfileImage(tokenRef.current, data.image); } catch (_) {}
+    let uploadedImageUrl = null;
+
+    if (data.imageAsset) {
+      try {
+        const result = await settingsApi.updateProfileImage(tokenRef.current, data.imageAsset);
+        const imageUrl = result?.imageUrl || result?.profileImage || result?.url || result?.imagePath;
+        if (imageUrl) {
+          uploadedImageUrl = imageUrl;
+          await AsyncStorage.setItem("profileImage", imageUrl);
+          setCurrentUser((prev) => prev ? { ...prev, image: imageUrl } : prev);
+        }
+        await loadSettings(tokenRef.current);
+      } catch (err) {
+        console.log("[updateProfile] image upload error:", err?.message || err);
+        await loadSettings(tokenRef.current);
+        throw err;
+      }
     }
 
     if (data.address !== undefined || data.phone !== undefined) {
@@ -287,12 +334,14 @@ export function AppProvider({ children }) {
         branch: data.branch,
       });
     }
+
+    return uploadedImageUrl;
   };
 
   // ── Leaf data ────────────────────────────────────────────────────────────────
 
-  // Sync read from cache — returns [] if not yet loaded
-  const getLeafData = (monthKey) => leafCache[monthKey] || [];
+  // Sync read from cache — returns undefined if not yet fetched, DTO object once fetched
+  const getLeafData = (monthKey) => leafCache[monthKey];
 
   // Async fetch — call from screens when month changes
   // Backend returns MonthlyLeafSummaryDto: { month, year, totalGross, totalNet, totalSuperNet, totalDays, collections[], hasSuper }

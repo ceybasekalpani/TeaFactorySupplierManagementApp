@@ -73,7 +73,7 @@ export default function HomeScreen() {
     { label: t.cashRequest,       icon: "cash-outline",       route: "/(app)/cash-request",       color: "#22c55e", enabled: featureFlags.cash },
     { label: t.fertilizerRequest, icon: "leaf-outline",       route: "/(app)/fertilizer-request", color: "#0891b2", enabled: featureFlags.fertilizer },
     { label: t.itemRequest,       icon: "cube-outline",       route: "/(app)/item-request",       color: "#d97706", enabled: featureFlags.item },
-    { label: t.leafCard,          icon: "card-outline",       route: "/(app)/leaf-details",       color: "#7c3aed", enabled: true },
+    { label: t.leafCard,          icon: "card-outline",       route: "/(app)/leaf-details?tab=card", color: "#7c3aed", enabled: true },
     { label: t.history,           icon: "bar-chart-outline",  route: "/(app)/history",            color: "#e11d48", enabled: true },
     { label: t.settings,          icon: "settings-outline",   route: "/(app)/settings",           color: "#64748b", enabled: true },
   ];
@@ -190,8 +190,8 @@ export default function HomeScreen() {
           /* Super leaf enabled — 3 equal cards in one row */
           <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 16, alignItems: "stretch" }}>
             {[
-              { label: "Normal", value: todayLeafData.normalNet, sub: "kg · today", bg: "#dcfce7", route: "/(app)/leaf-details", content: <Text style={{ fontSize: 18 }}>🍃</Text> },
-              { label: "Super",  value: todayLeafData.superNet,  sub: "kg · today", bg: "#fef9c3", route: "/(app)/leaf-details", content: <Text style={{ fontSize: 18 }}>⭐</Text> },
+              { label: "Normal", value: todayLeafData.normalNet, sub: "kg · today", bg: "#dcfce7", route: "/(app)/leaf-details?tab=monthly", content: <Text style={{ fontSize: 18 }}>🍃</Text> },
+              { label: "Super",  value: todayLeafData.superNet,  sub: "kg · today", bg: "#fef9c3", route: "/(app)/leaf-details?tab=monthly", content: <Text style={{ fontSize: 18 }}>⭐</Text> },
               { label: "Alerts", value: unreadCount,             sub: "unread",     bg: "#dbeafe", route: "/(app)/notifications", content: <Ionicons name="notifications" size={18} color="#2563eb" /> },
             ].map((item) => (
               <TouchableOpacity key={item.label} style={{ flex: 1 }} onPress={() => router.push(item.route)} activeOpacity={0.8}>
@@ -219,14 +219,14 @@ export default function HomeScreen() {
         ) : (
           /* No super — two equal cards side by side */
           <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 16, marginBottom: 16 }}>
-            <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push("/(app)/leaf-details")} activeOpacity={0.8}>
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push("/(app)/leaf-details?tab=monthly")} activeOpacity={0.8}>
               <Card style={{ alignItems: "center", paddingVertical: 16 }}>
                 <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#dcfce7", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
                   <Text style={{ fontSize: 22 }}>🍃</Text>
                 </View>
                 <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>{t.totalLeaf}</Text>
                 <Text style={{ color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>{totalLeaf}</Text>
-                <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>kg · this month</Text>
+                <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>kg · today</Text>
               </Card>
             </TouchableOpacity>
             <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push("/(app)/notifications")} activeOpacity={0.8}>

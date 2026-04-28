@@ -1,12 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
+import { Image } from "expo-image";
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
-import { useTheme } from "../../hooks/useTheme";
 import { useApp } from "../../context/AppContext";
+import { useTheme } from "../../hooks/useTheme";
 import { authApi, tokenStorage } from "../../utils/api";
 
 export default function ProfileScreen() {
@@ -14,7 +16,24 @@ export default function ProfileScreen() {
   const { currentUser, updateProfile } = useApp();
   const router = useRouter();
 
-  const [image, setImage] = useState(currentUser?.image || null);
+  const [imageAsset, setImageAsset] = useState(null);
+  const [localImageUrl, setLocalImageUrl] = useState(null);
+
+  // Load cached image immediately on mount — shows image before context/API finishes loading
+  useEffect(() => {
+    AsyncStorage.getItem("profileImage").then((url) => {
+      if (url) setLocalImageUrl(url);
+    });
+  }, []);
+
+  // Keep in sync when context updates (e.g. after startup completes)
+  useEffect(() => {
+    if (currentUser?.image) setLocalImageUrl(currentUser.image);
+  }, [currentUser?.image]);
+
+  // Picked preview takes priority; otherwise show the saved URL
+  const displayImage = imageAsset?.uri || localImageUrl || null;
+
   const [address, setAddress] = useState(currentUser?.address || "");
   const [phone, setPhone] = useState(currentUser?.phone || "");
   const [loading, setLoading] = useState(false);
@@ -43,10 +62,12 @@ export default function ProfileScreen() {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.6,
+      exif: false,
+      base64: false,
     });
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      setImageAsset(result.assets[0]);
     }
   };
 
@@ -89,10 +110,13 @@ export default function ProfileScreen() {
     }
     setLoading(true);
     try {
-      await updateProfile({ image, address, phone });
+      const newImageUrl = await updateProfile({ imageAsset, address, phone });
+      // Set locally before clearing imageAsset so displayImage never flashes to null
+      if (newImageUrl) setLocalImageUrl(newImageUrl);
+      setImageAsset(null);
       showToast("Profile updated successfully!");
-    } catch (_) {
-      showToast("Failed to update profile. Please try again.", "error");
+    } catch (err) {
+      showToast(err?.message || "Failed to update profile. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -122,8 +146,13 @@ export default function ProfileScreen() {
               borderColor: colors.primary,
               overflow: "hidden",
             }}>
-              {image ? (
-                <Image source={{ uri: image }} style={{ width: 110, height: 110 }} />
+              {displayImage ? (
+                <Image
+                  source={displayImage}
+                  style={{ width: 110, height: 110 }}
+                  contentFit="cover"
+                  cachePolicy="none"
+                />
               ) : (
                 <Ionicons name="person" size={52} color={colors.primary} />
               )}
@@ -156,7 +185,6 @@ export default function ProfileScreen() {
             {[
               { label: "Full Name", value: currentUser?.name, icon: "person-outline" },
               { label: "Supplier ID", value: currentUser?.id, icon: "card-outline" },
-              { label: "Username", value: currentUser?.username, icon: "at-outline" },
             ].map((item) => (
               <View key={item.label} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <Ionicons name={item.icon} size={fs.lg} color={colors.textMuted} />

@@ -8,7 +8,7 @@ export const tokenStorage = {
   get: () => AsyncStorage.getItem(TOKEN_KEY),
   set: (token) => AsyncStorage.setItem(TOKEN_KEY, token),
   remove: () => AsyncStorage.removeItem(TOKEN_KEY),
-};
+};                                                                                                                    
 
 // ── Base request ───────────────────────────────────────────────────────────────
 async function request(method, path, body, token) {
@@ -19,6 +19,42 @@ async function request(method, path, body, token) {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  if (!res.ok) {
+    let message = res.statusText;
+    let rawBody = "";
+    try {
+      rawBody = await res.text();
+      const err = JSON.parse(rawBody);
+      message = err.message || err.title || err.errors
+        ? (err.message || err.title || JSON.stringify(err.errors))
+        : message;
+    } catch (_) {
+      if (rawBody) message = rawBody;
+    }
+    console.error(`API ${method} ${path} → ${res.status}`, message || "(empty body)");
+    const error = new Error(message || `HTTP ${res.status}`);
+    error.status = res.status;
+    throw error;
+  }
+
+  try {
+    return await res.json();
+  } catch (_) {
+    return null;
+  }
+}
+
+// ── Multipart upload ────────────────────────────────────────────────────────────
+async function uploadFile(method, path, formData, token) {
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: formData,
   });
 
   if (!res.ok) {
@@ -67,16 +103,16 @@ export const authApi = {
 // ── Leaf API ───────────────────────────────────────────────────────────────────
 export const leafApi = {
   monthly: (token, year, month) =>
-    request("GET", `/api/leaf/my?year=${year}&month=${month}`, undefined, token),
+    request("GET", `/api/leaf/monthly?year=${year}&month=${month}`, undefined, token),
 
   history: (token) =>
-    request("GET", "/api/leaf/my-history", undefined, token),
+    request("GET", "/api/leaf/history", undefined, token),
 
   today: (token) =>
-    request("GET", "/api/leaf/my-today", undefined, token),
+    request("GET", "/api/leaf/today", undefined, token),
 
   summary: (token) =>
-    request("GET", "/api/leaf/my-summary", undefined, token),
+    request("GET", "/api/leaf/summary", undefined, token),
 };
 
 // ── Cash Request API ───────────────────────────────────────────────────────────
@@ -165,8 +201,32 @@ export const settingsApi = {
   updateFontSize: (token, fontSize) =>
     request("PUT", "/api/settings/font-size", { fontSize }, token),
 
-  updateProfileImage: (token, profileImage) =>
-    request("PUT", "/api/settings/profile-image", { profileImage }, token),
+  updateProfileImage: (token, asset) => {
+    let mimeType = asset.mimeType;
+    if (!mimeType || mimeType === "image") {
+      const uriExt = asset.uri?.split(".").pop()?.toLowerCase().split("?")[0];
+      if (uriExt === "png") mimeType = "image/png";
+      else if (uriExt === "webp") mimeType = "image/webp";
+      else mimeType = "image/jpeg";
+    }
+    const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+    const formData = new FormData();
+    formData.append("image", {
+      uri: asset.uri,
+      name: asset.fileName || `profile.${ext}`,
+      type: mimeType,
+    });
+    console.log("[upload] SENDING uri:", asset.uri, "type:", mimeType, "size:", asset.fileSize);
+    return uploadFile("PUT", "/api/settings/profile-image", formData, token)
+      .then((result) => {
+        console.log("[upload] SUCCESS:", JSON.stringify(result));
+        return result;
+      })
+      .catch((err) => {
+        console.log("[upload] FAILED:", err?.status, err?.message);
+        throw err;
+      });
+  },
 
   updateSettings: (token, data) =>
     request("PUT", "/api/settings", data, token),
