@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import KeyboardView from "../../components/KeyboardView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, EmptyState, Input, Picker, ScreenHeader, StatusBadge, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
@@ -49,14 +50,26 @@ export default function FertilizerRequestScreen() {
 
   const handleRequest = async () => {
     if (!fertType) {
-      showToast("Please select fertilizer type", "error");
+      showToast("Please select a fertilizer type", "error");
+      return;
+    }
+    if (!quantity.trim()) {
+      showToast("Please enter quantity", "error");
+      return;
+    }
+    const quantityNum = parseFloat(quantity);
+    if (isNaN(quantityNum) || quantityNum <= 0) {
+      showToast("Please enter a valid quantity greater than 0", "error");
+      return;
+    }
+    if (!currentUser) {
+      showToast("Please login to make a request", "error");
       return;
     }
     if (!activeReg) {
       showToast("No active registration found", "error");
       return;
     }
-    const quantityNum = parseFloat(quantity) || 0;
     setLoading(true);
     try {
       await addFertilizerRequest({
@@ -68,8 +81,7 @@ export default function FertilizerRequestScreen() {
       setQuantity("");
       showToast("Request submitted successfully!");
     } catch (error) {
-      console.error("Error submitting request:", error);
-      showToast("Failed to submit request. Please try again.", "error");
+      showToast(error?.message || "Failed to submit request. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -124,7 +136,13 @@ export default function FertilizerRequestScreen() {
         onRightPress={() => setMenuOpen(true)}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <KeyboardView>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* Request Form */}
         <Card style={{ marginBottom: 24 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
@@ -284,11 +302,12 @@ export default function FertilizerRequestScreen() {
           </Card>
         )}
       </ScrollView>
+      </KeyboardView>
 
-      <Toast 
-        message={toast.message} 
-        visible={toast.visible} 
-        type={toast.type} 
+      <Toast
+        message={toast.message}
+        visible={toast.visible}
+        type={toast.type}
         onDismiss={() => setToast({ ...toast, visible: false })}
       />
       

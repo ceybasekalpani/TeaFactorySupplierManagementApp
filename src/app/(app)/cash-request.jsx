@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import KeyboardView from "../../components/KeyboardView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, EmptyState, Input, ScreenHeader, StatusBadge, Toast, ToggleTabs } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
@@ -128,7 +129,13 @@ export default function CashRequestScreen() {
         onRightPress={() => setMenuOpen(true)}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <KeyboardView>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <ToggleTabs tabs={tabs} activeTab={activeTab} onSelect={setActiveTab} />
 
         {/* Request Form */}
@@ -291,18 +298,19 @@ export default function CashRequestScreen() {
           </Card>
         )}
       </ScrollView>
+      </KeyboardView>
 
-      <Toast 
-        message={toast.message} 
-        visible={toast.visible} 
-        type={toast.type} 
+      <Toast
+        message={toast.message}
+        visible={toast.visible}
+        type={toast.type}
         onDismiss={() => setToast({ ...toast, visible: false })}
       />
-      
-      <SidebarMenu 
-        visible={menuOpen} 
-        onClose={() => setMenuOpen(false)} 
-        activeKey="cashRequest" 
+
+      <SidebarMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        activeKey="cashRequest"
       />
     </SafeAreaView>
   );

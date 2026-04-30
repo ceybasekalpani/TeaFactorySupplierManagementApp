@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import KeyboardView from "../../components/KeyboardView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, EmptyState, Input, Picker, ScreenHeader, StatusBadge, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
@@ -124,7 +125,13 @@ export default function ItemRequestScreen() {
         onRightPress={() => setMenuOpen(true)}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <KeyboardView>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* Request Form */}
         <Card style={{ marginBottom: 24 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
@@ -265,6 +272,7 @@ export default function ItemRequestScreen() {
           </Card>
         )}
       </ScrollView>
+      </KeyboardView>
 
       <Toast
         message={toast.message}

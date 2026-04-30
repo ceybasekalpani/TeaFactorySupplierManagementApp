@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import KeyboardView from "../../components/KeyboardView";
 import { Button, Card, Input, Picker, ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
@@ -57,14 +58,10 @@ export default function AccountDetailsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader title={t.accountDetails} onBack={() => router.back()} />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 8}
-      >
+      <KeyboardView>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
@@ -127,7 +124,7 @@ export default function AccountDetailsScreen() {
           <Button title={t.save} onPress={handleSave} loading={loading} icon="checkmark-circle" />
         </Card>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardView>
 
       <Toast message={toast.message} visible={toast.visible} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />
     </SafeAreaView>

@@ -2,8 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -11,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import KeyboardView from "../../components/KeyboardView";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
@@ -62,15 +61,23 @@ export default function LandingScreen() {
 
   const handleSignIn = async () => {
     setError("");
-    if (!username.trim() || !password.trim()) {
-      setError(t.fillAllFields || "Please enter username and password");
+    if (!username.trim()) {
+      setError("Please enter your username (Registration No)");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Please enter your password");
       return;
     }
     setLoading(true);
     try {
-      const result = await signIn(username.trim(), password);
+      const result = await signIn(username.trim(), password.trim());
       if (!result) {
-        setError(t.loginError || "Invalid username or password");
+        setError("Invalid username or password. Please try again.");
+        return;
+      }
+      if (!result.registrations || result.registrations.length === 0) {
+        setError("No active registration found for this account. Please contact the factory.");
         return;
       }
       if (result.registrations.length > 1) {
@@ -80,7 +87,7 @@ export default function LandingScreen() {
         router.replace("/(app)/home");
       }
     } catch (err) {
-      setError(err.message || t.loginError || "Login failed. Please try again.");
+      setError(err.message || "Login failed. Please check your credentials and try again.");
     } finally {
       setLoading(false);
     }
@@ -88,13 +95,11 @@ export default function LandingScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardView>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {/* ── Hero Section ─────────────────────────────────── */}
@@ -263,7 +268,7 @@ export default function LandingScreen() {
 
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardView>
     </SafeAreaView>
   );
 }

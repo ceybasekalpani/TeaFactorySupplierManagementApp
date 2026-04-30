@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
-import { Image } from "expo-image";
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
+import KeyboardView from "../../components/KeyboardView";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 import { authApi, tokenStorage } from "../../utils/api";
@@ -17,22 +17,19 @@ export default function ProfileScreen() {
   const router = useRouter();
 
   const [imageAsset, setImageAsset] = useState(null);
-  const [localImageUrl, setLocalImageUrl] = useState(null);
-
-  // Load cached image immediately on mount — shows image before context/API finishes loading
+  // imageKey changes only after a new upload so expo-image reloads the local file
+  const [imageKey, setImageKey] = useState(0);
+  const prevImage = useRef(null);
   useEffect(() => {
-    AsyncStorage.getItem("profileImage").then((url) => {
-      if (url) setLocalImageUrl(url);
-    });
-  }, []);
-
-  // Keep in sync when context updates (e.g. after startup completes)
-  useEffect(() => {
-    if (currentUser?.image) setLocalImageUrl(currentUser.image);
+    if (currentUser?.image && currentUser.image !== prevImage.current) {
+      prevImage.current = currentUser.image;
+      setImageKey(k => k + 1);
+    }
   }, [currentUser?.image]);
 
-  // Picked preview takes priority; otherwise show the saved URL
-  const displayImage = imageAsset?.uri || localImageUrl || null;
+  // During upload: show the locally-picked file immediately (imageAsset.uri)
+  // After save:    show the local file path stored by AppContext (works offline, instant)
+  const displayImage = imageAsset?.uri || currentUser?.image || null;
 
   const [address, setAddress] = useState(currentUser?.address || "");
   const [phone, setPhone] = useState(currentUser?.phone || "");
@@ -76,10 +73,6 @@ export default function ProfileScreen() {
       showToast("Please fill all password fields", "error");
       return;
     }
-    if (newPassword.length < 6) {
-      showToast("New password must be at least 6 characters", "error");
-      return;
-    }
     if (newPassword !== confirmPassword) {
       showToast("New passwords do not match", "error");
       return;
@@ -110,9 +103,7 @@ export default function ProfileScreen() {
     }
     setLoading(true);
     try {
-      const newImageUrl = await updateProfile({ imageAsset, address, phone });
-      // Set locally before clearing imageAsset so displayImage never flashes to null
-      if (newImageUrl) setLocalImageUrl(newImageUrl);
+      await updateProfile({ imageAsset, address, phone });
       setImageAsset(null);
       showToast("Profile updated successfully!");
     } catch (err) {
@@ -126,12 +117,13 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader title={t.profile} onBack={() => router.back()} />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 8}
+      <KeyboardView>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         {/* Profile Image */}
         <View style={{ alignItems: "center", marginBottom: 24 }}>
           <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
@@ -147,12 +139,13 @@ export default function ProfileScreen() {
               overflow: "hidden",
             }}>
               {displayImage ? (
-                <Image
-                  source={displayImage}
-                  style={{ width: 110, height: 110 }}
-                  contentFit="cover"
-                  cachePolicy="none"
-                />
+              <Image
+                source={{ uri: displayImage }}
+                style={{ width: 110, height: 110 }}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                key={imageKey}
+              />
               ) : (
                 <Ionicons name="person" size={52} color={colors.primary} />
               )}
@@ -244,7 +237,7 @@ export default function ProfileScreen() {
             label="New Password"
             value={newPassword}
             onChangeText={setNewPassword}
-            placeholder="At least 6 characters"
+            placeholder="Enter new password"
             secureTextEntry={!showNewPw}
             right={
               <TouchableOpacity onPress={() => setShowNewPw(p => !p)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -269,7 +262,7 @@ export default function ProfileScreen() {
           <Button title="Change Password" onPress={handleChangePassword} loading={pwLoading} icon="lock-closed-outline" />
         </Card>
       </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardView>
 
       <Toast message={toast.message} visible={toast.visible} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />
     </SafeAreaView>
