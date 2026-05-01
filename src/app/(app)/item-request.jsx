@@ -174,7 +174,7 @@ export default function ItemRequestScreen() {
             value={itemType}
             options={itemTypes}
             onSelect={setItemType}
-            placeholder={typesLoading ? "Loading types..." : "Select item type"}
+            placeholder={typesLoading ? "Item types..." : "Select item type"}
           />
           <Input
             label="Quantity (units)"

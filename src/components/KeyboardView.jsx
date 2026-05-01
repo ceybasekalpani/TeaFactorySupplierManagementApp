@@ -1,22 +1,26 @@
-import { KeyboardAvoidingView, Platform } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
 
 /**
- * Drop-in replacement for KeyboardAvoidingView that works correctly on Android
- * with edgeToEdgeEnabled: true.
+ * Keyboard-aware wrapper used by every screen that has text inputs.
  *
- * Problem: In edge-to-edge mode the Keyboard event's reported height includes
- * the bottom navigation-bar inset, causing KAV to over-subtract on Android.
- * Fix: offset by useSafeAreaInsets().bottom so only the true keyboard height
- * is subtracted from the container.
+ * Android  – app.json sets softwareKeyboardLayoutMode="resize" so the OS
+ *            shrinks the window when the keyboard opens.  A plain View is
+ *            all that is needed; KeyboardAvoidingView actually fights the
+ *            system resize and makes things worse, so we skip it.
+ *
+ * iOS      – The OS does not resize the window, so we use KeyboardAvoidingView
+ *            with behavior="padding" to push content above the keyboard.
  */
 export default function KeyboardView({ children, style }) {
-  const insets = useSafeAreaInsets();
+  if (Platform.OS === "android") {
+    return <View style={[{ flex: 1 }, style]}>{children}</View>;
+  }
+
   return (
     <KeyboardAvoidingView
       style={[{ flex: 1 }, style]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "android" ? insets.bottom : 0}
+      behavior="padding"
+      keyboardVerticalOffset={0}
     >
       {children}
     </KeyboardAvoidingView>
