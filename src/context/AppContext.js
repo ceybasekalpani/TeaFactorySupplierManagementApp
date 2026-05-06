@@ -16,16 +16,18 @@ import {
 
 const AppContext = createContext(null);
 
-// AsyncStorage key that holds the CURRENT local image file path.
-// Each upload writes to a NEW uniquely-named file so expo-image always sees a
-// different URI and can never serve a stale cached version of the old photo.
-const PROFILE_IMAGE_PATH_KEY = "profileImageLocalPath";
+// Per-registration AsyncStorage key for the local cached profile image path.
+// Using regNo as part of the key ensures each registration has its own image.
+const PROFILE_IMAGE_PATH_KEY = "profileImageLocalPath"; // legacy key — kept only for logout cleanup
 const PROFILE_IMAGE_DIR = (FileSystem.documentDirectory ?? "") + "profiles/";
 
-// Returns the stored local path if the file still exists on disk, otherwise null
-async function getStoredLocalImagePath() {
+const profileImagePathKey = (regNo) => `profileImageLocalPath_${regNo}`;
+
+// Returns the stored local path for a given registration if the file still exists on disk, otherwise null
+async function getStoredLocalImagePath(regNo) {
   try {
-    const stored = await AsyncStorage.getItem(PROFILE_IMAGE_PATH_KEY);
+    if (!regNo) return null;
+    const stored = await AsyncStorage.getItem(profileImagePathKey(regNo));
     if (!stored) return null;
     const info = await FileSystem.getInfoAsync(stored);
     return info.exists ? stored : null;
@@ -34,16 +36,18 @@ async function getStoredLocalImagePath() {
   }
 }
 
-// Persists `newPath` as the active profile image path in AsyncStorage and
+// Persists `newPath` as the active profile image path for the given registration and
 // deletes the previous file (different path) to avoid accumulating old photos.
-async function activateLocalImagePath(newPath) {
+async function activateLocalImagePath(newPath, regNo) {
+  if (!regNo) return;
   try {
-    const old = await AsyncStorage.getItem(PROFILE_IMAGE_PATH_KEY);
+    const key = profileImagePathKey(regNo);
+    const old = await AsyncStorage.getItem(key);
     if (old && old !== newPath) {
       FileSystem.deleteAsync(old, { idempotent: true }).catch(() => {});
     }
   } catch (_) {}
-  await AsyncStorage.setItem(PROFILE_IMAGE_PATH_KEY, newPath);
+  await AsyncStorage.setItem(profileImagePathKey(regNo), newPath);
 }
 
 // Generates a unique local file path for each upload
@@ -52,14 +56,14 @@ function newLocalImagePath() {
 }
 
 // Fast path: copy the already-local picked file to a new persistent path (no network)
-async function copyPickedImageLocally(sourceUri) {
+async function copyPickedImageLocally(sourceUri, regNo) {
   try {
     await FileSystem.makeDirectoryAsync(PROFILE_IMAGE_DIR, { intermediates: true });
     const dest = newLocalImagePath();
     await FileSystem.copyAsync({ from: sourceUri, to: dest });
     const info = await FileSystem.getInfoAsync(dest);
     if (info.exists) {
-      await activateLocalImagePath(dest);
+      await activateLocalImagePath(dest, regNo);
       return dest;
     }
     console.log("[profile] copyAsync ran but file missing:", dest);
@@ -72,7 +76,7 @@ async function copyPickedImageLocally(sourceUri) {
 
 // Reliable fallback: download via the authenticated backend endpoint.
 // The backend uses the Supabase service-role key, so bucket visibility doesn't matter.
-async function downloadProfileImageViaBackend(token) {
+async function downloadProfileImageViaBackend(token, regNo) {
   try {
     await FileSystem.makeDirectoryAsync(PROFILE_IMAGE_DIR, { intermediates: true });
     const dest = newLocalImagePath();
@@ -84,7 +88,7 @@ async function downloadProfileImageViaBackend(token) {
     if (dl.status === 200) {
       const info = await FileSystem.getInfoAsync(dest);
       if (info.exists) {
-        await activateLocalImagePath(dest);
+        await activateLocalImagePath(dest, regNo);
         return dest;
       }
     }
@@ -122,86 +126,92 @@ export function AppProvider({ children }) {
   const [specialNews, setSpecialNews] = useState([]);
   const [newsShown, setNewsShown] = useState(false);
 
-  // Keep a ref so async callbacks always see the latest token
+  // Keep refs so async callbacks always see the latest values
   const tokenRef = useRef(null);
   tokenRef.current = token;
+  const activeRegRef = useRef(null);
+  activeRegRef.current = activeReg;
 
   // ── Restore session on startup ───────────────────────────────────────────────
-  // useEffect(() => {
-  //   (async () => {
-  //     try {
-  //       const savedToken = await tokenStorage.get();
-  //       if (!savedToken) return;
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedToken = await tokenStorage.get();
+        if (!savedToken) return;
 
-  //       // Validate token by fetching user
-  //       const user = await authApi.me(savedToken);
-  //       const regs = await authApi.registrations(savedToken);
+        // Validate token by fetching user
+        const user = await authApi.me(savedToken);
+        const regs = await authApi.registrations(savedToken);
 
-  //       setToken(savedToken);
-  //       setCurrentUser(mapUser(user));
-  //       setRegistrations(regs || []);
+        setToken(savedToken);
+        setCurrentUser(mapUser(user));
+        setRegistrations(regs || []);
 
-  //       // Restore active registration from AsyncStorage
-  //       const savedRegJson = await AsyncStorage.getItem("activeReg");
-  //       if (savedRegJson) {
-  //         setActiveReg(JSON.parse(savedRegJson));
-  //       }
+        // Restore active registration from AsyncStorage
+        const savedRegJson = await AsyncStorage.getItem("activeReg");
+        let savedReg = null;
+        if (savedRegJson) {
+          savedReg = JSON.parse(savedRegJson);
+          setActiveReg(savedReg);
+        }
 
-  //       // Load settings first — this sets profileImage from DB into context
-  //       await loadSettings(savedToken);
+        // Load settings — pass regNo so we load the correct per-registration image cache
+        await loadSettings(savedToken, savedReg?.regNo);
 
-  //       // Guaranteed fallback: if the API returned no profileImage, use AsyncStorage cache
-  //       const cachedImage = await AsyncStorage.getItem("profileImage");
-  //       if (cachedImage) {
-  //         setCurrentUser((prev) => prev ? { ...prev, image: prev.image || cachedImage } : prev);
-  //       }
-  //     } catch (_) {
-  //       // Token expired or invalid — clear it
-  //       await tokenStorage.remove();
-  //     }
-  //   })();
-  // }, []);
-useEffect(() => {
-  (async () => {
-    try {
-      // Show the locally-saved profile image immediately — no network, no delay
-      const localImage = await getStoredLocalImagePath();
-      if (localImage) {
-        setCurrentUser({ image: localImage });
+        // Guaranteed fallback: if the API returned no profileImage, use AsyncStorage cache
+        const cachedImage = await AsyncStorage.getItem("profileImage");
+        if (cachedImage) {
+          setCurrentUser((prev) => prev ? { ...prev, image: prev.image || cachedImage } : prev);
+        }
+      } catch (_) {
+        // Token expired or invalid — clear it
+        await tokenStorage.remove();
       }
+    })();
+  }, []);
 
-      const savedToken = await tokenStorage.get();
-      if (!savedToken) return;
 
-      setToken(savedToken);
+// useEffect(() => {
+//   (async () => {
+//     try {
+//       // Show the locally-saved profile image immediately — no network, no delay
+//       const localImage = await getStoredLocalImagePath();
+//       if (localImage) {
+//         setCurrentUser({ image: localImage });
+//       }
 
-      const user = await authApi.me(savedToken);
-      const regs = await authApi.registrations(savedToken);
-      setRegistrations(regs || []);
+//       const savedToken = await tokenStorage.get();
+//       if (!savedToken) return;
 
-      const mapped = mapUser(user);
-      setCurrentUser(prev => ({
-        ...mapped,
-        // Keep the local file path — it's what the user sees instantly
-        image: localImage || prev?.image || mapped.image,
-      }));
+//       setToken(savedToken);
 
-      const savedRegJson = await AsyncStorage.getItem("activeReg");
-      if (savedRegJson) setActiveReg(JSON.parse(savedRegJson));
+//       const user = await authApi.me(savedToken);
+//       const regs = await authApi.registrations(savedToken);
+//       setRegistrations(regs || []);
 
-      await loadSettings(savedToken);
+//       const mapped = mapUser(user);
+//       setCurrentUser(prev => ({
+//         ...mapped,
+//         // Keep the local file path — it's what the user sees instantly
+//         image: localImage || prev?.image || mapped.image,
+//       }));
 
-    } catch (err) {
-      console.log("Startup Error:", err);
-      await tokenStorage.remove();
-      setToken(null);       // clear stale token from React state
-      setCurrentUser(null); // clear stale user so screens don't show wrong data
-    }
-  })();
-}, []);
+//       const savedRegJson = await AsyncStorage.getItem("activeReg");
+//       if (savedRegJson) setActiveReg(JSON.parse(savedRegJson));
+
+//       await loadSettings(savedToken);
+
+//     } catch (err) {
+//       console.log("Startup Error:", err);
+//       await tokenStorage.remove();
+//       setToken(null);       // clear stale token from React state
+//       setCurrentUser(null); // clear stale user so screens don't show wrong data
+//     }
+//   })();
+// }, []);
 
   // Load settings and apply them
-const loadSettings = async (tok) => {
+const loadSettings = async (tok, regNo) => {
   try {
     const s = await settingsApi.get(tok);
     if (!s) return;
@@ -215,18 +225,18 @@ const loadSettings = async (tok) => {
     if (lang) setLanguage(lang);
     if (fSize !== undefined) setFontSize(Number(fSize));
 
-    // Image resolution priority:
-    // 1. Local file on device (instant, works offline)
+    // Image resolution priority (per-registration):
+    // 1. Local file on device for this regNo (instant, works offline)
     // 2. Download via backend proxy (authenticated — works regardless of Supabase bucket visibility)
     // 3. Fall back to the remote Supabase URL directly (last resort)
     let imageToUse = null;
 
-    const localExists = await getStoredLocalImagePath();
+    const localExists = regNo ? await getStoredLocalImagePath(regNo) : null;
     if (localExists) {
-      imageToUse = localExists; // use the stored unique path
+      imageToUse = localExists;
     } else if (remoteImage) {
-      // No local file — download via the backend so auth/visibility config doesn't matter
-      const downloaded = await downloadProfileImageViaBackend(tok);
+      // No local file for this registration — download via the backend
+      const downloaded = regNo ? await downloadProfileImageViaBackend(tok, regNo) : null;
       imageToUse = downloaded || remoteImage.split('?')[0];
     }
 
@@ -238,7 +248,7 @@ const loadSettings = async (tok) => {
         phone: s.phone || s.Phone || prev.phone,
         bankName: s.bankName || s.BankName || prev.bankName,
         accountNumber: s.accountNumber || s.AccountNumber || prev.accountNumber,
-        image: imageToUse || prev.image,
+        image: imageToUse !== null ? imageToUse : prev.image,
       };
     });
   } catch (err) {
@@ -388,11 +398,14 @@ const loadSettings = async (tok) => {
     return { user: mappedUser, registrations: Array.isArray(regs) ? regs : [] };
   };
 
-  // Call after registration is chosen — loads all app data
+  // Call after registration is chosen — loads settings (including correct profile image) and all app data
   const login = async (reg) => {
     setActiveReg(reg);
     setNewsShown(false);
+    // Clear the image immediately so the previous registration's photo doesn't show
+    setCurrentUser((prev) => prev ? { ...prev, image: null } : prev);
     await AsyncStorage.setItem("activeReg", JSON.stringify(reg));
+    await loadSettings(tokenRef.current, reg?.regNo);
     await loadAppData(tokenRef.current);
   };
 
@@ -400,10 +413,20 @@ const loadSettings = async (tok) => {
     await tokenStorage.remove();
     await AsyncStorage.removeItem("activeReg");
     await AsyncStorage.removeItem("profileImage");
-    // Delete local profile image so the next user's image doesn't bleed through
+    // Delete per-registration local profile images so the next user's images don't bleed through
     try {
-      const localPath = await AsyncStorage.getItem(PROFILE_IMAGE_PATH_KEY);
-      if (localPath) FileSystem.deleteAsync(localPath, { idempotent: true }).catch(() => {});
+      const regsToClean = registrations.length > 0 ? registrations : (activeReg ? [activeReg] : []);
+      for (const reg of regsToClean) {
+        const key = profileImagePathKey(reg.regNo);
+        const localPath = await AsyncStorage.getItem(key);
+        if (localPath) FileSystem.deleteAsync(localPath, { idempotent: true }).catch(() => {});
+        await AsyncStorage.removeItem(key);
+      }
+    } catch (_) {}
+    // Legacy cleanup for the old shared key
+    try {
+      const oldPath = await AsyncStorage.getItem(PROFILE_IMAGE_PATH_KEY);
+      if (oldPath) FileSystem.deleteAsync(oldPath, { idempotent: true }).catch(() => {});
     } catch (_) {}
     await AsyncStorage.removeItem(PROFILE_IMAGE_PATH_KEY);
     setToken(null);
@@ -445,22 +468,23 @@ const loadSettings = async (tok) => {
           // 1. Show the picked local file immediately (zero-delay feedback)
           setCurrentUser((prev) => prev ? { ...prev, image: data.imageAsset.uri } : prev);
 
+          const regNo = activeRegRef.current?.regNo;
           // 2. Try to copy the local picked file to persistent storage (fastest, no network)
-          let localPath = await copyPickedImageLocally(data.imageAsset.uri);
+          let localPath = await copyPickedImageLocally(data.imageAsset.uri, regNo);
 
           // 3. If copy failed, download from backend proxy (reliable, auth-based)
           if (!localPath) {
-            localPath = await downloadProfileImageViaBackend(tokenRef.current);
+            localPath = await downloadProfileImageViaBackend(tokenRef.current, regNo);
           }
 
           const displayUrl = localPath || remoteUrl;
           uploadedImageUrl = displayUrl;
           setCurrentUser((prev) => prev ? { ...prev, image: displayUrl } : prev);
         }
-        await loadSettings(tokenRef.current);
+        await loadSettings(tokenRef.current, activeRegRef.current?.regNo);
       } catch (err) {
         console.log("[updateProfile] image upload error:", err?.message || err);
-        await loadSettings(tokenRef.current);
+        await loadSettings(tokenRef.current, activeRegRef.current?.regNo);
         throw err;
       }
     }

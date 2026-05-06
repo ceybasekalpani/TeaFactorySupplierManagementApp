@@ -6,4 +6,4 @@
 //  • Production        → https://api.yourapp.com
 
 // Physical device / Expo Go on same WiFi network
-export const API_BASE_URL = "http://192.168.8.107:5295";
+export const API_BASE_URL = "http://192.168.8.108:5295";
