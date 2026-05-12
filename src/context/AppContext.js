@@ -16,8 +16,7 @@ import {
 
 const AppContext = createContext(null);
 
-// Per-registration AsyncStorage key for the local cached profile image path.
-// Using regNo as part of the key ensures each registration has its own image.
+
 const PROFILE_IMAGE_PATH_KEY = "profileImageLocalPath"; // legacy key — kept only for logout cleanup
 const PROFILE_IMAGE_DIR = (FileSystem.documentDirectory ?? "") + "profiles/";
 
@@ -36,8 +35,7 @@ async function getStoredLocalImagePath(regNo) {
   }
 }
 
-// Persists `newPath` as the active profile image path for the given registration and
-// deletes the previous file (different path) to avoid accumulating old photos.
+
 async function activateLocalImagePath(newPath, regNo) {
   if (!regNo) return;
   try {
@@ -74,8 +72,7 @@ async function copyPickedImageLocally(sourceUri, regNo) {
   }
 }
 
-// Reliable fallback: download via the authenticated backend endpoint.
-// The backend uses the Supabase service-role key, so bucket visibility doesn't matter.
+
 async function downloadProfileImageViaBackend(token, regNo) {
   try {
     await FileSystem.makeDirectoryAsync(PROFILE_IMAGE_DIR, { intermediates: true });
@@ -244,8 +241,11 @@ const loadSettings = async (tok, regNo) => {
       if (!prev) return prev;
       return {
         ...prev,
+        name: s.name || s.Name || prev.name,
         address: s.address || s.Address || prev.address,
         phone: s.phone || s.Phone || prev.phone,
+        phone2: s.phone2 || s.Phone2 || prev.phone2 || "",
+        phone3: s.phone3 || s.Phone3 || prev.phone3 || "",
         bankName: s.bankName || s.BankName || prev.bankName,
         accountNumber: s.accountNumber || s.AccountNumber || prev.accountNumber,
         image: imageToUse !== null ? imageToUse : prev.image,
@@ -449,8 +449,11 @@ const loadSettings = async (tok, regNo) => {
       if (!prev) return prev;
       return {
         ...prev,
+        name: data.name ?? prev.name,
         address: data.address ?? prev.address,
         phone: data.phone ?? prev.phone,
+        phone2: data.phone2 ?? prev.phone2 ?? "",
+        phone3: data.phone3 ?? prev.phone3 ?? "",
         bankName: data.bankName ?? prev.bankName,
         accountNumber: data.accountNumber ?? prev.accountNumber,
         accountHolder: data.accountHolder ?? prev.accountHolder,
@@ -489,10 +492,13 @@ const loadSettings = async (tok, regNo) => {
       }
     }
 
-    if (data.address !== undefined || data.phone !== undefined) {
+    if (data.address !== undefined || data.phone !== undefined || data.name !== undefined || data.phone2 !== undefined || data.phone3 !== undefined) {
       await settingsApi.updateSettings(tokenRef.current, {
+        name: data.name,
         address: data.address,
         phone: data.phone,
+        phone2: data.phone2,
+        phone3: data.phone3,
       });
     }
 
@@ -511,18 +517,17 @@ const loadSettings = async (tok, regNo) => {
 
   // ── Leaf data ────────────────────────────────────────────────────────────────
 
-  // Sync read from cache — returns undefined if not yet fetched, DTO object once fetched
+
   const getLeafData = (monthKey) => leafCache[monthKey];
 
-  // Async fetch — call from screens when month changes
-  // Backend returns MonthlyLeafSummaryDto: { month, year, totalGross, totalNet, totalSuperNet, totalDays, collections[], hasSuper }
+  
   const fetchLeafData = async (monthKey) => {
     const tok = tokenRef.current;
     if (!tok) return;
     try {
       const [year, month] = monthKey.split("-").map(Number);
       const data = await leafApi.monthly(tok, year, month);
-      // Store the full summary object; screens extract .collections and .hasSuper
+      
       setLeafCache((prev) => ({ ...prev, [monthKey]: data ?? null }));
     } catch (_) {}
   };
@@ -544,6 +549,13 @@ const loadSettings = async (tok, regNo) => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
       await notificationApi.markAllRead(tokenRef.current);
+    } catch (_) {}
+  };
+
+  const removeNotification = async (id) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await notificationApi.dismiss(tokenRef.current, id);
     } catch (_) {}
   };
 
@@ -637,7 +649,7 @@ const loadSettings = async (tok, regNo) => {
       // Feature flags
       getFeatureFlags,
       // Notifications
-      notifications, unreadCount, markNotificationRead, markAllRead,
+      notifications, unreadCount, markNotificationRead, markAllRead, removeNotification,
       // Requests
       cashRequests, addCashRequest,
       fertilizerRequests, addFertilizerRequest,
@@ -665,15 +677,18 @@ function mapUser(u) {
     id: String(u.regNo ?? u.id ?? ""),
     name: u.name ?? u.regName ?? "",
     username: u.username ?? "",
-    image: img ? img.split('?')[0] : null, // clean base URL; version is managed separately
+    image: img ? img.split('?')[0] : null,
     address: u.address ?? u.Address ?? "",
     phone: u.phone ?? u.Phone ?? u.telNo ?? "",
+    phone2: u.phone2 ?? u.Phone2 ?? "",
+    phone3: u.phone3 ?? u.Phone3 ?? "",
     bankName: u.bankName ?? u.BankName ?? "",
     accountNumber: u.accountNumber ?? u.AccountNumber ?? "",
     accountHolder: u.accountHolder ?? u.AccountHolder ?? "",
     branch: u.branch ?? u.Branch ?? "",
   };
 }
+
 
 function mapCashRequest(r) {
   if (!r) return r;

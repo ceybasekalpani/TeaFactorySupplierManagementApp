@@ -6,8 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import SpecialNewsModal from "../../components/SpecialNewsModal";
 import { Card } from "../../components/ui";
-import { useTheme } from "../../hooks/useTheme";
 import { useApp } from "../../context/AppContext";
+import { useTheme } from "../../hooks/useTheme";
 
 const iconMap = {
   success: { name: "checkmark-circle",  color: "#16a34a", bg: "#dcfce7" },
@@ -70,12 +70,12 @@ export default function HomeScreen() {
   const recentNotifications = notifications.slice(0, 3);
 
   const quickActions = [
-    { label: t.cashRequest,       icon: "cash-outline",       route: "/(app)/cash-request",       color: "#22c55e", enabled: featureFlags.cash },
-    { label: t.fertilizerRequest, icon: "leaf-outline",       route: "/(app)/fertilizer-request", color: "#0891b2", enabled: featureFlags.fertilizer },
-    { label: t.itemRequest,       icon: "cube-outline",       route: "/(app)/item-request",       color: "#d97706", enabled: featureFlags.item },
-    { label: t.leafCard,          icon: "card-outline",       route: "/(app)/leaf-details?tab=card", color: "#7c3aed", enabled: true },
-    { label: t.history,           icon: "bar-chart-outline",  route: "/(app)/history",            color: "#e11d48", enabled: true },
-    { label: t.settings,          icon: "settings-outline",   route: "/(app)/settings",           color: "#64748b", enabled: true },
+    { label: t.cashRequest,      icon: "cash-outline",      route: "/(app)/cash-request",          color: "#22c55e", enabled: featureFlags.cash },
+    { label: t.fertilizerItemRequest,   icon: "leaf-outline",      route: "/(app)/fertilizerItem-request",        color: "#0891b2", enabled: featureFlags.fertilizer || featureFlags.item },
+    { label: t.leafCard,         icon: "card-outline",      route: "/(app)/leaf-details?tab=card", color: "#7c3aed", enabled: true },
+    { label: t.history,          icon: "bar-chart-outline", route: "/(app)/history",               color: "#e11d48", enabled: true },
+    { label: t.landInfo,         icon: "map-outline",       route: "/(app)/land-info",             color: "#059669", enabled: true },
+    { label: t.settings,         icon: "settings-outline",  route: "/(app)/settings",              color: "#64748b", enabled: true },
   ];
 
   return (
@@ -242,37 +242,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Active Registration */}
-        {activeReg && (
-          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-            <Card style={{
-              flexDirection: "row", alignItems: "center", gap: 14,
-              backgroundColor: colors.primary + "10",
-              borderWidth: 1, borderColor: colors.primary + "30",
-            }}>
-              <View style={{
-                width: 44, height: 44, borderRadius: 22,
-                backgroundColor: colors.primary + "25",
-                alignItems: "center", justifyContent: "center",
-              }}>
-                <Ionicons name="document-text" size={fs.lg} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fs.sm }}>
-                  Active Registration
-                </Text>
-                <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600", marginTop: 1 }}>
-                  {activeReg.regNo}
-                </Text>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 1 }}>
-                  {activeReg.route}
-                </Text>
-              </View>
-              <Ionicons name="checkmark-circle" size={fs.xl} color={colors.primary} />
-            </Card>
-          </View>
-        )}
-
+       
         {/* Quick Actions */}
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
           <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 12 }}>

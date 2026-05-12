@@ -5,8 +5,8 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
 import KeyboardView from "../../components/KeyboardView";
+import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 import { authApi, tokenStorage } from "../../utils/api";
@@ -31,8 +31,11 @@ export default function ProfileScreen() {
   // After save:    show the local file path stored by AppContext (works offline, instant)
   const displayImage = imageAsset?.uri || currentUser?.image || null;
 
+   const [name, setName] = useState(currentUser?.name || "");
   const [address, setAddress] = useState(currentUser?.address || "");
   const [phone, setPhone] = useState(currentUser?.phone || "");
+  const [phone2, setPhone2] = useState(currentUser?.phone2 || "");
+  const [phone3, setPhone3] = useState(currentUser?.phone3 || "");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
@@ -93,21 +96,26 @@ export default function ProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!address.trim() || !phone.trim()) {
-      showToast("Please fill all fields", "error");
+    if (!name.trim() || !address.trim() || !phone.trim()) {
+      showToast("Please fill Name, Address, and Primary Phone", "error");
       return;
     }
-    if (!/^0\d{9}$/.test(phone.trim())) {
-      showToast("Enter a valid 10-digit phone number", "error");
-      return;
-    }
+    
     setLoading(true);
     try {
-      await updateProfile({ imageAsset, address, phone });
+      // Pass all 3 phone numbers and the name to the updateProfile function
+      await updateProfile({ 
+        imageAsset, 
+        name, 
+        address, 
+        phone, 
+        phone2, 
+        phone3 
+      });
       setImageAsset(null);
       showToast("Profile updated successfully!");
     } catch (err) {
-      showToast(err?.message || "Failed to update profile. Please try again.", "error");
+      showToast(err?.message || "Update failed", "error");
     } finally {
       setLoading(false);
     }
@@ -196,20 +204,44 @@ export default function ProfileScreen() {
             Edit Profile
           </Text>
 
+           
           <Input
-            label={t.address}
-            value={address}
-            onChangeText={setAddress}
-            placeholder="Enter your address"
-          />
+              label="Full Name"
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter your full name"
+            />
 
-          <Input
-            label={t.phoneNumber}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="e.g. 0771234567"
-            keyboardType="phone-pad"
-          />
+            <Input
+              label={t.address}
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Enter your address"
+            />
+
+            <Input
+              label="Primary Phone"
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="e.g. 0771234567"
+              keyboardType="phone-pad"
+            />
+
+            <Input
+              label="Secondary Phone (Optional)"
+              value={phone2}
+              onChangeText={setPhone2}
+              placeholder="e.g. 0771112223"
+              keyboardType="phone-pad"
+            />
+
+            <Input
+              label="Additional Phone (Optional)"
+              value={phone3}
+              onChangeText={setPhone3}
+              placeholder="e.g. 0112223334"
+              keyboardType="phone-pad"
+            />
 
           <Button title={t.save} onPress={handleSave} loading={loading} icon="checkmark-circle" />
         </Card>

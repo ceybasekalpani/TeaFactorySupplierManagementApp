@@ -2,12 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import {
-    Animated,
-    Dimensions, Image,
-    Modal,
-    ScrollView,
-    Text, TouchableOpacity,
-    View,
+  Animated,
+  Dimensions, Image,
+  Modal,
+  ScrollView,
+  Text, TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
@@ -17,14 +17,14 @@ const { width } = Dimensions.get("window");
 const MENU_WIDTH = width * 0.82;
 
 const menuItems = (t) => [
-  { key: "home", label: t.home, icon: "home", route: "/(app)/home" },
-  { key: "cashRequest", label: t.cashRequest, icon: "cash", route: "/(app)/cash-request" },
-  { key: "fertilizerRequest", label: t.fertilizerRequest, icon: "leaf", route: "/(app)/fertilizer-request" },
-  { key: "itemRequest", label: t.itemRequest, icon: "cube", route: "/(app)/item-request" },
-  { key: "leafCard", label: t.leafCard, icon: "card", route: "/(app)/leaf-details?tab=card" },
-  { key: "monthLeafDetails", label: t.monthLeafDetails, icon: "calendar", route: "/(app)/leaf-details?tab=monthly" },
-  { key: "history", label: t.history, icon: "time", route: "/(app)/history" },
-  { key: "settings", label: t.settings, icon: "settings", route: "/(app)/settings" },
+  { key: "home",             label: t.home,             icon: "home",      route: "/(app)/home" },
+  { key: "cashRequest",      label: t.cashRequest,      icon: "cash",      route: "/(app)/cash-request" },
+  { key: "fertilizerItemRequest",    label: t.fertilizerItemRequest,   icon: "leaf",      route: "/(app)/fertilizerItem-request" },
+  { key: "leafCard",         label: t.leafCard,         icon: "card",      route: "/(app)/leaf-details?tab=card" },
+  { key: "monthLeafDetails", label: t.monthLeafDetails, icon: "calendar",  route: "/(app)/leaf-details?tab=monthly" },
+  { key: "history",          label: t.history,          icon: "time",      route: "/(app)/history" },
+  { key: "landInfo",         label: t.landInfo,         icon: "map",       route: "/(app)/land-info" },
+  { key: "settings",         label: t.settings,         icon: "settings",  route: "/(app)/settings" },
 ];
 
 export default function SidebarMenu({ visible, onClose, activeKey }) {
@@ -146,9 +146,8 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
               {menuItems(t).map((item) => {
                 const isActive = item.key === activeKey;
                 const isDisabled =
-                  (item.key === "cashRequest"       && !featureFlags.cash) ||
-                  (item.key === "fertilizerRequest" && !featureFlags.fertilizer) ||
-                  (item.key === "itemRequest"       && !featureFlags.item);
+                  (item.key === "cashRequest"   && !featureFlags.cash) ||
+                  (item.key === "supplyRequest" && !featureFlags.fertilizer && !featureFlags.item);
                 return (
                   <TouchableOpacity
                     key={item.key}

@@ -127,7 +127,10 @@ export const cashApi = {
     request("DELETE", `/api/cashrequest/${id}`, undefined, token),
 
   featureEnabled: (token) =>
-    request("GET", "/api/cashrequest/feature-enabled", undefined, token), 
+    request("GET", "/api/cashrequest/feature-enabled", undefined, token),
+
+  advanceLimit: (token) =>
+    request("GET", "/api/cashrequest/advance-limit", undefined, token),
 };
 
 // ── Fertilizer Request API ─────────────────────────────────────────────────────
@@ -176,6 +179,9 @@ export const notificationApi = {
 
   markAllRead: (token) =>
     request("POST", "/api/notification/mark-all-read", undefined, token),
+
+  dismiss: (token, id) =>
+    request("DELETE", `/api/notification/${id}`, undefined, token),
 };
 
 // ── News API ───────────────────────────────────────────────────────────────────
