@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
@@ -87,24 +87,24 @@ export default function CashRequestScreen() {
 
   const handleRequest = async () => {
     if (!amount) {
-      showToast("Please enter amount", "error");
+      showToast(t.pleaseEnterAmount, "error");
       return;
     }
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      showToast("Please enter a valid amount greater than 0", "error");
+      showToast(t.pleaseEnterValidAmount, "error");
       return;
     }
     if (advanceLimit !== null && amountNum > advanceLimit) {
-      showToast(`Amount exceeds your limit of Rs. ${formatCurrency(advanceLimit)}`, "error");
+      showToast(`${t.amountExceedsLimit} Rs. ${formatCurrency(advanceLimit)}`, "error");
       return;
     }
     if (!currentUser) {
-      showToast("Please login to make a request", "error");
+      showToast(t.pleaseLoginToRequest, "error");
       return;
     }
     if (!activeReg) {
-      showToast("No active registration found", "error");
+      showToast(t.noActiveRegistration, "error");
       return;
     }
 
@@ -117,9 +117,9 @@ export default function CashRequestScreen() {
         date: `${selectedMonthInfo.year}-${String(selectedMonthInfo.month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`,
       });
       setAmount("");
-      showToast("Request submitted successfully!");
+      showToast(t.successRequest);
     } catch (error) {
-      showToast("Failed to submit request. Please try again.", "error");
+      showToast(t.failedToSubmitRequest, "error");
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,7 @@ export default function CashRequestScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader
-        title="Cash Request"
+        title={t.cashRequest}
         onBack={() => router.back()}
         rightIcon="menu"
         onRightPress={() => setMenuOpen(true)}
@@ -189,7 +189,7 @@ export default function CashRequestScreen() {
           {/* Advance Request Form */}
           <Card style={{ marginBottom: 24 }}>
             <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text, marginBottom: 20 }}>
-              New Advance Request
+              {t.newAdvanceRequest}
             </Text>
 
             {/* Advance Limit Banner */}
@@ -211,13 +211,13 @@ export default function CashRequestScreen() {
                   <Ionicons name="shield-checkmark" size={fs.lg} color="#16a34a" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: "#166534", fontSize: fs.xs, fontWeight: "600" }}>Your Advance Limit</Text>
+                  <Text style={{ color: "#166534", fontSize: fs.xs, fontWeight: "600" }}>{t.yourAdvanceLimit}</Text>
                   <Text style={{ color: "#166534", fontSize: fs.md, fontWeight: "800" }}>
                     Rs. {formatCurrency(advanceLimit)}
                   </Text>
                   {amountNum > 0 && (
                     <Text style={{ color: "#15803d", fontSize: fs.xs, marginTop: 2 }}>
-                      Remaining after request: Rs. {formatCurrency(Math.max(0, advanceLimit - amountNum))}
+                      {t.remainingAfterRequest}: Rs. {formatCurrency(Math.max(0, advanceLimit - amountNum))}
                     </Text>
                   )}
                 </View>
@@ -227,7 +227,7 @@ export default function CashRequestScreen() {
             {/* Month Selector */}
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 8 }}>
-                Select Month
+                {t.selectMonth}
               </Text>
               <View style={{ flexDirection: "row", gap: 10 }}>
                 {[
@@ -272,16 +272,16 @@ export default function CashRequestScreen() {
 
             {/* Day Selector */}
             <Picker
-              label={`Day (${selectedMonthLabel})`}
+              label={`${t.day} (${selectedMonthLabel})`}
               value={selectedDay}
               options={dayOptions}
               onSelect={setSelectedDay}
-              placeholder="Select day"
+              placeholder={t.selectDay}
             />
 
             {/* Amount Input */}
             <Input
-              label={`Amount (Rs)${advanceLimit !== null ? `  ·  Max Rs. ${formatCurrency(advanceLimit)}` : ""}`}
+              label={`${t.amountRs}${advanceLimit !== null ? `  ·  ${t.max} Rs. ${formatCurrency(advanceLimit)}` : ""}`}
               value={amount}
               onChangeText={(v) => {
                 // Block input if it would exceed the limit
@@ -291,7 +291,7 @@ export default function CashRequestScreen() {
                 }
                 setAmount(v);
               }}
-              placeholder="Enter amount"
+              placeholder={t.enterAmount}
               keyboardType="numeric"
             />
 
@@ -307,12 +307,12 @@ export default function CashRequestScreen() {
             }}>
               <Ionicons name="information-circle" size={fs.lg} color="#d97706" />
               <Text style={{ color: "#92400e", fontSize: fs.xs, flex: 1 }}>
-                Advance requests not approved within 24 hours will be automatically rejected.
+                {t.autoRejectWarning}
               </Text>
             </View>
 
             <Button
-              title="Submit Request"
+              title={t.submitRequest}
               onPress={handleRequest}
               loading={loading}
               icon="send-outline"
@@ -321,15 +321,15 @@ export default function CashRequestScreen() {
 
           {/* Advance Request History */}
           <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
-            Advance Request History{advanceRequests.length > 0 ? ` (${advanceRequests.length})` : ""}
+            {t.advanceRequestHistory}{advanceRequests.length > 0 ? ` (${advanceRequests.length})` : ""}
           </Text>
 
           {advanceRequests.length === 0 ? (
             <Card>
               <EmptyState
                 icon="document-text-outline"
-                message="No advance requests yet"
-                description="Your request history will appear here"
+                message={t.noAdvanceRequestsYet}
+                description={t.requestHistoryWillAppear}
               />
             </Card>
           ) : (
@@ -343,10 +343,10 @@ export default function CashRequestScreen() {
                 borderBottomWidth: 2,
                 borderBottomColor: colors.primary,
               }}>
-                <Text style={{ flex: 2, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>REQUEST DATE</Text>
-                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>MONTH</Text>
-                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>AMOUNT (Rs)</Text>
-                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>STATUS</Text>
+                <Text style={{ flex: 2, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>{t.requestDate}</Text>
+                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.month}</Text>
+                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>{t.amountRsHeader}</Text>
+                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.status}</Text>
               </View>
 
               {/* Table Rows */}
@@ -390,10 +390,10 @@ export default function CashRequestScreen() {
                 borderTopColor: colors.border,
               }}>
                 <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
-                  Total Requests: {advanceRequests.length}
+                  {t.totalRequests}: {advanceRequests.length}
                 </Text>
                 <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
-                  Total: Rs. {formatCurrency(
+                  {t.total}: Rs. {formatCurrency(
                     advanceRequests.reduce((sum, req) => sum + (parseFloat(req.amount) || 0), 0)
                   )}
                 </Text>

@@ -29,30 +29,40 @@ export default function AccountDetailsScreen() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
+  const [disabled, setDisabled] = useState(false); 
+
   const showToast = (message, type = "success") => {
     setToast({ visible: true, message, type });
     setTimeout(() => setToast({ visible: false, message: "", type: "success" }), 3000);
   };
 
-  const handleSave = async () => {
-    if (!bankName || !accountNumber || !accountHolder || !branch) {
-      showToast(t.fillAllFields, "error");
-      return;
-    }
-    if (accountNumber.length < 8 || accountNumber.length > 16) {
-      showToast("Account number must be 8–16 digits", "error");
-      return;
-    }
-    setLoading(true);
-    try {
-      await updateProfile({ bankName, accountNumber, accountHolder, branch });
-      showToast("Account details updated successfully!");
-    } catch (_) {
-      showToast("Failed to update account details. Please try again.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+ const handleSave = async () => {
+  if (!bankName || !accountNumber || !accountHolder || !branch) {
+    showToast(t.fillAllFields, "error");
+    return;
+  }
+
+  if (accountNumber.length < 8 || accountNumber.length > 16) {
+    showToast("Account number must be 8–16 digits", "error");
+    return;
+  }
+
+  setDisabled(true);
+  setLoading(true);
+
+  try {
+    await updateProfile({ bankName, accountNumber, accountHolder, branch });
+    showToast(t.saveSuccess || "Account details updated successfully!");
+  } catch (_) {
+    showToast(t.saveError || "Failed to update account details. Please try again.", "error");
+  } finally {
+    setLoading(false);
+
+    setTimeout(() => {
+      setDisabled(false);
+    }, 3000);
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -78,17 +88,17 @@ export default function AccountDetailsScreen() {
           <Text style={{ fontSize: 32 }}>🏦</Text>
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fs.base }}>
-              {currentUser?.bankName || "No bank set"}
+              {currentUser?.bankName || t.noData || "No bank set"}
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: fs.xs }}>
-              Acc: {currentUser?.accountNumber ? `****${currentUser.accountNumber.slice(-4)}` : "—"}
+              {t.accountNumber}: {currentUser?.accountNumber ? `****${currentUser.accountNumber.slice(-4)}` : "—"}
             </Text>
           </View>
         </View>
 
         <Card>
           <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
-            Bank Details
+            {t.accountDetails}
           </Text>
 
           <Picker
@@ -96,14 +106,14 @@ export default function AccountDetailsScreen() {
             value={bankName}
             options={BANK_OPTIONS}
             onSelect={setBankName}
-            placeholder="Select Bank"
+            placeholder={`${t.selectBank || "Select Bank"}`}
           />
 
           <Input
             label={t.accountNumber}
             value={accountNumber}
             onChangeText={setAccountNumber}
-            placeholder="Enter account number"
+            placeholder={t.accountNumber}
             keyboardType="number-pad"
           />
 
@@ -111,17 +121,26 @@ export default function AccountDetailsScreen() {
             label={t.accountHolder}
             value={accountHolder}
             onChangeText={setAccountHolder}
-            placeholder="Name as on bank account"
+            placeholder={t.accountHolder}
           />
 
           <Input
             label={t.branch}
             value={branch}
             onChangeText={setBranch}
-            placeholder="e.g. Kandy"
+            placeholder={t.branch}
           />
 
-          <Button title={t.save} onPress={handleSave} loading={loading} icon="checkmark-circle" />
+        {!disabled && (
+        <Button
+          title={t.save}
+          onPress={handleSave}
+          loading={loading}
+          icon="checkmark-circle"
+          disabled={true}
+        />
+      )}
+
         </Card>
         </ScrollView>
       </KeyboardView>

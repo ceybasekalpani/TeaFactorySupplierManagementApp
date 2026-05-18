@@ -11,8 +11,6 @@ import { Card, EmptyState, Picker, ScreenHeader, ToggleTabs } from "../../compon
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
-
-
 function getDaysInMonth(yearMonth) {
   const [year, month] = yearMonth.split("-").map(Number);
   return new Date(year, month, 0).getDate();
@@ -78,7 +76,7 @@ export default function LeafDetailsScreen() {
           value={selectedMonth}
           options={monthOptions}
           onSelect={setSelectedMonth}
-          placeholder="Select Month"
+          placeholder={t.selectMonth || "මාසය තෝරන්න"}
         />
       </View>
 
@@ -86,14 +84,14 @@ export default function LeafDetailsScreen() {
       {leafData.length > 0 && (
         <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 12 }}>
           {[
-            { label: "Total Gross", value: `${totalGross} kg`, color: "#16a34a" },
-            { label: "Total Water", value: `${totalWater} kg`, color: "#0891b2" },
+            { label: t.totalGross || "Total Gross", value: `${totalGross} kg`, color: "#16a34a" },
+            { label: t.totalWater || "Total Water", value: `${totalWater} kg`, color: "#0891b2" },
             ...(hasSuper
               ? [
-                  { label: "Normal Net", value: `${totalNet} kg`,   color: "#7c3aed" },
-                  { label: "Super Net",  value: `${totalSuper} kg`, color: "#d97706" },
+                  { label: t.normalNet || "Normal Net", value: `${totalNet} kg`, color: "#7c3aed" },
+                  { label: t.superNet || "Super Net", value: `${totalSuper} kg`, color: "#d97706" },
                 ]
-              : [{ label: "Total Net", value: `${totalNet} kg`, color: "#7c3aed" }]
+              : [{ label: t.totalNet || "Total Net", value: `${totalNet} kg`, color: "#7c3aed" }]
             ),
           ].map((stat) => (
             <View
@@ -132,10 +130,10 @@ export default function LeafDetailsScreen() {
   );
 }
 
-// ── Monthly Leaf Details Table (only days with data) ───────────────────────────
+// ── Monthly Leaf Details Table ───────────────────────────
 function MonthlyLeafTable({ leafData, hasSuper, colors, fs, t }) {
   if (leafData.length === 0) {
-    return <Card><EmptyState icon="leaf-outline" message="No leaf data for this month" /></Card>;
+    return <Card><EmptyState icon="leaf-outline" message={t.noLeafDataThisMonth || "මෙම මාසය සඳහා දළු දත්ත නොමැත"} /></Card>;
   }
 
   const cols = hasSuper
@@ -190,7 +188,7 @@ function MonthlyLeafTable({ leafData, hasSuper, colors, fs, t }) {
 
       {/* Totals */}
       <View style={{ flexDirection: "row", paddingVertical: 10, paddingHorizontal: 10, backgroundColor: colors.surface, borderTopWidth: 2, borderTopColor: colors.primary }}>
-        <Text style={{ flex: 0.8, color: colors.primary, fontSize: fs.xs, fontWeight: "700" }}>Total</Text>
+        <Text style={{ flex: 0.8, color: colors.primary, fontSize: fs.xs, fontWeight: "700" }}>{t.total || "Total"}</Text>
         <Text style={{ flex: 1, color: colors.text, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>
           {leafData.reduce((s, d) => s + (d.gross ?? 0), 0)}
         </Text>
@@ -219,7 +217,7 @@ function MonthlyLeafTable({ leafData, hasSuper, colors, fs, t }) {
   );
 }
 
-// ── Leaf Card Table (every day of month, Normal/Super) ─────────────────────────
+// ── Leaf Card Table ─────────────────────────
 function LeafCardTable({ leafData, selectedMonth, hasSuper, colors, fs, t }) {
   const totalDays = getDaysInMonth(selectedMonth);
   const dataMap = {};
@@ -272,7 +270,7 @@ function LeafCardTable({ leafData, selectedMonth, hasSuper, colors, fs, t }) {
 
       {/* Total */}
       <View style={{ flexDirection: "row", paddingVertical: 10, paddingHorizontal: 14, backgroundColor: colors.surface, borderTopWidth: 2, borderTopColor: colors.primary }}>
-        <Text style={{ flex: 0.8, color: colors.primary, fontSize: fs.xs, fontWeight: "700" }}>Total</Text>
+        <Text style={{ flex: 0.8, color: colors.primary, fontSize: fs.xs, fontWeight: "700" }}>{t.total || "Total"}</Text>
         <Text style={{ flex: 1, color: colors.primary, fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>{totalNormal}</Text>
         {hasSuper && (
           <Text style={{ flex: 1, color: "#d97706", fontSize: fs.xs, fontWeight: "700", textAlign: "right" }}>{totalSuperNet}</Text>

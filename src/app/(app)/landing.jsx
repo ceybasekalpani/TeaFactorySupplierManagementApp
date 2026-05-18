@@ -50,7 +50,7 @@ function Field({ icon, placeholder, value, onChangeText, secureTextEntry, right,
 
 export default function LandingScreen() {
   const { colors, fs, t } = useTheme();
-  const { signIn, login } = useApp();
+  const { signIn } = useApp();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -80,12 +80,9 @@ export default function LandingScreen() {
         setError("No active registration found for this account. Please contact the factory.");
         return;
       }
-      if (result.registrations.length > 1) {
-        router.push("/(auth)/select-account");
-      } else {
-        await login(result.registrations[0]);
-        router.replace("/(app)/home");
-      }
+      // Always go to PIN setup after password login.
+      // pin-setup will handle both first-time setup and re-confirmation.
+      router.replace("/(auth)/pin-setup");
     } catch (err) {
       setError(err.message || "Login failed. Please check your credentials and try again.");
     } finally {
@@ -113,43 +110,25 @@ export default function LandingScreen() {
             borderBottomRightRadius: 44,
             overflow: "hidden",
           }}>
-            {/* Decorative circles */}
             <View style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: "rgba(255,255,255,0.07)" }} />
             <View style={{ position: "absolute", top: 30, right: 20, width: 70, height: 70, borderRadius: 35, backgroundColor: "rgba(255,255,255,0.06)" }} />
             <View style={{ position: "absolute", bottom: 10, left: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: "rgba(255,255,255,0.06)" }} />
             <View style={{ position: "absolute", bottom: 40, right: -10, width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(255,255,255,0.05)" }} />
 
-            {/* App Icon */}
             <View style={{
-              width: 96,
-              height: 96,
-              borderRadius: 48,
+              width: 96, height: 96, borderRadius: 48,
               backgroundColor: "rgba(255,255,255,0.18)",
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: "center", justifyContent: "center",
               marginBottom: 18,
-              borderWidth: 2,
-              borderColor: "rgba(255,255,255,0.25)",
+              borderWidth: 2, borderColor: "rgba(255,255,255,0.25)",
             }}>
               <Text style={{ fontSize: 50 }}>🍃</Text>
             </View>
 
-            <Text style={{
-              fontSize: fs["3xl"],
-              fontWeight: "900",
-              color: "#fff",
-              letterSpacing: 0.5,
-              textAlign: "center",
-            }}>
+            <Text style={{ fontSize: fs["3xl"], fontWeight: "900", color: "#fff", letterSpacing: 0.5, textAlign: "center" }}>
               Tea Factory
             </Text>
-            <Text style={{
-              fontSize: fs.sm,
-              color: "rgba(255,255,255,0.72)",
-              marginTop: 6,
-              letterSpacing: 0.3,
-              textAlign: "center",
-            }}>
+            <Text style={{ fontSize: fs.sm, color: "rgba(255,255,255,0.72)", marginTop: 6, letterSpacing: 0.3, textAlign: "center" }}>
               Supplier Management Portal
             </Text>
           </View>
@@ -168,7 +147,6 @@ export default function LandingScreen() {
               borderWidth: 1,
               borderColor: colors.cardBorder,
             }}>
-              {/* Card Header */}
               <Text style={{ fontSize: fs.xl, fontWeight: "800", color: colors.text }}>
                 Welcome Back 👋
               </Text>
@@ -213,14 +191,11 @@ export default function LandingScreen() {
               {/* Error */}
               {!!error && (
                 <View style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
+                  flexDirection: "row", alignItems: "center", gap: 6,
                   marginTop: 12,
                   backgroundColor: colors.error + "12",
                   borderRadius: 10,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
+                  paddingHorizontal: 12, paddingVertical: 8,
                 }}>
                   <Ionicons name="alert-circle" size={fs.base} color={colors.error} />
                   <Text style={{ color: colors.error, fontSize: fs.sm, flex: 1 }}>{error}</Text>
@@ -251,21 +226,16 @@ export default function LandingScreen() {
                 {loading ? (
                   <>
                     <Ionicons name="sync-outline" size={fs.md} color="#fff" />
-                    <Text style={{ color: "#fff", fontWeight: "700", fontSize: fs.md }}>
-                      Signing in...
-                    </Text>
+                    <Text style={{ color: "#fff", fontWeight: "700", fontSize: fs.md }}>Signing in...</Text>
                   </>
                 ) : (
                   <>
-                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: fs.md }}>
-                      {t.signIn}
-                    </Text>
+                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: fs.md }}>{t.signIn}</Text>
                     <Ionicons name="arrow-forward" size={fs.md} color="#fff" />
                   </>
                 )}
               </TouchableOpacity>
             </View>
-
           </View>
         </ScrollView>
       </KeyboardView>

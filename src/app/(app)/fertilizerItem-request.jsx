@@ -12,7 +12,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { fertilizerApi, itemApi, tokenStorage } from "../../utils/api";
 
 export default function FertilizerItemRequestScreen() {  // Changed component name
-  const { colors, fs } = useTheme();
+  const { colors, fs, t } = useTheme();
   const {
     fertilizerRequests, addFertilizerRequest,
     itemRequests, addItemRequest,
@@ -43,21 +43,21 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
           if (mounted) setTypesLoading(false);
           return;
         }
-        
+
         const [fResult, iResult] = await Promise.allSettled([
           fertilizerApi.types(token),
           itemApi.types(token),
         ]);
-        
+
         if (mounted) {
           if (fResult.status === "fulfilled" && Array.isArray(fResult.value)) {
-            setFertilizerTypes(fResult.value.map((t) => ({ value: t, label: t })));
+            setFertilizerTypes(fResult.value.map((tp) => ({ value: tp, label: tp })));
           } else if (fResult.status === "rejected") {
             console.log("Failed to fetch fertilizer types:", fResult.reason);
           }
-          
+
           if (iResult.status === "fulfilled" && Array.isArray(iResult.value)) {
-            setItemTypes(iResult.value.map((t) => ({ value: t, label: t })));
+            setItemTypes(iResult.value.map((tp) => ({ value: tp, label: tp })));
           } else if (iResult.status === "rejected") {
             console.log("Failed to fetch item types:", iResult.reason);
           }
@@ -80,10 +80,10 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
   const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
   const currentTypes = category === "fertilizer" ? fertilizerTypes : itemTypes;
-  const quantityUnit = category === "fertilizer" ? "kg" : "units";
+  const quantityUnit = category === "fertilizer" ? t.unitKg : t.unitUnits;
   const quantityPlaceholder = category === "fertilizer"
-    ? "Enter quantity in kg"
-    : "Enter quantity in units";
+    ? t.enterQuantityKg
+    : t.enterQuantityUnits;
 
   const showToast = (message, type = "success") => {
     setToast({ visible: true, message, type });
@@ -92,24 +92,24 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
 
   const handleRequest = async () => {
     if (!selectedType) {
-      showToast(`Please select a ${category} type`, "error");
+      showToast(category === "fertilizer" ? t.pleaseSelectFertilizerType : t.pleaseSelectItemType, "error");
       return;
     }
     if (!quantity.trim()) {
-      showToast("Please enter quantity", "error");
+      showToast(t.pleaseEnterQuantity, "error");
       return;
     }
     const quantityNum = parseFloat(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
-      showToast("Please enter a valid quantity greater than 0", "error");
+      showToast(t.pleaseEnterValidQuantity, "error");
       return;
     }
     if (!currentUser) {
-      showToast("Please login to make a request", "error");
+      showToast(t.pleaseLoginToRequest, "error");
       return;
     }
     if (!activeReg) {
-      showToast("No active registration found", "error");
+      showToast(t.noActiveRegistration, "error");
       return;
     }
 
@@ -130,10 +130,10 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
       }
       setSelectedType("");
       setQuantity("");
-      showToast("Request submitted successfully!");
+      showToast(t.successRequest);
     } catch (error) {
       console.log("Request error:", error);
-      showToast(error?.message || "Failed to submit request. Please try again.", "error");
+      showToast(error?.message || t.failedToSubmitRequest, "error");
     } finally {
       setLoading(false);
     }
@@ -172,14 +172,14 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
     if (!qty && qty !== 0) return "-";
     try {
       const n = parseFloat(qty).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
-      return `${n} ${cat === "Fertilizer" ? "kg" : "units"}`;
+      return `${n} ${cat === "Fertilizer" ? t.unitKg : t.unitUnits}`;
     } catch { return "-"; }
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader
-        title="Fertilizer/Item Request"
+        title={t.fertilizerItemRequest}
         onBack={() => router.back()}
         rightIcon="menu"
         onRightPress={() => setMenuOpen(true)}
@@ -204,23 +204,23 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
               </View>
               <View>
                 <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text }}>
-                  New Fertilizer/Item Request
+                  {t.newFertilizerItemRequest}
                 </Text>
                 <Text style={{ fontSize: fs.xs, color: colors.textSecondary }}>
-                  {currentUser?.name || "Guest"} · {activeReg?.regNo || "No registration"}
+                  {currentUser?.name || t.guest} · {activeReg?.regNo || t.noRegistration}
                 </Text>
               </View>
             </View>
 
-            {/* Category Selector — combobox style */}
+            {/* Category Selector */}
             <View style={{ marginBottom: 16 }}>
               <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 8 }}>
-                Request Type
+                {t.requestType}
               </Text>
               <View style={{ flexDirection: "row", gap: 10 }}>
                 {[
-                  { key: "fertilizer", label: "Fertilizer", icon: "leaf-outline", color: "#16a34a", bg: "#dcfce7" },
-                  { key: "item",       label: "Item",       icon: "cube-outline", color: "#d97706", bg: "#fef3c7" },
+                  { key: "fertilizer", label: t.fertilizer, icon: "leaf-outline", color: "#16a34a", bg: "#dcfce7" },
+                  { key: "item",       label: t.item,       icon: "cube-outline", color: "#d97706", bg: "#fef3c7" },
                 ].map((cat) => {
                   const isActive = category === cat.key;
                   return (
@@ -269,7 +269,9 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
 
             {/* Month display */}
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>Month</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>
+                {t.month}
+              </Text>
               <View style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -286,24 +288,26 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
               </View>
             </View>
 
-            {/* Type picker — changes based on selected category */}
+            {/* Type picker */}
             <Picker
-              label={category === "fertilizer" ? "Fertilizer Type" : "Item Type"}
+              label={category === "fertilizer" ? t.fertilizerType : t.itemType}
               value={selectedType}
               options={currentTypes}
               onSelect={setSelectedType}
               placeholder={
                 typesLoading
-                  ? "Loading types..."
+                  ? t.loadingTypes
                   : currentTypes.length === 0
-                    ? "No types available"
-                    : `Select ${category === "fertilizer" ? "fertilizer" : "item"} type`
+                    ? t.noTypesAvailable
+                    : category === "fertilizer"
+                      ? t.selectFertilizerType
+                      : t.selectItemType
               }
             />
 
-            {/* Quantity — unit changes based on category */}
+            {/* Quantity */}
             <Input
-              label={`Quantity (${quantityUnit})`}
+              label={`${t.quantity} (${quantityUnit})`}
               value={quantity}
               onChangeText={setQuantity}
               placeholder={quantityPlaceholder}
@@ -321,14 +325,12 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
             }}>
               <Ionicons name="information-circle" size={fs.lg} color="#2563eb" />
               <Text style={{ color: "#1e40af", fontSize: fs.xs, flex: 1 }}>
-                {category === "fertilizer"
-                  ? "Fertilizer requests are subject to availability and processed within 3-5 working days."
-                  : "Item requests are subject to stock availability and will be processed shortly."}
+                {category === "fertilizer" ? t.fertilizerInfoNote : t.itemInfoNote}
               </Text>
             </View>
 
             <Button
-              title="Submit Request"
+              title={t.submitRequest}
               onPress={handleRequest}
               loading={loading}
               icon="send-outline"
@@ -337,15 +339,15 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
 
           {/* Combined History */}
           <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
-            Request History{combinedHistory.length > 0 ? ` (${combinedHistory.length})` : ""}
+            {t.requestHistory}{combinedHistory.length > 0 ? ` (${combinedHistory.length})` : ""}
           </Text>
 
           {combinedHistory.length === 0 ? (
             <Card>
               <EmptyState
                 icon="leaf-outline"
-                message="No supply requests yet"
-                description="Your fertilizer and item request history will appear here"
+                message={t.noSupplyRequestsYet}
+                description={t.supplyRequestHistoryWillAppear}
               />
             </Card>
           ) : (
@@ -359,11 +361,11 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
                 borderBottomWidth: 2,
                 borderBottomColor: colors.primary,
               }}>
-                <Text style={{ flex: 1.8, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>DATE</Text>
-                <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>CATEGORY</Text>
-                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>TYPE</Text>
-                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>QTY</Text>
-                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>STATUS</Text>
+                <Text style={{ flex: 1.8, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>{t.colDate}</Text>
+                <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colCategory}</Text>
+                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colType}</Text>
+                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colQty}</Text>
+                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.status}</Text>
               </View>
 
               {/* Table Rows */}
@@ -395,7 +397,7 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
                         fontWeight: "700",
                         color: req.category === "Fertilizer" ? "#16a34a" : "#d97706",
                       }}>
-                        {req.category === "Fertilizer" ? "Fertilizer" : "Item"}
+                        {req.category === "Fertilizer" ? t.fertilizer : t.item}
                       </Text>
                     </View>
                   </View>
@@ -423,10 +425,10 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
                 borderTopColor: colors.border,
               }}>
                 <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
-                  Total: {combinedHistory.length}
+                  {t.total}: {combinedHistory.length}
                 </Text>
                 <Text style={{ color: colors.textSecondary, fontSize: fs.xs }}>
-                  {fertilizerRequests?.length || 0} fertilizer · {itemRequests?.length || 0} items
+                  {fertilizerRequests?.length || 0} {t.fertilizerLower} · {itemRequests?.length || 0} {t.itemsLower}
                 </Text>
               </View>
             </Card>

@@ -12,7 +12,7 @@ import { useTheme } from "../../hooks/useTheme";
 const LAND_INFO_KEY = "landInfo";
 
 export default function LandInfoScreen() {
-  const { colors, fs } = useTheme();
+  const { colors, fs, t } = useTheme(); // Added 't' for translations
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,14 +65,14 @@ export default function LandInfoScreen() {
 
   const handleSave = async () => {
     if (!landName.trim()) {
-      showToast("Please enter the land name", "error");
+      showToast(t.errorLandName, "error");
       return;
     }
     if (maxLeaves && minLeaves) {
       const maxNum = parseFloat(maxLeaves);
       const minNum = parseFloat(minLeaves);
       if (!isNaN(maxNum) && !isNaN(minNum) && minNum > maxNum) {
-        showToast("Minimum leaves cannot exceed maximum leaves", "error");
+        showToast(t.errorMinMax, "error");
         return;
       }
     }
@@ -87,9 +87,9 @@ export default function LandInfoScreen() {
         maxLeaves: maxLeaves.trim(),
         minLeaves: minLeaves.trim(),
       }));
-      showToast("Land information saved!");
+      showToast(t.saveSuccess);
     } catch {
-      showToast("Failed to save. Please try again.", "error");
+      showToast(t.saveError, "error");
     } finally {
       setLoading(false);
     }
@@ -149,7 +149,7 @@ export default function LandInfoScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader
-        title="Land Information"
+        title={t.landInfo}
         onBack={() => router.back()}
         rightIcon="menu"
         onRightPress={() => setMenuOpen(true)}
@@ -188,7 +188,7 @@ export default function LandInfoScreen() {
                   ) : null}
                   {(maxLeaves || minLeaves) ? (
                     <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>
-                      Leaves: {minLeaves || "—"} – {maxLeaves || "—"} kg/day
+                      {t.dailySupplyRange}: {minLeaves || "—"} – {maxLeaves || "—"} {t.kg}
                     </Text>
                   ) : null}
                 </View>
@@ -199,14 +199,14 @@ export default function LandInfoScreen() {
           {/* Land Details Form */}
           <Card style={{ marginBottom: 20 }}>
             <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
-              Land Details
+              {t.landDetails}
             </Text>
 
             <Input
-              label="Name of the Land"
+              label={t.landNameLabel}
               value={landName}
               onChangeText={setLandName}
-              placeholder="e.g. Kandy Upper Estate"
+              placeholder={t.landNamePlaceholder}
             />
 
             {/* Size: Acres / Rood / Perches */}
@@ -217,7 +217,7 @@ export default function LandInfoScreen() {
                 fontWeight: "600",
                 marginBottom: 10,
               }}>
-                Size of Land
+                {t.sizeOfLand}
               </Text>
 
               <View style={{ flexDirection: "row", gap: 10 }}>
@@ -228,7 +228,7 @@ export default function LandInfoScreen() {
                     style={sizeInputStyle}
                     value={acres}
                     onChangeText={handleAcresChange}
-                    placeholder="Acres"
+                    placeholder={t.acres}
                     placeholderTextColor={colors.textSecondary}
                     keyboardType="number-pad"
                     maxLength={4}
@@ -245,7 +245,7 @@ export default function LandInfoScreen() {
                     style={sizeInputStyle}
                     value={rood}
                     onChangeText={handleRoodChange}
-                    placeholder="Rood"
+                    placeholder={t.rood}
                     placeholderTextColor={colors.textSecondary}
                     keyboardType="number-pad"
                     maxLength={4}
@@ -262,7 +262,7 @@ export default function LandInfoScreen() {
                     style={sizeInputStyle}
                     value={perches}
                     onChangeText={handlePerchesChange}
-                    placeholder="Perches"
+                    placeholder={t.perches}
                     placeholderTextColor={colors.textSecondary}
                     keyboardType="number-pad"
                     maxLength={4}
@@ -285,7 +285,7 @@ export default function LandInfoScreen() {
                 }}>
                   <Ionicons name="resize-outline" size={fs.sm} color={colors.primary} />
                   <Text style={{ color: colors.primary, fontSize: fs.xs, fontWeight: "600" }}>
-                    {acres || "0"} Acres  {rood || "0"} Rood  {perches || "0"} Perches
+                    {acres || "0"} {t.acres}  {rood || "0"} {t.rood}  {perches || "0"} {t.perches}
                   </Text>
                 </View>
               )}
@@ -295,16 +295,16 @@ export default function LandInfoScreen() {
           {/* Leaf Capacity */}
           <Card style={{ marginBottom: 20 }}>
             <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-              Leaf Supply Capacity
+              {t.leafCapacity}
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginBottom: 16 }}>
-              Set the expected daily leaf supply range for this land.
+              {t.leafCapacityDesc}
             </Text>
 
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View style={{ flex: 1 }}>
                 <Input
-                  label="Minimum (kg/day)"
+                  label={t.minLeaves}
                   value={minLeaves}
                   onChangeText={setMinLeaves}
                   placeholder="e.g. 50"
@@ -313,7 +313,7 @@ export default function LandInfoScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Input
-                  label="Maximum (kg/day)"
+                  label={t.maxLeaves}
                   value={maxLeaves}
                   onChangeText={setMaxLeaves}
                   placeholder="e.g. 200"
@@ -334,14 +334,14 @@ export default function LandInfoScreen() {
               }}>
                 <Ionicons name="leaf-outline" size={fs.lg} color="#2563eb" />
                 <Text style={{ color: "#1e40af", fontSize: fs.xs, flex: 1 }}>
-                  Daily supply range: {minLeaves || "—"} – {maxLeaves || "—"} kg
+                  {t.dailySupplyRange}: {minLeaves || "—"} – {maxLeaves || "—"} {t.kg}
                 </Text>
               </View>
             )}
           </Card>
 
           <Button
-            title="Save Land Information"
+            title={t.saveLandInfo}
             onPress={handleSave}
             loading={loading}
             icon="save-outline"

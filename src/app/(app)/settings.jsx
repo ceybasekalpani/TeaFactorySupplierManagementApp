@@ -244,21 +244,7 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        {/* REGISTRATION */}
-        {activeReg && (
-          <>
-            <SectionHeader title="Registration" />
-            <Card>
-              <SettingRow
-                icon="document-text"
-                iconBg="#fef3c7"
-                iconColor="#d97706"
-                title="Active Registration"
-                subtitle={`${activeReg.regNo} · ${activeReg.route}`}
-              />
-            </Card>
-          </>
-        )}
+       
 
       </ScrollView>
 

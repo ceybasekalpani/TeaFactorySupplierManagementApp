@@ -17,12 +17,11 @@ import {
 const AppContext = createContext(null);
 
 
-const PROFILE_IMAGE_PATH_KEY = "profileImageLocalPath"; // legacy key — kept only for logout cleanup
+const PROFILE_IMAGE_PATH_KEY = "profileImageLocalPath";
 const PROFILE_IMAGE_DIR = (FileSystem.documentDirectory ?? "") + "profiles/";
 
 const profileImagePathKey = (regNo) => `profileImageLocalPath_${regNo}`;
 
-// Returns the stored local path for a given registration if the file still exists on disk, otherwise null
 async function getStoredLocalImagePath(regNo) {
   try {
     if (!regNo) return null;
@@ -34,7 +33,6 @@ async function getStoredLocalImagePath(regNo) {
     return null;
   }
 }
-
 
 async function activateLocalImagePath(newPath, regNo) {
   if (!regNo) return;
@@ -48,12 +46,10 @@ async function activateLocalImagePath(newPath, regNo) {
   await AsyncStorage.setItem(profileImagePathKey(regNo), newPath);
 }
 
-// Generates a unique local file path for each upload
 function newLocalImagePath() {
   return `${PROFILE_IMAGE_DIR}profile_${Date.now()}.jpg`;
 }
 
-// Fast path: copy the already-local picked file to a new persistent path (no network)
 async function copyPickedImageLocally(sourceUri, regNo) {
   try {
     await FileSystem.makeDirectoryAsync(PROFILE_IMAGE_DIR, { intermediates: true });
@@ -64,14 +60,12 @@ async function copyPickedImageLocally(sourceUri, regNo) {
       await activateLocalImagePath(dest, regNo);
       return dest;
     }
-    console.log("[profile] copyAsync ran but file missing:", dest);
     return null;
   } catch (e) {
     console.log("[profile] copyAsync failed:", e?.message || e);
     return null;
   }
 }
-
 
 async function downloadProfileImageViaBackend(token, regNo) {
   try {
@@ -89,7 +83,6 @@ async function downloadProfileImageViaBackend(token, regNo) {
         return dest;
       }
     }
-    console.log("[profile] backend download status:", dl.status);
     return null;
   } catch (e) {
     console.log("[profile] backend download failed:", e?.message || e);
@@ -104,6 +97,10 @@ export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeReg, setActiveReg] = useState(null);
   const [registrations, setRegistrations] = useState([]);
+  // "loading" | "authenticated" | "pin-required" | "unauthenticated"
+  const [authState, setAuthState] = useState("loading");
+  const [savedRegNo, setSavedRegNo] = useState(null);
+  const [savedName, setSavedName] = useState(null);
 
   // ── Settings / theme ─────────────────────────────────────────────────────────
   const [theme, setTheme] = useState("light");
@@ -123,7 +120,6 @@ export function AppProvider({ children }) {
   const [specialNews, setSpecialNews] = useState([]);
   const [newsShown, setNewsShown] = useState(false);
 
-  // Keep refs so async callbacks always see the latest values
   const tokenRef = useRef(null);
   tokenRef.current = token;
   const activeRegRef = useRef(null);
@@ -133,130 +129,112 @@ export function AppProvider({ children }) {
   useEffect(() => {
     (async () => {
       try {
-        const savedToken = await tokenStorage.get();
-        if (!savedToken) return;
+        const storedRegNo = await AsyncStorage.getItem("savedRegNo");
+        const storedName  = await AsyncStorage.getItem("savedName");
+        const isPinSet    = await AsyncStorage.getItem("isPinSet");
+        const savedToken  = await tokenStorage.get();
 
-        // Validate token by fetching user
-        const user = await authApi.me(savedToken);
-        const regs = await authApi.registrations(savedToken);
+        if (savedToken) {
+          try {
+            const user = await authApi.me(savedToken);
+            const regs = await authApi.registrations(savedToken);
 
-        setToken(savedToken);
-        setCurrentUser(mapUser(user));
-        setRegistrations(regs || []);
+            setToken(savedToken);
+            setCurrentUser(mapUser(user));
+            setRegistrations(regs || []);
 
-        // Restore active registration from AsyncStorage
-        const savedRegJson = await AsyncStorage.getItem("activeReg");
-        let savedReg = null;
-        if (savedRegJson) {
-          savedReg = JSON.parse(savedRegJson);
-          setActiveReg(savedReg);
-        }
+            const savedRegJson = await AsyncStorage.getItem("activeReg");
+            let savedReg = null;
+            if (savedRegJson) {
+              savedReg = JSON.parse(savedRegJson);
+              setActiveReg(savedReg);
+            }
 
-        // Load settings — pass regNo so we load the correct per-registration image cache
-        await loadSettings(savedToken, savedReg?.regNo);
+            await loadSettings(savedToken, savedReg?.regNo);
+            await loadAppData(savedToken);
 
-        // Guaranteed fallback: if the API returned no profileImage, use AsyncStorage cache
-        const cachedImage = await AsyncStorage.getItem("profileImage");
-        if (cachedImage) {
-          setCurrentUser((prev) => prev ? { ...prev, image: prev.image || cachedImage } : prev);
+            const cachedImage = await AsyncStorage.getItem("profileImage");
+            if (cachedImage) {
+              setCurrentUser((prev) => prev ? { ...prev, image: prev.image || cachedImage } : prev);
+            }
+
+            // ── KEY CHANGE: even with a valid token, if a PIN is set we require
+            // the user to verify with PIN on every cold start.
+            if (storedRegNo && isPinSet === "true") {
+              setSavedRegNo(storedRegNo);
+              setSavedName(storedName || "");
+              setAuthState("pin-required");
+            } else {
+              setAuthState("authenticated");
+            }
+          } catch (_) {
+            // Token expired — fall back to PIN if available
+            await tokenStorage.remove();
+            if (storedRegNo && isPinSet === "true") {
+              setSavedRegNo(storedRegNo);
+              setSavedName(storedName || "");
+              setAuthState("pin-required");
+            } else {
+              setAuthState("unauthenticated");
+            }
+          }
+        } else if (storedRegNo && isPinSet === "true") {
+          setSavedRegNo(storedRegNo);
+          setSavedName(storedName || "");
+          setAuthState("pin-required");
+        } else {
+          setAuthState("unauthenticated");
         }
       } catch (_) {
-        // Token expired or invalid — clear it
-        await tokenStorage.remove();
+        setAuthState("unauthenticated");
       }
     })();
   }, []);
 
+  // ── Settings loader ──────────────────────────────────────────────────────────
+  const loadSettings = async (tok, regNo) => {
+    try {
+      const s = await settingsApi.get(tok);
+      if (!s) return;
 
-// useEffect(() => {
-//   (async () => {
-//     try {
-//       // Show the locally-saved profile image immediately — no network, no delay
-//       const localImage = await getStoredLocalImagePath();
-//       if (localImage) {
-//         setCurrentUser({ image: localImage });
-//       }
+      const themeVal   = s.theme || s.Theme;
+      const lang       = s.language || s.Language;
+      const fSize      = s.fontSize ?? s.FontSize;
+      const remoteImage = s.profileImage || s.ProfileImage || s.imageUrl;
 
-//       const savedToken = await tokenStorage.get();
-//       if (!savedToken) return;
+      if (themeVal) setTheme(themeVal);
+      if (lang) setLanguage(lang);
+      if (fSize !== undefined) setFontSize(Number(fSize));
 
-//       setToken(savedToken);
+      let imageToUse = null;
+      const localExists = regNo ? await getStoredLocalImagePath(regNo) : null;
+      if (localExists) {
+        imageToUse = localExists;
+      } else if (remoteImage) {
+        const downloaded = regNo ? await downloadProfileImageViaBackend(tok, regNo) : null;
+        imageToUse = downloaded || remoteImage.split('?')[0];
+      }
 
-//       const user = await authApi.me(savedToken);
-//       const regs = await authApi.registrations(savedToken);
-//       setRegistrations(regs || []);
-
-//       const mapped = mapUser(user);
-//       setCurrentUser(prev => ({
-//         ...mapped,
-//         // Keep the local file path — it's what the user sees instantly
-//         image: localImage || prev?.image || mapped.image,
-//       }));
-
-//       const savedRegJson = await AsyncStorage.getItem("activeReg");
-//       if (savedRegJson) setActiveReg(JSON.parse(savedRegJson));
-
-//       await loadSettings(savedToken);
-
-//     } catch (err) {
-//       console.log("Startup Error:", err);
-//       await tokenStorage.remove();
-//       setToken(null);       // clear stale token from React state
-//       setCurrentUser(null); // clear stale user so screens don't show wrong data
-//     }
-//   })();
-// }, []);
-
-  // Load settings and apply them
-const loadSettings = async (tok, regNo) => {
-  try {
-    const s = await settingsApi.get(tok);
-    if (!s) return;
-
-    const theme = s.theme || s.Theme;
-    const lang = s.language || s.Language;
-    const fSize = s.fontSize ?? s.FontSize;
-    const remoteImage = s.profileImage || s.ProfileImage || s.imageUrl;
-
-    if (theme) setTheme(theme);
-    if (lang) setLanguage(lang);
-    if (fSize !== undefined) setFontSize(Number(fSize));
-
-    // Image resolution priority (per-registration):
-    // 1. Local file on device for this regNo (instant, works offline)
-    // 2. Download via backend proxy (authenticated — works regardless of Supabase bucket visibility)
-    // 3. Fall back to the remote Supabase URL directly (last resort)
-    let imageToUse = null;
-
-    const localExists = regNo ? await getStoredLocalImagePath(regNo) : null;
-    if (localExists) {
-      imageToUse = localExists;
-    } else if (remoteImage) {
-      // No local file for this registration — download via the backend
-      const downloaded = regNo ? await downloadProfileImageViaBackend(tok, regNo) : null;
-      imageToUse = downloaded || remoteImage.split('?')[0];
+      setCurrentUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          name:          s.name          || s.Name          || prev.name,
+          address:       s.address       || s.Address       || prev.address,
+          phone:         s.phone         || s.Phone         || prev.phone,
+          phone2:        s.phone2        || s.Phone2        || prev.phone2  || "",
+          phone3:        s.phone3        || s.Phone3        || prev.phone3  || "",
+          bankName:      s.bankName      || s.BankName      || prev.bankName,
+          accountNumber: s.accountNumber || s.AccountNumber || prev.accountNumber,
+          image: imageToUse !== null ? imageToUse : prev.image,
+        };
+      });
+    } catch (err) {
+      console.error("[loadSettings] error:", err);
     }
+  };
 
-    setCurrentUser((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        name: s.name || s.Name || prev.name,
-        address: s.address || s.Address || prev.address,
-        phone: s.phone || s.Phone || prev.phone,
-        phone2: s.phone2 || s.Phone2 || prev.phone2 || "",
-        phone3: s.phone3 || s.Phone3 || prev.phone3 || "",
-        bankName: s.bankName || s.BankName || prev.bankName,
-        accountNumber: s.accountNumber || s.AccountNumber || prev.accountNumber,
-        image: imageToUse !== null ? imageToUse : prev.image,
-      };
-    });
-  } catch (err) {
-    console.error("[loadSettings] error:", err);
-  }
-};
-
-  // Load all app data after a registration is selected
+  // ── App data loader ──────────────────────────────────────────────────────────
   const loadAppData = useCallback(async (tok) => {
     if (!tok) return;
     await Promise.allSettled([
@@ -320,7 +298,6 @@ const loadSettings = async (tok, regNo) => {
   const loadSpecialNews = async (tok) => {
     try {
       const data = await newsApi.activePopup(tok);
-      // Backend returns a single NewsDto object (or null), not an array
       if (!data) {
         setSpecialNews([]);
       } else if (Array.isArray(data)) {
@@ -334,7 +311,6 @@ const loadSettings = async (tok, regNo) => {
   const loadTodayLeaf = async (tok) => {
     try {
       const data = await leafApi.today(tok);
-      // Backend returns TodayLeafDto: { normalNet, superNet, hasSuper, bagCount }
       const normalNet = data?.normalNet ?? 0;
       const superNet  = data?.superNet  ?? 0;
       const hasSuper  = data?.hasSuper  ?? false;
@@ -377,7 +353,11 @@ const loadSettings = async (tok, regNo) => {
 
   // ── Auth functions ───────────────────────────────────────────────────────────
 
-  // Returns { user, registrations } on success, throws on error
+  /**
+   * Password login. After success the caller should always navigate to
+   * /(auth)/pin-setup so the user sets (or re-confirms) their PIN.
+   * Returns { user, registrations, token, hasPinSet } on success.
+   */
   const signIn = async (username, password) => {
     const result = await authApi.login(username, password);
     if (!result?.token) return null;
@@ -393,27 +373,95 @@ const loadSettings = async (tok, regNo) => {
     const mappedUser = mapUser(user);
     setCurrentUser(mappedUser);
     setRegistrations(Array.isArray(regs) ? regs : []);
-    await loadSettings(result.token);
+    await loadSettings(result.token, result.regNo ?? username);
 
-    return { user: mappedUser, registrations: Array.isArray(regs) ? regs : [] };
+    // Persist identity for PIN screen
+    const regNoStr = result.regNo ?? username;
+    const nameStr  = result.name  ?? mappedUser.name ?? "";
+    await AsyncStorage.setItem("savedRegNo", regNoStr);
+    await AsyncStorage.setItem("savedName",  nameStr);
+    setSavedRegNo(regNoStr);
+    setSavedName(nameStr);
+
+    // Do NOT set authState to "authenticated" here — the PIN setup/entry
+    // screen will do that once the PIN is confirmed.
+
+    return {
+      user:          mappedUser,
+      registrations: Array.isArray(regs) ? regs : [],
+      token:         result.token,
+      hasPinSet:     result.hasPinSet ?? false,
+    };
   };
 
-  // Call after registration is chosen — loads settings (including correct profile image) and all app data
-  const login = async (reg) => {
+  /**
+   * Save PIN for the currently logged-in user and mark it as set.
+   */
+  const setupPin = async (pin) => {
+    await authApi.setupPin(tokenRef.current, pin);
+    await AsyncStorage.setItem("isPinSet", "true");
+  };
+
+  /**
+   * PIN login. Verifies PIN server-side, refreshes token, returns
+   * { user, registrations, token } on success.
+   */
+  const pinLogin = async (regNo, pin) => {
+    const result = await authApi.pinLogin(regNo, pin);
+    if (!result?.token) return null;
+
+    await tokenStorage.set(result.token);
+    setToken(result.token);
+
+    const [user, regs] = await Promise.all([
+      authApi.me(result.token),
+      authApi.registrations(result.token),
+    ]);
+
+    const mappedUser = mapUser(user);
+    setCurrentUser(mappedUser);
+    setRegistrations(Array.isArray(regs) ? regs : []);
+
+    return {
+      user:          mappedUser,
+      registrations: Array.isArray(regs) ? regs : [],
+      token:         result.token,
+    };
+  };
+
+  /**
+   * Called after a registration is chosen (or when there is only one).
+   * Loads settings + all app data then sets authState → "authenticated".
+   */
+  const login = async (reg, tok) => {
+    const activeTok = tok || tokenRef.current;
     setActiveReg(reg);
     setNewsShown(false);
-    // Clear the image immediately so the previous registration's photo doesn't show
     setCurrentUser((prev) => prev ? { ...prev, image: null } : prev);
     await AsyncStorage.setItem("activeReg", JSON.stringify(reg));
-    await loadSettings(tokenRef.current, reg?.regNo);
-    await loadAppData(tokenRef.current);
+    await loadSettings(activeTok, reg?.regNo);
+    await loadAppData(activeTok);
+    setAuthState("authenticated");
+  };
+
+  /**
+   * Reset PIN: clears isPinSet flag and returns to unauthenticated so the
+   * user has to go through password login → pin-setup again.
+   */
+  const resetPin = async () => {
+    await AsyncStorage.removeItem("isPinSet");
+    await tokenStorage.remove();
+    setToken(null);
+    setCurrentUser(null);
+    setActiveReg(null);
+    setRegistrations([]);
+    setAuthState("unauthenticated");
   };
 
   const logout = async () => {
     await tokenStorage.remove();
     await AsyncStorage.removeItem("activeReg");
     await AsyncStorage.removeItem("profileImage");
-    // Delete per-registration local profile images so the next user's images don't bleed through
     try {
       const regsToClean = registrations.length > 0 ? registrations : (activeReg ? [activeReg] : []);
       for (const reg of regsToClean) {
@@ -423,12 +471,12 @@ const loadSettings = async (tok, regNo) => {
         await AsyncStorage.removeItem(key);
       }
     } catch (_) {}
-    // Legacy cleanup for the old shared key
     try {
       const oldPath = await AsyncStorage.getItem(PROFILE_IMAGE_PATH_KEY);
       if (oldPath) FileSystem.deleteAsync(oldPath, { idempotent: true }).catch(() => {});
     } catch (_) {}
     await AsyncStorage.removeItem(PROFILE_IMAGE_PATH_KEY);
+
     setToken(null);
     setCurrentUser(null);
     setActiveReg(null);
@@ -442,6 +490,14 @@ const loadSettings = async (tok, regNo) => {
     setItemRequests([]);
     setSpecialNews([]);
     setNewsShown(false);
+
+    // Keep savedRegNo / savedName / isPinSet — user can re-enter PIN to get back in
+    const isPinSet = await AsyncStorage.getItem("isPinSet");
+    if (isPinSet === "true") {
+      setAuthState("pin-required");
+    } else {
+      setAuthState("unauthenticated");
+    }
   };
 
   const updateProfile = async (data) => {
@@ -449,15 +505,15 @@ const loadSettings = async (tok, regNo) => {
       if (!prev) return prev;
       return {
         ...prev,
-        name: data.name ?? prev.name,
-        address: data.address ?? prev.address,
-        phone: data.phone ?? prev.phone,
-        phone2: data.phone2 ?? prev.phone2 ?? "",
-        phone3: data.phone3 ?? prev.phone3 ?? "",
-        bankName: data.bankName ?? prev.bankName,
+        name:          data.name          ?? prev.name,
+        address:       data.address       ?? prev.address,
+        phone:         data.phone         ?? prev.phone,
+        phone2:        data.phone2        ?? prev.phone2 ?? "",
+        phone3:        data.phone3        ?? prev.phone3 ?? "",
+        bankName:      data.bankName      ?? prev.bankName,
         accountNumber: data.accountNumber ?? prev.accountNumber,
         accountHolder: data.accountHolder ?? prev.accountHolder,
-        branch: data.branch ?? prev.branch,
+        branch:        data.branch        ?? prev.branch,
       };
     });
 
@@ -468,14 +524,10 @@ const loadSettings = async (tok, regNo) => {
         const result = await settingsApi.updateProfileImage(tokenRef.current, data.imageAsset);
         const remoteUrl = result?.imageUrl || result?.profileImage || result?.url || result?.imagePath;
         if (remoteUrl) {
-          // 1. Show the picked local file immediately (zero-delay feedback)
           setCurrentUser((prev) => prev ? { ...prev, image: data.imageAsset.uri } : prev);
 
           const regNo = activeRegRef.current?.regNo;
-          // 2. Try to copy the local picked file to persistent storage (fastest, no network)
           let localPath = await copyPickedImageLocally(data.imageAsset.uri, regNo);
-
-          // 3. If copy failed, download from backend proxy (reliable, auth-based)
           if (!localPath) {
             localPath = await downloadProfileImageViaBackend(tokenRef.current, regNo);
           }
@@ -494,21 +546,21 @@ const loadSettings = async (tok, regNo) => {
 
     if (data.address !== undefined || data.phone !== undefined || data.name !== undefined || data.phone2 !== undefined || data.phone3 !== undefined) {
       await settingsApi.updateSettings(tokenRef.current, {
-        name: data.name,
+        name:    data.name,
         address: data.address,
-        phone: data.phone,
-        phone2: data.phone2,
-        phone3: data.phone3,
+        phone:   data.phone,
+        phone2:  data.phone2,
+        phone3:  data.phone3,
       });
     }
 
     if (data.bankName !== undefined || data.accountNumber !== undefined ||
         data.accountHolder !== undefined || data.branch !== undefined) {
       await settingsApi.updateAccountDetails(tokenRef.current, {
-        bankName: data.bankName,
+        bankName:      data.bankName,
         accountNumber: data.accountNumber,
         accountHolder: data.accountHolder,
-        branch: data.branch,
+        branch:        data.branch,
       });
     }
 
@@ -516,18 +568,14 @@ const loadSettings = async (tok, regNo) => {
   };
 
   // ── Leaf data ────────────────────────────────────────────────────────────────
-
-
   const getLeafData = (monthKey) => leafCache[monthKey];
 
-  
   const fetchLeafData = async (monthKey) => {
     const tok = tokenRef.current;
     if (!tok) return;
     try {
       const [year, month] = monthKey.split("-").map(Number);
       const data = await leafApi.monthly(tok, year, month);
-      
       setLeafCache((prev) => ({ ...prev, [monthKey]: data ?? null }));
     } catch (_) {}
   };
@@ -540,80 +588,59 @@ const loadSettings = async (tok, regNo) => {
   // ── Notification actions ─────────────────────────────────────────────────────
   const markNotificationRead = async (id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    try {
-      await notificationApi.markRead(tokenRef.current, id);
-    } catch (_) {}
+    try { await notificationApi.markRead(tokenRef.current, id); } catch (_) {}
   };
 
   const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    try {
-      await notificationApi.markAllRead(tokenRef.current);
-    } catch (_) {}
+    try { await notificationApi.markAllRead(tokenRef.current); } catch (_) {}
   };
 
   const removeNotification = async (id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    try {
-      await notificationApi.dismiss(tokenRef.current, id);
-    } catch (_) {}
+    try { await notificationApi.dismiss(tokenRef.current, id); } catch (_) {}
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // ── News actions ─────────────────────────────────────────────────────────────
   const dismissNews = async (id) => {
-    // Optimistically remove from local state so it won't re-show this session
     setSpecialNews((prev) => prev.filter((n) => n.id !== String(id)));
-    try {
-      await newsApi.dismiss(tokenRef.current, id);
-    } catch (_) {}
+    try { await newsApi.dismiss(tokenRef.current, id); } catch (_) {}
   };
 
   // ── Request actions ──────────────────────────────────────────────────────────
   const addCashRequest = async (requestData) => {
-    try {
-      const result = await cashApi.create(tokenRef.current, {
-        requestType: requestData.type,
-        month: requestData.month,
-        amount: Number(requestData.amount),
-      });
-      const mapped = mapCashRequest(result);
-      setCashRequests((prev) => [mapped, ...prev]);
-      return mapped;
-    } catch (err) {
-      throw err;
-    }
+    const result = await cashApi.create(tokenRef.current, {
+      requestType: requestData.type,
+      month:       requestData.month,
+      amount:      Number(requestData.amount),
+    });
+    const mapped = mapCashRequest(result);
+    setCashRequests((prev) => [mapped, ...prev]);
+    return mapped;
   };
 
   const addFertilizerRequest = async (requestData) => {
-    try {
-      const result = await fertilizerApi.create(tokenRef.current, {
-        fertilizerType: requestData.fertilizerType ?? requestData.fertType,
-        month: requestData.month,
-        quantity: Number(requestData.quantity),
-      });
-      const mapped = mapFertilizerRequest(result);
-      setFertilizerRequests((prev) => [mapped, ...prev]);
-      return mapped;
-    } catch (err) {
-      throw err;
-    }
+    const result = await fertilizerApi.create(tokenRef.current, {
+      fertilizerType: requestData.fertilizerType ?? requestData.fertType,
+      month:          requestData.month,
+      quantity:       Number(requestData.quantity),
+    });
+    const mapped = mapFertilizerRequest(result);
+    setFertilizerRequests((prev) => [mapped, ...prev]);
+    return mapped;
   };
 
   const addItemRequest = async (requestData) => {
-    try {
-      const result = await itemApi.create(tokenRef.current, {
-        itemType: requestData.itemType,
-        month: requestData.month,
-        quantity: Number(requestData.quantity),
-      });
-      const mapped = mapItemRequest(result);
-      setItemRequests((prev) => [mapped, ...prev]);
-      return mapped;
-    } catch (err) {
-      throw err;
-    }
+    const result = await itemApi.create(tokenRef.current, {
+      itemType: requestData.itemType,
+      month:    requestData.month,
+      quantity: Number(requestData.quantity),
+    });
+    const mapped = mapItemRequest(result);
+    setItemRequests((prev) => [mapped, ...prev]);
+    return mapped;
   };
 
   // ── Settings actions ─────────────────────────────────────────────────────────
@@ -642,8 +669,9 @@ const loadSettings = async (tok, regNo) => {
       language, updateLanguage,
       fontSize, updateFontSize,
       // Auth
+      authState, savedRegNo, savedName,
       currentUser, activeReg, registrations,
-      signIn, login, logout, updateProfile,
+      signIn, login, logout, setupPin, pinLogin, resetPin, updateProfile,
       // Leaf
       getLeafData, fetchLeafData, getTodayLeaf, getTodayLeafData, getSixMonthHistory,
       // Feature flags
@@ -668,72 +696,71 @@ export const useApp = () => {
   return ctx;
 };
 
-// ── Field mappers (backend → frontend shape) ───────────────────────────────────
+// ── Field mappers ──────────────────────────────────────────────────────────────
 
 function mapUser(u) {
   if (!u) return null;
   const img = u.profileImage || u.ProfileImage || u.image || null;
   return {
-    id: String(u.regNo ?? u.id ?? ""),
-    name: u.name ?? u.regName ?? "",
-    username: u.username ?? "",
-    image: img ? img.split('?')[0] : null,
-    address: u.address ?? u.Address ?? "",
-    phone: u.phone ?? u.Phone ?? u.telNo ?? "",
-    phone2: u.phone2 ?? u.Phone2 ?? "",
-    phone3: u.phone3 ?? u.Phone3 ?? "",
-    bankName: u.bankName ?? u.BankName ?? "",
+    id:            String(u.regNo ?? u.id ?? ""),
+    name:          u.name          ?? u.regName ?? "",
+    username:      u.username      ?? "",
+    image:         img ? img.split('?')[0] : null,
+    address:       u.address       ?? u.Address ?? "",
+    phone:         u.phone         ?? u.Phone   ?? u.telNo ?? "",
+    phone2:        u.phone2        ?? u.Phone2  ?? "",
+    phone3:        u.phone3        ?? u.Phone3  ?? "",
+    bankName:      u.bankName      ?? u.BankName      ?? "",
     accountNumber: u.accountNumber ?? u.AccountNumber ?? "",
     accountHolder: u.accountHolder ?? u.AccountHolder ?? "",
-    branch: u.branch ?? u.Branch ?? "",
+    branch:        u.branch        ?? u.Branch        ?? "",
   };
 }
-
 
 function mapCashRequest(r) {
   if (!r) return r;
   return {
-    id: r.id,
-    type: r.requestType ?? r.type ?? "",
-    month: r.month ?? "",
-    amount: Number(r.amount ?? 0),
-    date: r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
-    status: r.status ?? "pending",
-    createdAt: r.createdAt ?? new Date().toISOString(),
-    requestedDate: r.requestDate ?? r.requestedDate ?? "",
-    regNo: r.regNo,
-    remarks: r.remarks ?? "",
+    id:            r.id,
+    type:          r.requestType    ?? r.type   ?? "",
+    month:         r.month          ?? "",
+    amount:        Number(r.amount  ?? 0),
+    date:          r.requestDate    ? r.requestDate.split("T")[0] : (r.date ?? ""),
+    status:        r.status         ?? "pending",
+    createdAt:     r.createdAt      ?? new Date().toISOString(),
+    requestedDate: r.requestDate    ?? r.requestedDate ?? "",
+    regNo:         r.regNo,
+    remarks:       r.remarks        ?? "",
   };
 }
 
 function mapFertilizerRequest(r) {
   if (!r) return r;
   return {
-    id: r.id,
-    month: r.month ?? "",
-    fertType: r.fertilizerType ?? r.fertType ?? "",
-    quantity: Number(r.quantity ?? 0),
-    date: r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
-    status: r.status ?? "pending",
-    createdAt: r.createdAt ?? new Date().toISOString(),
-    requestedDate: r.requestDate ?? r.requestedDate ?? "",
-    regNo: r.regNo,
-    remarks: r.remarks ?? "",
+    id:            r.id,
+    month:         r.month          ?? "",
+    fertType:      r.fertilizerType ?? r.fertType ?? "",
+    quantity:      Number(r.quantity ?? 0),
+    date:          r.requestDate    ? r.requestDate.split("T")[0] : (r.date ?? ""),
+    status:        r.status         ?? "pending",
+    createdAt:     r.createdAt      ?? new Date().toISOString(),
+    requestedDate: r.requestDate    ?? r.requestedDate ?? "",
+    regNo:         r.regNo,
+    remarks:       r.remarks        ?? "",
   };
 }
 
 function mapItemRequest(r) {
   if (!r) return r;
   return {
-    id: r.id,
-    month: r.month ?? "",
-    itemType: r.itemType ?? "",
-    quantity: Number(r.quantity ?? 0),
-    date: r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
-    status: r.status ?? "pending",
-    createdAt: r.createdAt ?? new Date().toISOString(),
+    id:            r.id,
+    month:         r.month     ?? "",
+    itemType:      r.itemType  ?? "",
+    quantity:      Number(r.quantity ?? 0),
+    date:          r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
+    status:        r.status    ?? "pending",
+    createdAt:     r.createdAt ?? new Date().toISOString(),
     requestedDate: r.requestDate ?? r.requestedDate ?? "",
-    regNo: r.regNo,
-    remarks: r.remarks ?? "",
+    regNo:         r.regNo,
+    remarks:       r.remarks   ?? "",
   };
 }

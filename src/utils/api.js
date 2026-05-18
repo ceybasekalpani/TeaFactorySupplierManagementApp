@@ -98,6 +98,12 @@ export const authApi = {
 
   changePassword: (token, currentPassword, newPassword) =>
     request("POST", "/api/auth/change-password", { currentPassword, newPassword }, token),
+
+  setupPin: (token, pin) =>
+    request("POST", "/api/auth/setup-pin", { pin }, token),
+
+  pinLogin: (regNo, pin) =>
+    request("POST", "/api/auth/pin-login", { regNo, pin }),
 };
 
 // ── Leaf API ───────────────────────────────────────────────────────────────────
@@ -209,21 +215,34 @@ export const settingsApi = {
 
   updateProfileImage: (token, asset) => {
     let mimeType = asset.mimeType;
+    
+    // Fallback if mimeType is missing or generic
     if (!mimeType || mimeType === "image") {
       const uriExt = asset.uri?.split(".").pop()?.toLowerCase().split("?")[0];
       if (uriExt === "png") mimeType = "image/png";
       else if (uriExt === "webp") mimeType = "image/webp";
       else mimeType = "image/jpeg";
     }
+    
     const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
-    const formData = new FormData();
-    formData.append("image", {
-      uri: asset.uri,
-      name: asset.fileName || `profile.${ext}`,
-      type: mimeType,
-    });
-    console.log("[upload] SENDING uri:", asset.uri, "type:", mimeType, "size:", asset.fileSize);
-    return uploadFile("PUT", "/api/settings/profile-image", formData, token)
+    const fileName = asset.fileName || `profile.${ext}`;
+
+    // Ensure we actually have the base64 data before sending
+    if (!asset.base64) {
+        return Promise.reject(new Error("Image base64 data is missing. Ensure ImagePicker has base64: true"));
+    }
+
+    // Build the JSON payload to match your UpdateProfileImageBase64Dto
+    const body = {
+      imageBase64: asset.base64,
+      fileName: fileName,
+      mimeType: mimeType
+    };
+
+    console.log("[upload] SENDING to base64 endpoint, filename:", fileName);
+    
+    // Call the correct base64 endpoint using standard JSON request
+    return request("PUT", "/api/settings/profile-image-base64", body, token)
       .then((result) => {
         console.log("[upload] SUCCESS:", JSON.stringify(result));
         return result;

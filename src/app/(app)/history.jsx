@@ -11,7 +11,6 @@ import { Button, Card, ScreenHeader } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
-
 export default function HistoryScreen() {
   const { colors, fs, t } = useTheme();
   const { getSixMonthHistory, currentUser, activeReg } = useApp();
@@ -20,16 +19,14 @@ export default function HistoryScreen() {
   const [downloadLoading, setDownloadLoading] = useState(false);
 
   const history = getSixMonthHistory();
-
   const historyArray = Array.isArray(history) ? history : [];
   const maxNet = Math.max(...historyArray.map((h) => h?.totalNet || 0), 1);
 
   const handleDownloadPDF = async () => {
     try {
       setDownloadLoading(true);
-
       if (!historyArray || historyArray.length === 0) {
-        Alert.alert("No Data", "No history available to generate PDF");
+        Alert.alert(t.noData || "No Data", t.noHistoryAvailable || "No history available to generate PDF");
         setDownloadLoading(false);
         return;
       }
@@ -76,44 +73,34 @@ export default function HistoryScreen() {
               }
             </style>
           </head>
-
           <body>
-
-            <h1>Annual Leaf Collection Statement</h1>
-
-            <p><b>Name:</b> ${currentUser?.name ?? "-"}</p>
-            <p><b>Registration No:</b> ${activeReg?.regNo ?? "-"}</p>
-
-            <h3>6 Month Summary</h3>
-            <p>Total Net KG: ${totalNet}</p>
-            <p>Total Collection Days: ${totalDays}</p>
-
+            <h1>${t.annualLeafCollectionStatement || "Annual Leaf Collection Statement"}</h1>
+            <p><b>${t.name || "Name"}:</b> ${currentUser?.name ?? "-"}</p>
+            <p><b>${t.registrationNo || "Registration No"}:</b> ${activeReg?.regNo ?? "-"}</p>
+            <h3>${t.sixMonthSummary || "6 Month Summary"}</h3>
+            <p><b>${t.totalNetKG || "Total Net KG"}:</b> ${totalNet}</p>
+            <p><b>${t.totalCollectionDays || "Total Collection Days"}:</b> ${totalDays}</p>
             <table>
               <thead>
                 <tr>
-                  <th>Month</th>
-                  <th>Gross</th>
-                  <th>Net</th>
-                  <th>Days</th>
+                  <th>${t.month || "Month"}</th>
+                  <th>${t.gross || "Gross"}</th>
+                  <th>${t.net || "Net"}</th>
+                  <th>${t.days || "Days"}</th>
                 </tr>
               </thead>
-
               <tbody>
                 ${tableRows}
               </tbody>
             </table>
-
             <p style="margin-top:30px">
               Generated on ${new Date().toLocaleDateString()}
             </p>
-
           </body>
         </html>
       `;
 
-      const { uri } = await Print.printToFileAsync({
-        html: html,
-      });
+      const { uri } = await Print.printToFileAsync({ html: html });
 
       const fileName = `LeafStatement_${activeReg?.regNo || "supplier"}_${Date.now()}.pdf`;
       const fileUri = FileSystem.documentDirectory + fileName;
@@ -124,19 +111,16 @@ export default function HistoryScreen() {
       });
 
       setDownloadLoading(false);
-
       const canShare = await Sharing.isAvailableAsync();
-
       if (canShare) {
         await Sharing.shareAsync(fileUri);
       } else {
-        Alert.alert("PDF Saved", `Saved to: ${fileUri}`);
+        Alert.alert(t.pdfSaved || "PDF Saved", `${t.savedTo || "Saved to"}: ${fileUri}`);
       }
-
     } catch (error) {
       console.log(error);
       setDownloadLoading(false);
-      Alert.alert("Error", "Failed to generate PDF");
+      Alert.alert("Error", t.failedToGeneratePDF || "Failed to generate PDF");
     }
   };
 
@@ -157,7 +141,7 @@ export default function HistoryScreen() {
               <Text style={{ fontSize: 20 }}>📊</Text>
             </View>
             <View>
-              <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text }}>6 Month Overview</Text>
+              <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text }}>{t.sixMonthOverview || "6 Month Overview"}</Text>
               <Text style={{ fontSize: fs.xs, color: colors.textSecondary }}>{currentUser?.name} · {activeReg?.regNo}</Text>
             </View>
           </View>
@@ -167,20 +151,24 @@ export default function HistoryScreen() {
               <Text style={{ color: colors.primary, fontSize: fs.xl, fontWeight: "800" }}>
                 {historyArray.reduce((s, h) => s + (h?.totalNet || 0), 0)}
               </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center", marginTop: 2 }}>Total kg (6 months)</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center", marginTop: 2 }}>
+                {t.totalKgSixMonths || "Total kg (6 months)"}
+              </Text>
             </View>
             <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, alignItems: "center" }}>
               <Text style={{ color: colors.accent, fontSize: fs.xl, fontWeight: "800" }}>
                 {historyArray.reduce((s, h) => s + (h?.days || 0), 0)}
               </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center", marginTop: 2 }}>Collection Days</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center", marginTop: 2 }}>
+                {t.collectionDays || "Collection Days"}
+              </Text>
             </View>
           </View>
         </Card>
 
         {/* Bar chart */}
         <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
-          Monthly Leaf Collection
+          {t.monthlyLeafCollection || "Monthly Leaf Collection"}
         </Text>
 
         <Card style={{ marginBottom: 16 }}>
@@ -191,7 +179,6 @@ export default function HistoryScreen() {
                 const barHeight = maxNet > 0 ? (totalNet / maxNet) * 130 : 0;
                 const monthLabel = month?.label || `Month ${index + 1}`;
                 const shortMonth = monthLabel.split(" ")[0];
-
                 return (
                   <View key={month?.key || index} style={{ flex: 1, alignItems: "center" }}>
                     <Text style={{ color: colors.primary, fontSize: fs.xs, fontWeight: "700", marginBottom: 4 }}>
@@ -212,7 +199,7 @@ export default function HistoryScreen() {
               })
             ) : (
               <View style={{ flex: 1, alignItems: "center", padding: 20 }}>
-                <Text style={{ color: colors.textSecondary }}>No monthly data available</Text>
+                <Text style={{ color: colors.textSecondary }}>{t.noData}</Text>
               </View>
             )}
           </View>
@@ -220,7 +207,7 @@ export default function HistoryScreen() {
 
         {/* Monthly table */}
         <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
-          Monthly Summary
+          {t.monthlySummary || "Monthly Summary"}
         </Text>
 
         <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
@@ -233,10 +220,10 @@ export default function HistoryScreen() {
             borderBottomWidth: 2,
             borderBottomColor: colors.primary,
           }}>
-            <Text style={{ flex: 2, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>MONTH</Text>
-            <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>GROSS (kg)</Text>
-            <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>NET (kg)</Text>
-            <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>DAYS</Text>
+            <Text style={{ flex: 2, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>{t.month || "MONTH"}</Text>
+            <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>{t.grossKg || "GROSS (kg)"}</Text>
+            <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>{t.netKg || "NET (kg)"}</Text>
+            <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right" }}>{t.days || "DAYS"}</Text>
           </View>
 
           {/* Table Rows */}
@@ -262,7 +249,7 @@ export default function HistoryScreen() {
             ))
           ) : (
             <View style={{ padding: 20, alignItems: "center" }}>
-              <Text style={{ color: colors.textSecondary }}>No monthly data available</Text>
+              <Text style={{ color: colors.textSecondary }}>{t.noData}</Text>
             </View>
           )}
 
@@ -278,10 +265,10 @@ export default function HistoryScreen() {
             borderTopColor: colors.border,
           }}>
             <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
-              Total Days: {historyArray.reduce((s, m) => s + (m?.days ?? 0), 0)}
+              {t.totalDays}: {historyArray.reduce((s, m) => s + (m?.days ?? 0), 0)}
             </Text>
             <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
-              Total Net: {historyArray.reduce((s, m) => s + (m?.totalNet ?? 0), 0)} kg
+              {t.totalNet}: {historyArray.reduce((s, m) => s + (m?.totalNet ?? 0), 0)} kg
             </Text>
           </View>
         </Card>
@@ -291,8 +278,8 @@ export default function HistoryScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <Ionicons name="document-text" size={fs.xl} color={colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontSize: fs.sm, fontWeight: "700" }}>Annual Account Statement</Text>
-              <Text style={{ color: colors.textSecondary, fontSize: fs.xs }}>Download your full year statement as PDF</Text>
+              <Text style={{ color: colors.text, fontSize: fs.sm, fontWeight: "700" }}>{t.annualAccountStatement || "Annual Account Statement"}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fs.xs }}>{t.downloadFullYearStatement || "Download your full year statement as PDF"}</Text>
             </View>
           </View>
           <Button
