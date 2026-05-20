@@ -254,23 +254,23 @@ export default function HistoryScreen() {
           )}
 
           {/* Summary Footer */}
-          <View style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingVertical: 14,
-            paddingHorizontal: 14,
-            backgroundColor: colors.surface,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-          }}>
-            <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
-              {t.totalDays}: {historyArray.reduce((s, m) => s + (m?.days ?? 0), 0)}
-            </Text>
-            <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
-              {t.totalNet}: {historyArray.reduce((s, m) => s + (m?.totalNet ?? 0), 0)} kg
-            </Text>
-          </View>
+<View style={{
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingVertical: 14,
+  paddingHorizontal: 14,
+  backgroundColor: colors.surface,
+  borderTopWidth: 1,
+  borderTopColor: colors.border,
+}}>
+  <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
+     {t.totalDays || "Total Days"}: {historyArray.reduce((s, m) => s + (m?.days ?? 0), 0)}
+  </Text>
+  <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
+    {t.totalNet || "Total Net"}: {historyArray.reduce((s, m) => s + (m?.totalNet ?? 0), 0)} kg
+  </Text>
+</View>
         </Card>
 
         {/* Download Statement */}

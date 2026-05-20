@@ -16,7 +16,6 @@ import {
 
 const AppContext = createContext(null);
 
-
 const PROFILE_IMAGE_PATH_KEY = "profileImageLocalPath";
 const PROFILE_IMAGE_DIR = (FileSystem.documentDirectory ?? "") + "profiles/";
 
@@ -90,24 +89,19 @@ async function downloadProfileImageViaBackend(token, regNo) {
   }
 }
 
-// ── Provider ───────────────────────────────────────────────────────────────────
 export function AppProvider({ children }) {
-  // ── Auth / session ───────────────────────────────────────────────────────────
   const [token, setToken] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeReg, setActiveReg] = useState(null);
   const [registrations, setRegistrations] = useState([]);
-  // "loading" | "authenticated" | "pin-required" | "unauthenticated"
   const [authState, setAuthState] = useState("loading");
   const [savedRegNo, setSavedRegNo] = useState(null);
   const [savedName, setSavedName] = useState(null);
 
-  // ── Settings / theme ─────────────────────────────────────────────────────────
   const [theme, setTheme] = useState("light");
   const [language, setLanguage] = useState("english");
   const [fontSize, setFontSize] = useState(50);
 
-  // ── App data ─────────────────────────────────────────────────────────────────
   const [leafCache, setLeafCache] = useState({});
   const [sixMonthHistory, setSixMonthHistory] = useState([]);
   const [todayLeafTotal, setTodayLeafTotal] = useState(0);
@@ -125,60 +119,12 @@ export function AppProvider({ children }) {
   const activeRegRef = useRef(null);
   activeRegRef.current = activeReg;
 
-  // ── Restore session on startup ───────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
         const storedRegNo = await AsyncStorage.getItem("savedRegNo");
         const storedName  = await AsyncStorage.getItem("savedName");
-        const isPinSet    = await AsyncStorage.getItem("isPinSet");
-        const savedToken  = await tokenStorage.get();
-
-        if (savedToken) {
-          try {
-            const user = await authApi.me(savedToken);
-            const regs = await authApi.registrations(savedToken);
-
-            setToken(savedToken);
-            setCurrentUser(mapUser(user));
-            setRegistrations(regs || []);
-
-            const savedRegJson = await AsyncStorage.getItem("activeReg");
-            let savedReg = null;
-            if (savedRegJson) {
-              savedReg = JSON.parse(savedRegJson);
-              setActiveReg(savedReg);
-            }
-
-            await loadSettings(savedToken, savedReg?.regNo);
-            await loadAppData(savedToken);
-
-            const cachedImage = await AsyncStorage.getItem("profileImage");
-            if (cachedImage) {
-              setCurrentUser((prev) => prev ? { ...prev, image: prev.image || cachedImage } : prev);
-            }
-
-            // ── KEY CHANGE: even with a valid token, if a PIN is set we require
-            // the user to verify with PIN on every cold start.
-            if (storedRegNo && isPinSet === "true") {
-              setSavedRegNo(storedRegNo);
-              setSavedName(storedName || "");
-              setAuthState("pin-required");
-            } else {
-              setAuthState("authenticated");
-            }
-          } catch (_) {
-            // Token expired — fall back to PIN if available
-            await tokenStorage.remove();
-            if (storedRegNo && isPinSet === "true") {
-              setSavedRegNo(storedRegNo);
-              setSavedName(storedName || "");
-              setAuthState("pin-required");
-            } else {
-              setAuthState("unauthenticated");
-            }
-          }
-        } else if (storedRegNo && isPinSet === "true") {
+        if (storedRegNo) {
           setSavedRegNo(storedRegNo);
           setSavedName(storedName || "");
           setAuthState("pin-required");
@@ -191,15 +137,14 @@ export function AppProvider({ children }) {
     })();
   }, []);
 
-  // ── Settings loader ──────────────────────────────────────────────────────────
   const loadSettings = async (tok, regNo) => {
     try {
       const s = await settingsApi.get(tok);
       if (!s) return;
 
-      const themeVal   = s.theme || s.Theme;
-      const lang       = s.language || s.Language;
-      const fSize      = s.fontSize ?? s.FontSize;
+      const themeVal    = s.theme    || s.Theme;
+      const lang        = s.language || s.Language;
+      const fSize       = s.fontSize ?? s.FontSize;
       const remoteImage = s.profileImage || s.ProfileImage || s.imageUrl;
 
       if (themeVal) setTheme(themeVal);
@@ -234,7 +179,6 @@ export function AppProvider({ children }) {
     }
   };
 
-  // ── App data loader ──────────────────────────────────────────────────────────
   const loadAppData = useCallback(async (tok) => {
     if (!tok) return;
     await Promise.allSettled([
@@ -249,7 +193,6 @@ export function AppProvider({ children }) {
     ]);
   }, []);
 
-  // ── Data loaders ─────────────────────────────────────────────────────────────
   const loadNotifications = async (tok) => {
     try {
       const data = await notificationApi.list(tok);
@@ -351,13 +294,6 @@ export function AppProvider({ children }) {
     } catch (_) {}
   };
 
-  // ── Auth functions ───────────────────────────────────────────────────────────
-
-  /**
-   * Password login. After success the caller should always navigate to
-   * /(auth)/pin-setup so the user sets (or re-confirms) their PIN.
-   * Returns { user, registrations, token, hasPinSet } on success.
-   */
   const signIn = async (username, password) => {
     const result = await authApi.login(username, password);
     if (!result?.token) return null;
@@ -375,7 +311,6 @@ export function AppProvider({ children }) {
     setRegistrations(Array.isArray(regs) ? regs : []);
     await loadSettings(result.token, result.regNo ?? username);
 
-    // Persist identity for PIN screen
     const regNoStr = result.regNo ?? username;
     const nameStr  = result.name  ?? mappedUser.name ?? "";
     await AsyncStorage.setItem("savedRegNo", regNoStr);
@@ -383,29 +318,22 @@ export function AppProvider({ children }) {
     setSavedRegNo(regNoStr);
     setSavedName(nameStr);
 
-    // Do NOT set authState to "authenticated" here — the PIN setup/entry
-    // screen will do that once the PIN is confirmed.
-
     return {
       user:          mappedUser,
       registrations: Array.isArray(regs) ? regs : [],
       token:         result.token,
-      hasPinSet:     result.hasPinSet ?? false,
+      isCreatePin:   result.isCreatePin ?? false,
     };
   };
 
-  /**
-   * Save PIN for the currently logged-in user and mark it as set.
-   */
   const setupPin = async (pin) => {
     await authApi.setupPin(tokenRef.current, pin);
-    await AsyncStorage.setItem("isPinSet", "true");
   };
 
-  /**
-   * PIN login. Verifies PIN server-side, refreshes token, returns
-   * { user, registrations, token } on success.
-   */
+  const changePin = async (currentPin, newPin) => {
+    return await authApi.changePin(tokenRef.current, currentPin, newPin);
+  };
+
   const pinLogin = async (regNo, pin) => {
     const result = await authApi.pinLogin(regNo, pin);
     if (!result?.token) return null;
@@ -429,10 +357,6 @@ export function AppProvider({ children }) {
     };
   };
 
-  /**
-   * Called after a registration is chosen (or when there is only one).
-   * Loads settings + all app data then sets authState → "authenticated".
-   */
   const login = async (reg, tok) => {
     const activeTok = tok || tokenRef.current;
     setActiveReg(reg);
@@ -444,12 +368,14 @@ export function AppProvider({ children }) {
     setAuthState("authenticated");
   };
 
-  /**
-   * Reset PIN: clears isPinSet flag and returns to unauthenticated so the
-   * user has to go through password login → pin-setup again.
-   */
+  // ── NEW: lock the session without clearing credentials ───────────────────────
+  const lockSession = () => {
+    setAuthState((prev) => (prev === "authenticated" ? "pin-required" : prev));
+  };
+
   const resetPin = async () => {
-    await AsyncStorage.removeItem("isPinSet");
+    await AsyncStorage.removeItem("savedRegNo");
+    await AsyncStorage.removeItem("savedName");
     await tokenStorage.remove();
     setToken(null);
     setCurrentUser(null);
@@ -491,9 +417,8 @@ export function AppProvider({ children }) {
     setSpecialNews([]);
     setNewsShown(false);
 
-    // Keep savedRegNo / savedName / isPinSet — user can re-enter PIN to get back in
-    const isPinSet = await AsyncStorage.getItem("isPinSet");
-    if (isPinSet === "true") {
+    const storedRegNo = await AsyncStorage.getItem("savedRegNo");
+    if (storedRegNo) {
       setAuthState("pin-required");
     } else {
       setAuthState("unauthenticated");
@@ -567,7 +492,6 @@ export function AppProvider({ children }) {
     return uploadedImageUrl;
   };
 
-  // ── Leaf data ────────────────────────────────────────────────────────────────
   const getLeafData = (monthKey) => leafCache[monthKey];
 
   const fetchLeafData = async (monthKey) => {
@@ -585,7 +509,6 @@ export function AppProvider({ children }) {
   const getSixMonthHistory = () => sixMonthHistory;
   const getFeatureFlags = () => featureFlags;
 
-  // ── Notification actions ─────────────────────────────────────────────────────
   const markNotificationRead = async (id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     try { await notificationApi.markRead(tokenRef.current, id); } catch (_) {}
@@ -603,13 +526,11 @@ export function AppProvider({ children }) {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // ── News actions ─────────────────────────────────────────────────────────────
   const dismissNews = async (id) => {
     setSpecialNews((prev) => prev.filter((n) => n.id !== String(id)));
     try { await newsApi.dismiss(tokenRef.current, id); } catch (_) {}
   };
 
-  // ── Request actions ──────────────────────────────────────────────────────────
   const addCashRequest = async (requestData) => {
     const result = await cashApi.create(tokenRef.current, {
       requestType: requestData.type,
@@ -643,7 +564,6 @@ export function AppProvider({ children }) {
     return mapped;
   };
 
-  // ── Settings actions ─────────────────────────────────────────────────────────
   const updateTheme = async (t) => {
     setTheme(t);
     try { await settingsApi.updateTheme(tokenRef.current, t); } catch (_) {}
@@ -659,30 +579,23 @@ export function AppProvider({ children }) {
     try { await settingsApi.updateFontSize(tokenRef.current, f); } catch (_) {}
   };
 
-  // ── Context value ────────────────────────────────────────────────────────────
   const isDark = theme === "dark";
 
   return (
     <AppContext.Provider value={{
-      // Theme
       theme, isDark, updateTheme,
       language, updateLanguage,
       fontSize, updateFontSize,
-      // Auth
       authState, savedRegNo, savedName,
       currentUser, activeReg, registrations,
-      signIn, login, logout, setupPin, pinLogin, resetPin, updateProfile,
-      // Leaf
+      signIn, login, logout, setupPin, changePin, pinLogin, resetPin, updateProfile,
+      lockSession, // ── NEW
       getLeafData, fetchLeafData, getTodayLeaf, getTodayLeafData, getSixMonthHistory,
-      // Feature flags
       getFeatureFlags,
-      // Notifications
       notifications, unreadCount, markNotificationRead, markAllRead, removeNotification,
-      // Requests
       cashRequests, addCashRequest,
       fertilizerRequests, addFertilizerRequest,
       itemRequests, addItemRequest,
-      // News
       specialNews, newsShown, setNewsShown, dismissNews,
     }}>
       {children}
@@ -695,8 +608,6 @@ export const useApp = () => {
   if (!ctx) throw new Error("useApp must be used inside AppProvider");
   return ctx;
 };
-
-// ── Field mappers ──────────────────────────────────────────────────────────────
 
 function mapUser(u) {
   if (!u) return null;

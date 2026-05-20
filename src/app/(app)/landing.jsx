@@ -50,7 +50,7 @@ function Field({ icon, placeholder, value, onChangeText, secureTextEntry, right,
 
 export default function LandingScreen() {
   const { colors, fs, t } = useTheme();
-  const { signIn } = useApp();
+  const { signIn, login } = useApp(); // Implemented login fetch here
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -80,9 +80,22 @@ export default function LandingScreen() {
         setError("No active registration found for this account. Please contact the factory.");
         return;
       }
-      // Always go to PIN setup after password login.
-      // pin-setup will handle both first-time setup and re-confirmation.
-      router.replace("/(auth)/pin-setup");
+      
+      // If the isCreatePin boolean returned true from the API login response
+      if (result.isCreatePin) {
+        if (result.registrations.length > 1) {
+          router.replace("/(auth)/select-account");
+        } else if (result.registrations.length === 1) {
+          await login(result.registrations[0], result.token); 
+          router.replace("/(app)/home");
+        } else {
+          router.replace("/(app)/home");
+        }
+      } else {
+        // Fallback flag directs them to standard PIN Setup View
+        router.replace("/(auth)/pin-setup");
+      }
+
     } catch (err) {
       setError(err.message || "Login failed. Please check your credentials and try again.");
     } finally {

@@ -1,7 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { PanResponder, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, Modal, PanResponder, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import SidebarMenu from "../../components/SidebarMenu";
+import { Card, ScreenHeader } from "../../components/ui";
+import { useApp } from "../../context/AppContext";
+import { useTheme } from "../../hooks/useTheme";
 
 const SLIDER_MIN = 10;
 const SLIDER_MAX = 100;
@@ -25,7 +30,6 @@ function FontSizeSlider({ value, onChange, colors }) {
       const ratio = (e.nativeEvent.locationX - THUMB_SIZE / 2) / (trackWidth - THUMB_SIZE);
       onChange(clamp(SLIDER_MIN + ratio * (SLIDER_MAX - SLIDER_MIN)));
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [trackWidth]);
 
   const thumbLeft = trackWidth > 0
@@ -64,12 +68,6 @@ function FontSizeSlider({ value, onChange, colors }) {
     </View>
   );
 }
-
-import { SafeAreaView } from "react-native-safe-area-context";
-import SidebarMenu from "../../components/SidebarMenu";
-import { Card, ScreenHeader } from "../../components/ui";
-import { useApp } from "../../context/AppContext";
-import { useTheme } from "../../hooks/useTheme";
 
 
 function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBg, iconColor }) {
@@ -115,9 +113,58 @@ function SectionHeader({ title }) {
 
 export default function SettingsScreen() {
   const { colors, fs, t, isDark } = useTheme();
-  const { theme, updateTheme, language, updateLanguage, fontSize, updateFontSize, currentUser, activeReg } = useApp();
+  const { theme, updateTheme, language, updateLanguage, fontSize, updateFontSize, currentUser, changePin } = useApp();
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Change PIN modal state
+  const [isPinModalVisible, setPinModalVisible] = useState(false);
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinSuccess, setPinSuccess] = useState("");
+  const [isChangingPin, setIsChangingPin] = useState(false);
+
+  const resetPinState = () => {
+    setCurrentPin("");
+    setNewPin("");
+    setConfirmPin("");
+    setPinError("");
+    setPinSuccess("");
+  };
+
+  const handleChangePinSubmit = async () => {
+    setPinError("");
+    setPinSuccess("");
+
+    if (!currentPin || !newPin || !confirmPin) {
+      setPinError("Please fill in all fields.");
+      return;
+    }
+    if (newPin.length < 4) {
+      setPinError("New PIN must be exactly 4 digits.");
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinError("New PIN and Confirm PIN do not match.");
+      return;
+    }
+
+    setIsChangingPin(true);
+    try {
+      await changePin(currentPin, newPin);
+      setPinSuccess("PIN successfully changed!");
+      setTimeout(() => {
+        setPinModalVisible(false);
+        resetPinState();
+      }, 2000);
+    } catch (err) {
+      setPinError(err.message || "Failed to change PIN. Ensure your current PIN is correct.");
+    } finally {
+      setIsChangingPin(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -150,12 +197,23 @@ export default function SettingsScreen() {
             subtitle={currentUser ? `${currentUser.bankName} · ${currentUser.accountNumber}` : "Bank name, account number"}
             onPress={() => router.push("/(app)/account-details")}
           />
+          <View style={{ height: 1, backgroundColor: colors.border }} />
+          <SettingRow
+            icon="keypad"
+            iconBg="#fef08a"
+            iconColor="#ca8a04"
+            title="Change PIN"
+            subtitle="Update your 4-digit security PIN"
+            onPress={() => {
+              resetPinState();
+              setPinModalVisible(true);
+            }}
+          />
         </Card>
 
         {/* APPEARANCE */}
         <SectionHeader title="Appearance" />
         <Card>
-          {/* Theme Toggle */}
           <SettingRow
             icon={isDark ? "moon" : "sunny"}
             iconBg={isDark ? "#1e1b4b" : "#fef3c7"}
@@ -173,7 +231,6 @@ export default function SettingsScreen() {
           />
           <View style={{ height: 1, backgroundColor: colors.border }} />
 
-          {/* Font Size */}
           <View style={{ paddingVertical: 14 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
               <View style={{
@@ -243,10 +300,121 @@ export default function SettingsScreen() {
             })}
           </View>
         </Card>
-
-       
-
       </ScrollView>
+
+      {/* CHANGE PIN MODAL */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isPinModalVisible}
+        onRequestClose={() => setPinModalVisible(false)}
+      >
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <View style={{
+            backgroundColor: colors.card,
+            padding: 24,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 10,
+          }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text }}>Change Security PIN</Text>
+              <TouchableOpacity onPress={() => setPinModalVisible(false)}>
+                <Ionicons name="close-circle" size={28} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Error Message */}
+            {!!pinError && (
+              <View style={{ backgroundColor: "#fee2e2", padding: 10, borderRadius: 8, marginBottom: 16 }}>
+                <Text style={{ color: "#ef4444", fontSize: fs.sm, fontWeight: "600" }}>{pinError}</Text>
+              </View>
+            )}
+
+            {/* Success Message */}
+            {!!pinSuccess && (
+              <View style={{ backgroundColor: "#dcfce7", padding: 10, borderRadius: 8, marginBottom: 16 }}>
+                <Text style={{ color: "#16a34a", fontSize: fs.sm, fontWeight: "600" }}>{pinSuccess}</Text>
+              </View>
+            )}
+
+            <View style={{ gap: 16, marginBottom: 24 }}>
+              <View>
+                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>Current PIN</Text>
+                <TextInput
+                  value={currentPin}
+                  onChangeText={setCurrentPin}
+                  secureTextEntry
+                  keyboardType="numeric"
+                  maxLength={4}
+                  placeholder="Enter current PIN"
+                  placeholderTextColor={colors.placeholder}
+                  style={{
+                    backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border,
+                    borderRadius: 12, paddingHorizontal: 14, height: 48, color: colors.text, fontSize: fs.base
+                  }}
+                />
+              </View>
+
+              <View>
+                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>New PIN</Text>
+                <TextInput
+                  value={newPin}
+                  onChangeText={setNewPin}
+                  secureTextEntry
+                  keyboardType="numeric"
+                  maxLength={4}
+                  placeholder="Enter new 4-digit PIN"
+                  placeholderTextColor={colors.placeholder}
+                  style={{
+                    backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border,
+                    borderRadius: 12, paddingHorizontal: 14, height: 48, color: colors.text, fontSize: fs.base
+                  }}
+                />
+              </View>
+
+              <View>
+                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>Confirm New PIN</Text>
+                <TextInput
+                  value={confirmPin}
+                  onChangeText={setConfirmPin}
+                  secureTextEntry
+                  keyboardType="numeric"
+                  maxLength={4}
+                  placeholder="Confirm new 4-digit PIN"
+                  placeholderTextColor={colors.placeholder}
+                  style={{
+                    backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border,
+                    borderRadius: 12, paddingHorizontal: 14, height: 48, color: colors.text, fontSize: fs.base
+                  }}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleChangePinSubmit}
+              disabled={isChangingPin}
+              style={{
+                backgroundColor: isChangingPin ? colors.disabled : colors.primary,
+                paddingVertical: 14, borderRadius: 14, alignItems: "center", justifyContent: "center",
+                flexDirection: "row", gap: 8
+              }}
+            >
+              {isChangingPin ? (
+                <>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text style={{ color: "#fff", fontSize: fs.base, fontWeight: "700" }}>Updating...</Text>
+                </>
+              ) : (
+                <Text style={{ color: "#fff", fontSize: fs.base, fontWeight: "700" }}>Change PIN</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <SidebarMenu visible={menuOpen} onClose={() => setMenuOpen(false)} activeKey="settings" />
     </SafeAreaView>
