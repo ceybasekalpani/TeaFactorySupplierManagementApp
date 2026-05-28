@@ -542,10 +542,17 @@ export function AppProvider({ children }) {
     return mapped;
   };
 
+  const deleteCashRequest = async (id) => {
+  const token = await tokenStorage.get(); // use tokenStorage directly
+  await cashApi.delete(tokenRef.current, id);
+  setCashRequests((prev) => prev.filter((r) => r.id !== id));
+  };
+
   const addFertilizerRequest = async (requestData) => {
     const result = await fertilizerApi.create(tokenRef.current, {
       fertilizerType: requestData.fertilizerType ?? requestData.fertType,
       month:          requestData.month,
+      unit:           requestData.unit,
       quantity:       Number(requestData.quantity),
     });
     const mapped = mapFertilizerRequest(result);
@@ -553,15 +560,26 @@ export function AppProvider({ children }) {
     return mapped;
   };
 
+  const deleteFertilizerRequest = async (id) => {
+  await fertilizerApi.delete(tokenRef.current, id);
+  setFertilizerRequests((prev) => prev.filter((r) => r.id !== id));
+  };
+
   const addItemRequest = async (requestData) => {
-    const result = await itemApi.create(tokenRef.current, {
-      itemType: requestData.itemType,
-      month:    requestData.month,
-      quantity: Number(requestData.quantity),
-    });
+  const result = await itemApi.create(tokenRef.current, {
+    itemType: requestData.itemType,
+    month:    requestData.month,
+    quantity: Number(requestData.quantity),
+    unit:     requestData.unit ?? "units",   // ← ADD
+  });
     const mapped = mapItemRequest(result);
     setItemRequests((prev) => [mapped, ...prev]);
     return mapped;
+  };
+
+  const deleteItemRequest = async (id) => {
+  await itemApi.delete(tokenRef.current, id);
+  setItemRequests((prev) => prev.filter((r) => r.id !== id));
   };
 
   const updateTheme = async (t) => {
@@ -593,9 +611,9 @@ export function AppProvider({ children }) {
       getLeafData, fetchLeafData, getTodayLeaf, getTodayLeafData, getSixMonthHistory,
       getFeatureFlags,
       notifications, unreadCount, markNotificationRead, markAllRead, removeNotification,
-      cashRequests, addCashRequest,
-      fertilizerRequests, addFertilizerRequest,
-      itemRequests, addItemRequest,
+      cashRequests, addCashRequest, deleteCashRequest,
+      fertilizerRequests, addFertilizerRequest, deleteFertilizerRequest,
+      itemRequests, addItemRequest, deleteItemRequest,
       specialNews, newsShown, setNewsShown, dismissNews,
     }}>
       {children}
@@ -650,7 +668,9 @@ function mapFertilizerRequest(r) {
     id:            r.id,
     month:         r.month          ?? "",
     fertType:      r.fertilizerType ?? r.fertType ?? "",
+    fertilizerType: r.fertilizerType ?? r.fertType ?? "",
     quantity:      Number(r.quantity ?? 0),
+    unit:          r.unit           ?? "kg",   // ← ADD
     date:          r.requestDate    ? r.requestDate.split("T")[0] : (r.date ?? ""),
     status:        r.status         ?? "pending",
     createdAt:     r.createdAt      ?? new Date().toISOString(),
@@ -667,6 +687,7 @@ function mapItemRequest(r) {
     month:         r.month     ?? "",
     itemType:      r.itemType  ?? "",
     quantity:      Number(r.quantity ?? 0),
+    unit:          r.unit      ?? "kg",
     date:          r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
     status:        r.status    ?? "pending",
     createdAt:     r.createdAt ?? new Date().toISOString(),

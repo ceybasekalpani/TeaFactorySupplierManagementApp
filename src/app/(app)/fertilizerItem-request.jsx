@@ -2,7 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
 import SidebarMenu from "../../components/SidebarMenu";
@@ -11,20 +11,23 @@ import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 import { fertilizerApi, itemApi, tokenStorage } from "../../utils/api";
 
-export default function FertilizerItemRequestScreen() {  // Changed component name
+export default function FertilizerItemRequestScreen() { 
   const { colors, fs, t } = useTheme();
   const {
-    fertilizerRequests, addFertilizerRequest,
-    itemRequests, addItemRequest,
-    currentUser, activeReg,
-  } = useApp();
+  fertilizerRequests, addFertilizerRequest, deleteFertilizerRequest,
+  itemRequests, addItemRequest, deleteItemRequest,
+  currentUser, activeReg,
+} = useApp();
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [category, setCategory] = useState("fertilizer"); // "fertilizer" | "item"
   const [selectedType, setSelectedType] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState("kg");
   const [loading, setLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [fertilizerTypes, setFertilizerTypes] = useState([]);
   const [itemTypes, setItemTypes] = useState([]);
@@ -75,15 +78,22 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
   useEffect(() => {
     setSelectedType("");
     setQuantity("");
+    setUnit("kg"); 
   }, [category]);
 
   const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
   const currentTypes = category === "fertilizer" ? fertilizerTypes : itemTypes;
-  const quantityUnit = category === "fertilizer" ? t.unitKg : t.unitUnits;
+  const quantityLabel = `${t.quantity} (${
+  category === "fertilizer"
+    ? `${t.unitKg ?? "kg"} / ${t.unitNos ?? "Nos"}`
+    : (t.unitUnits ?? "units")
+  })`;
   const quantityPlaceholder = category === "fertilizer"
-    ? t.enterQuantityKg
-    : t.enterQuantityUnits;
+    ? unit === "kg"
+      ? (t.enterQuantityKg ?? "Enter quantity in kg")
+      : (t.enterQuantityNos ?? "Enter quantity in Nos")
+    : (t.enterQuantityUnits ?? "Enter quantity in units");
 
   const showToast = (message, type = "success") => {
     setToast({ visible: true, message, type });
@@ -120,16 +130,19 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
           month: currentMonth,
           fertilizerType: selectedType,
           quantity: quantityNum,
+          unit: unit, 
         });
       } else {
         await addItemRequest({
           month: currentMonth,
           itemType: selectedType,
           quantity: quantityNum,
+          unit: "units", 
         });
       }
       setSelectedType("");
       setQuantity("");
+      setUnit("kg"); 
       showToast(t.successRequest);
     } catch (error) {
       console.log("Request error:", error);
@@ -148,7 +161,7 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
     }));
     const iReqs = (itemRequests || []).map((r) => ({
       ...r,
-      category: "Item",
+      category: "Other Item",
       displayType: r.itemType || "-",
     }));
     return [...fReqs, ...iReqs]
@@ -168,13 +181,39 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
     } catch { return dateString || "-"; }
   };
 
-  const formatQty = (qty, cat) => {
-    if (!qty && qty !== 0) return "-";
-    try {
-      const n = parseFloat(qty).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
-      return `${n} ${cat === "Fertilizer" ? t.unitKg : t.unitUnits}`;
-    } catch { return "-"; }
-  };
+  const formatQty = (qty, unit) => {
+  if (!qty && qty !== 0) return "-";
+  try {
+    const n = parseFloat(qty).toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    });
+    const unitLabel =
+      unit === "kg"    ? t.unitKg    :
+      unit === "units" ? t.unitUnits :
+      unit === "Nos"   ? t.unitNos   : unit;
+    return `${n} ${unitLabel}`;
+  } catch {
+    return "-";
+  }
+};
+
+const handleDelete = async (req) => {
+  setDeleteLoading(true);
+  try {
+    if (req.category === "Fertilizer") {
+      await deleteFertilizerRequest(req.id);
+    } else {
+      await deleteItemRequest(req.id);
+    }
+    showToast(t.deleteSuccess ?? "Request deleted");
+  } catch {
+    showToast(t.deleteFailed ?? "Failed to delete", "error");
+  } finally {
+    setDeleteLoading(false);
+    setDeleteConfirm(null);
+  }
+};
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -305,9 +344,46 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
               }
             />
 
+             {category === "fertilizer" && (
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 8 }}>
+                  {t.unit}
+                </Text>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  {[
+                    { key: "kg",  label: t.unitKg  },
+                    { key: "Nos", label: t.unitNos },
+                  ].map((u) => {
+                    const isActive = unit === u.key;
+                    return (
+                      <TouchableOpacity
+                        key={u.key}
+                        onPress={() => setUnit(u.key)}
+                        style={{
+                          flex: 1, paddingVertical: 10, borderRadius: 10,
+                          borderWidth: 2,
+                          borderColor: isActive ? colors.primary : colors.border,
+                          backgroundColor: isActive ? colors.primary + "15" : colors.surface,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text style={{
+                          color: isActive ? colors.primary : colors.text,
+                          fontWeight: isActive ? "700" : "500",
+                          fontSize: fs.sm,
+                        }}>
+                          {u.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
             {/* Quantity */}
             <Input
-              label={`${t.quantity} (${quantityUnit})`}
+              label={quantityLabel}
               value={quantity}
               onChangeText={setQuantity}
               placeholder={quantityPlaceholder}
@@ -338,10 +414,6 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
           </Card>
 
           {/* Combined History */}
-          <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
-            {t.requestHistory}{combinedHistory.length > 0 ? ` (${combinedHistory.length})` : ""}
-          </Text>
-
           {combinedHistory.length === 0 ? (
             <Card>
               <EmptyState
@@ -353,20 +425,21 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
           ) : (
             <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
               {/* Table Header */}
-              <View style={{
-                flexDirection: "row",
-                backgroundColor: colors.primary + "10",
-                paddingVertical: 12,
-                paddingHorizontal: 14,
-                borderBottomWidth: 2,
-                borderBottomColor: colors.primary,
-              }}>
-                <Text style={{ flex: 1.8, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>{t.colDate}</Text>
-                <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colCategory}</Text>
-                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colType}</Text>
-                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colQty}</Text>
-                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.status}</Text>
-              </View>
+          <View style={{
+            flexDirection: "row",
+            backgroundColor: colors.primary + "10",
+            paddingVertical: 12,
+            paddingHorizontal: 14,
+            borderBottomWidth: 2,
+            borderBottomColor: colors.primary,
+          }}>
+            <Text style={{ flex: 1.8, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>{t.colDate?.charAt(0).toUpperCase() + t.colDate?.slice(1).toLowerCase() || "Date"}</Text>
+            <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colCategory?.charAt(0).toUpperCase() + t.colCategory?.slice(1).toLowerCase() || "Category"}</Text>
+            <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colType?.charAt(0).toUpperCase() + t.colType?.slice(1).toLowerCase() || "Type"}</Text>
+            <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colQty?.charAt(0).toUpperCase() + t.colQty?.slice(1).toLowerCase() || "Qty"}</Text>
+            <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.status?.charAt(0).toUpperCase() + t.status?.slice(1).toLowerCase() || "Status"}</Text>
+            <Text style={{ flex: 0.6, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{(t.action ?? "Action")?.charAt(0).toUpperCase() + (t.action ?? "Action")?.slice(1).toLowerCase()}</Text>
+          </View>
 
               {/* Table Rows */}
               {combinedHistory.map((req, i) => (
@@ -394,7 +467,7 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
                     }}>
                       <Text style={{
                         fontSize: fs.xs - 1,
-                        fontWeight: "700",
+                        fontWeight: "600",
                         color: req.category === "Fertilizer" ? "#16a34a" : "#d97706",
                       }}>
                         {req.category === "Fertilizer" ? t.fertilizer : t.item}
@@ -405,10 +478,18 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
                     {req.displayType}
                   </Text>
                   <Text numberOfLines={1} style={{ flex: 1.2, color: colors.text, fontSize: fs.xs, fontWeight: "600", textAlign: "center" }}>
-                    {formatQty(req.quantity, req.category)}
+                    {formatQty(req.quantity, req.unit ?? (req.category === "Fertilizer" ? "kg" : "units"))}
                   </Text>
                   <View style={{ flex: 1.2, alignItems: "center" }}>
                     <StatusBadge status={req.status || "pending"} size="small" />
+                  </View>
+                  {/* Action column — delete icon, only for pending requests */}
+                  <View style={{ flex: 0.6, alignItems: "center" }}>
+                    {(req.status === "pending" || req.status === "Pending") && (
+                      <TouchableOpacity onPress={() => setDeleteConfirm(req)}>
+                        <Ionicons name="trash-outline" size={fs.lg} color="#ef4444" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               ))}
@@ -443,6 +524,36 @@ export default function FertilizerItemRequestScreen() {  // Changed component na
         onDismiss={() => setToast({ ...toast, visible: false })}
       />
       <SidebarMenu visible={menuOpen} onClose={() => setMenuOpen(false)} activeKey="fertilizerItemRequest" />
+
+      <Modal visible={!!deleteConfirm} transparent animationType="fade" onRequestClose={() => setDeleteConfirm(null)}>
+        <View style={{ flex: 1, backgroundColor: "#00000060", justifyContent: "center", padding: 24 }}>
+          <View style={{ backgroundColor: colors.bg, borderRadius: 16, padding: 24 }}>
+            <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text, marginBottom: 8 }}>
+              {t.confirm ?? "Confirm"}
+            </Text>
+            <Text style={{ fontSize: fs.sm, color: colors.textSecondary, marginBottom: 24 }}>
+              {t.deleteConfirmMessage ?? "Are you sure you want to delete this request?"}
+            </Text>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => setDeleteConfirm(null)}
+                style={{ flex: 1, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}
+              >
+                <Text style={{ color: colors.text, fontWeight: "600" }}>{t.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleDelete(deleteConfirm)}
+                disabled={deleteLoading}
+                style={{ flex: 1, padding: 12, borderRadius: 10, backgroundColor: "#ef4444", alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>
+                  {deleteLoading ? "..." : (t.delete ?? "Delete")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

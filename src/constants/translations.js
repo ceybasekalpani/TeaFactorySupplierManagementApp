@@ -12,7 +12,7 @@ export const translations = {
 
     // Menu
     home: "Home",
-    cashRequest: "Cash Request",
+    cashRequest: "Advance Request",
     fertilizerItemRequest: "Fertilizer/Item Request",
     landInfo: "Land Info",
     leafCard: "Leaf Card",
@@ -60,7 +60,7 @@ export const translations = {
     permissionNeeded: "Permission needed",
     allowPhotoAccess: "Please allow photo library access to change your profile picture.",
 
-    // Cash Request
+    // Advance Request
     advanceRequest: "Advance Request",
     loanRequest: "Loan Request",
     selectMonth: "Select Month",
@@ -95,6 +95,7 @@ export const translations = {
     pleaseLoginToRequest: "Please login to make a request",
     noActiveRegistration: "No active registration found",
     failedToSubmitRequest: "Failed to submit request. Please try again.",
+   
 
     // Fertilizer / Item Request
     newFertilizerItemRequest: "New Fertilizer/Item Request",
@@ -102,7 +103,7 @@ export const translations = {
     noRegistration: "No registration",
     requestType: "Request Type",
     fertilizer: "Fertilizer",
-    item: "Item",
+    item: "Other Item",
     fertilizerLower: "fertilizer",
     itemsLower: "items",
     loadingTypes: "Loading types...",
@@ -111,7 +112,9 @@ export const translations = {
     selectItemType: "Select item type",
     unitKg: "kg",
     unitUnits: "units",
+    unitNos: "Nos",  
     enterQuantityKg: "Enter quantity in kg",
+    enterQuantityNos: "Enter quantity in Nos",
     enterQuantityUnits: "Enter quantity in units",
     fertilizerInfoNote: "Fertilizer requests are subject to availability and processed within 3-5 working days.",
     itemInfoNote: "Item requests are subject to stock availability and will be processed shortly.",
@@ -126,6 +129,12 @@ export const translations = {
     pleaseSelectItemType: "Please select an item type",
     pleaseEnterQuantity: "Please enter quantity",
     pleaseEnterValidQuantity: "Please enter a valid quantity greater than 0",
+
+
+    delete: "Delete",
+    deleteSuccess: "Request deleted successfully",
+    deleteFailed: "Failed to delete request",
+    deleteConfirmMessage: "Are you sure you want to delete this pending request?",
 
     // Fertilizer
     fertilizerType: "Fertilizer Type",
@@ -229,7 +238,7 @@ export const translations = {
 
     // Menu
     home: "මුල් පිටුව",
-    cashRequest: "මුදල් අත්තිකාරම් ඉල්ලීම",
+    cashRequest: "මුදල්  අත්තිකාරම් ඉල්ලීම",
     fertilizerItemRequest: "පොහොර/භාණ්ඩ ඉල්ලීම",
     landInfo: "ඉඩම් විස්තර",
     leafCard: "දළු කාඩ්පත",
@@ -251,7 +260,7 @@ export const translations = {
     unread: "නොකියවූ",
     alerts: "දැනුම්දීම්",
 
-    // Cash Request
+    // Advance Request
     advanceRequest: "අත්තිකාරම් ඉල්ලීම",
     loanRequest: "ණය ඉල්ලීම",
     selectMonth: "මාසය තෝරන්න",
@@ -293,7 +302,7 @@ export const translations = {
     noRegistration: "ලියාපදිංචියක් නැත",
     requestType: "ඉල්ලීම් වර්ගය",
     fertilizer: "පොහොර",
-    item: "භාණ්ඩය",
+    item: "වෙනත් භාණ්ඩ",
     fertilizerLower: "පොහොර",
     itemsLower: "භාණ්ඩ",
     loadingTypes: "වර්ග පූරණය වෙමින්...",
@@ -302,7 +311,9 @@ export const translations = {
     selectItemType: "භාණ්ඩ වර්ගය තෝරන්න",
     unitKg: "කිලෝ",
     unitUnits: "ඒකක",
+    unitNos: "ගණන",   
     enterQuantityKg: "කිලෝ ගණන ඇතුළත් කරන්න",
+    enterQuantityNos: "ගණන ඇතුළත් කරන්න",
     enterQuantityUnits: "ඒකක ගණන ඇතුළත් කරන්න",
     fertilizerInfoNote: "පොහොර ඉල්ලීම් ලබා ගැනීමේ හැකියාව මත රඳා පවතින අතර වැඩ කරන දින 3-5 ක් ඇතුළත සකස් කෙරේ.",
     itemInfoNote: "භාණ්ඩ ඉල්ලීම් තොගයේ ලබා ගැනීමේ හැකියාව මත රඳා පවතින අතර ඉක්මනින් සකස් කෙරේ.",
@@ -317,6 +328,11 @@ export const translations = {
     pleaseSelectItemType: "කරුණාකර භාණ්ඩ වර්ගයක් තෝරන්න",
     pleaseEnterQuantity: "කරුණාකර ප්‍රමාණය ඇතුළත් කරන්න",
     pleaseEnterValidQuantity: "කරුණාකර 0 ට වඩා වැඩි වලංගු ප්‍රමාණයක් ඇතුළත් කරන්න",
+
+    delete: "මකන්න",
+    deleteSuccess: "ඉල්ලීම සාර්ථකව මකා දමන ලදී",
+    deleteFailed: "ඉල්ලීම මකා දැමීමට අපොහොසත් විය",
+    deleteConfirmMessage: "ඔබට මෙම අපේක්ෂිත ඉල්ලීම මකා දැමීමට අවශ්‍යද?",
 
     // Fertilizer
     fertilizerType: "පොහොර වර්ගය",

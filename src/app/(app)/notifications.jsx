@@ -111,7 +111,6 @@ export default function NotificationsScreen() {
 
       <ScrollView 
         showsVerticalScrollIndicator={false} 
-        /* Added paddingTop: 20 here for the gap */
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 }}
       >
         {notifications.length === 0 ? (
