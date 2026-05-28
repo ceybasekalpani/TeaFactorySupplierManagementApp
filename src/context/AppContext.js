@@ -193,12 +193,17 @@ export function AppProvider({ children }) {
     ]);
   }, []);
 
-  const loadNotifications = async (tok) => {
-    try {
-      const data = await notificationApi.list(tok);
-      setNotifications(
-        Array.isArray(data)
-          ? data.map((n) => ({
+  const NOTIFICATION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+
+const loadNotifications = async (tok) => {
+  try {
+    const data = await notificationApi.list(tok);
+    const cutoff = Date.now() - NOTIFICATION_MAX_AGE_MS;
+    setNotifications(
+      Array.isArray(data)
+        ? data
+            .filter((n) => !n.createdAt || new Date(n.createdAt).getTime() >= cutoff)
+            .map((n) => ({
               id:        n.id,
               title:     n.title     ?? "",
               message:   n.message   ?? "",
@@ -206,10 +211,10 @@ export function AppProvider({ children }) {
               createdAt: n.createdAt ?? null,
               read:      n.isRead    ?? n.read ?? false,
             }))
-          : []
-      );
-    } catch (_) {}
-  };
+        : []
+    );
+  } catch (_) {}
+};
 
   const loadCashRequests = async (tok) => {
     try {
