@@ -7,7 +7,7 @@ export const tokenStorage = {
   get: () => AsyncStorage.getItem(TOKEN_KEY),
   set: (token) => AsyncStorage.setItem(TOKEN_KEY, token),
   remove: () => AsyncStorage.removeItem(TOKEN_KEY),
-};                                                                                                                    
+};
 
 async function request(method, path, body, token) {
   const headers = { "Content-Type": "application/json" };
@@ -94,57 +94,63 @@ export const authApi = {
     request("POST", "/api/auth/setup-pin", { pin }, token),
   pinLogin: (regNo, pin) =>
     request("POST", "/api/auth/pin-login", { regNo, pin }),
-  // NEW:
   changePin: (token, currentPin, newPin) =>
     request("POST", "/api/auth/change-pin", { currentPin, newPin }, token),
 };
 
 export const leafApi = {
-  monthly: (token, year, month) => request("GET", `/api/leaf/monthly?year=${year}&month=${month}`, undefined, token),
-  history: (token) => request("GET", "/api/leaf/history", undefined, token),
-  today: (token) => request("GET", "/api/leaf/today", undefined, token),
-  summary: (token) => request("GET", "/api/leaf/summary", undefined, token),
+  monthly:       (token, year, month) => request("GET", `/api/leaf/monthly?year=${year}&month=${month}`, undefined, token),
+  history:       (token) => request("GET", "/api/leaf/history", undefined, token),
+  historyAnnual: (token) => request("GET", "/api/leaf/history-annual", undefined, token),  // NEW — 12 months
+  today:         (token) => request("GET", "/api/leaf/today", undefined, token),
+  summary:       (token) => request("GET", "/api/leaf/summary", undefined, token),
+};
+
+// NEW — monthly account summary (cash + fertilizer + item per month)
+export const accountSummaryApi = {
+  monthlyRequests: (token, months = 6) =>
+    request("GET", `/api/accountsummary/monthly-requests?months=${months}`, undefined, token),
 };
 
 export const cashApi = {
-  list: (token) => request("GET", "/api/cashrequest", undefined, token),
-  create: (token, data) => request("POST", "/api/cashrequest", data, token),
-  delete: (token, id) => request("DELETE", `/api/cashrequest/${id}`, undefined, token),
+  list:           (token) => request("GET", "/api/cashrequest", undefined, token),
+  create:         (token, data) => request("POST", "/api/cashrequest", data, token),
+  delete:         (token, id) => request("DELETE", `/api/cashrequest/${id}`, undefined, token),
   featureEnabled: (token) => request("GET", "/api/cashrequest/feature-enabled", undefined, token),
-  advanceLimit: (token) => request("GET", "/api/cashrequest/advance-limit", undefined, token),
+  advanceLimit:   (token) => request("GET", "/api/cashrequest/advance-limit", undefined, token),
 };
 
 export const fertilizerApi = {
-  list: (token) => request("GET", "/api/fertilizerrequest", undefined, token),
-  create: (token, data) => request("POST", "/api/fertilizerrequest", data, token),
-  delete: (token, id) => request("DELETE", `/api/fertilizerrequest/${id}`, undefined, token),
-  types: (token) => request("GET", "/api/fertilizerrequest/types", undefined, token),
+  list:           (token) => request("GET", "/api/fertilizerrequest", undefined, token),
+  create:         (token, data) => request("POST", "/api/fertilizerrequest", data, token),
+  delete:         (token, id) => request("DELETE", `/api/fertilizerrequest/${id}`, undefined, token),
+  types:          (token) => request("GET", "/api/fertilizerrequest/types", undefined, token),
   featureEnabled: (token) => request("GET", "/api/fertilizerrequest/feature-enabled", undefined, token),
 };
 
 export const itemApi = {
-  list: (token) => request("GET", "/api/itemrequest", undefined, token),
-  create: (token, data) => request("POST", "/api/itemrequest", data, token),
-  delete: (token, id) => request("DELETE", `/api/itemrequest/${id}`, undefined, token),
-  types: (token) => request("GET", "/api/itemrequest/types", undefined, token),
+  list:           (token) => request("GET", "/api/itemrequest", undefined, token),
+  create:         (token, data) => request("POST", "/api/itemrequest", data, token),
+  delete:         (token, id) => request("DELETE", `/api/itemrequest/${id}`, undefined, token),
+  types:          (token) => request("GET", "/api/itemrequest/types", undefined, token),
   featureEnabled: (token) => request("GET", "/api/itemrequest/feature-enabled", undefined, token),
 };
 
 export const notificationApi = {
-  list: (token) => request("GET", "/api/notification", undefined, token),
-  markRead: (token, id) => request("POST", `/api/notification/${id}/mark-read`, undefined, token),
+  list:        (token) => request("GET", "/api/notification", undefined, token),
+  markRead:    (token, id) => request("POST", `/api/notification/${id}/mark-read`, undefined, token),
   markAllRead: (token) => request("POST", "/api/notification/mark-all-read", undefined, token),
-  dismiss: (token, id) => request("DELETE", `/api/notification/${id}`, undefined, token),
+  dismiss:     (token, id) => request("DELETE", `/api/notification/${id}`, undefined, token),
 };
 
 export const newsApi = {
   activePopup: (token) => request("GET", "/api/news/active-popup", undefined, token),
-  dismiss: (token, id) => request("POST", `/api/news/${id}/dismiss`, undefined, token),
+  dismiss:     (token, id) => request("POST", `/api/news/${id}/dismiss`, undefined, token),
 };
 
 export const settingsApi = {
-  get: (token) => request("GET", "/api/settings", undefined, token),
-  updateTheme: (token, theme) => request("PUT", "/api/settings/theme", { theme }, token),
+  get:            (token) => request("GET", "/api/settings", undefined, token),
+  updateTheme:    (token, theme) => request("PUT", "/api/settings/theme", { theme }, token),
   updateLanguage: (token, language) => request("PUT", "/api/settings/language", { language }, token),
   updateFontSize: (token, fontSize) => request("PUT", "/api/settings/font-size", { fontSize }, token),
 
@@ -160,17 +166,16 @@ export const settingsApi = {
     const fileName = asset.fileName || `profile.${ext}`;
 
     if (!asset.base64) {
-        return Promise.reject(new Error("Image base64 data is missing. Ensure ImagePicker has base64: true"));
+      return Promise.reject(new Error("Image base64 data is missing. Ensure ImagePicker has base64: true"));
     }
 
-    const body = {
+    return request("PUT", "/api/settings/profile-image-base64", {
       imageBase64: asset.base64,
-      fileName: fileName,
-      mimeType: mimeType
-    };
-    return request("PUT", "/api/settings/profile-image-base64", body, token);
+      fileName,
+      mimeType,
+    }, token);
   },
 
-  updateSettings: (token, data) => request("PUT", "/api/settings", data, token),
+  updateSettings:       (token, data) => request("PUT", "/api/settings", data, token),
   updateAccountDetails: (token, data) => request("PUT", "/api/settings/account-details", data, token),
 };

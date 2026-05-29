@@ -3,6 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "../constants/config";
 import {
+  accountSummaryApi,
   authApi,
   cashApi,
   fertilizerApi,
@@ -104,6 +105,8 @@ export function AppProvider({ children }) {
 
   const [leafCache, setLeafCache] = useState({});
   const [sixMonthHistory, setSixMonthHistory] = useState([]);
+  const [twelveMonthHistory, setTwelveMonthHistory] = useState([]);   // NEW
+  const [monthlyRequestsSummary, setMonthlyRequestsSummary] = useState([]); // NEW
   const [todayLeafTotal, setTodayLeafTotal] = useState(0);
   const [todayLeafData, setTodayLeafData] = useState({ normalNet: 0, superNet: 0, hasSuper: false });
   const [featureFlags, setFeatureFlags] = useState({ cash: true, fertilizer: true, item: true });
@@ -157,7 +160,7 @@ export function AppProvider({ children }) {
         imageToUse = localExists;
       } else if (remoteImage) {
         const downloaded = regNo ? await downloadProfileImageViaBackend(tok, regNo) : null;
-        imageToUse = downloaded || remoteImage.split('?')[0];
+        imageToUse = downloaded || remoteImage.split("?")[0];
       }
 
       setCurrentUser((prev) => {
@@ -189,32 +192,34 @@ export function AppProvider({ children }) {
       loadSpecialNews(tok),
       loadTodayLeaf(tok),
       loadHistory(tok),
+      loadAnnualHistory(tok),          // NEW
+      loadMonthlyRequestsSummary(tok), // NEW
       loadFeatureFlags(tok),
     ]);
   }, []);
 
-  const NOTIFICATION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+  const NOTIFICATION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
-const loadNotifications = async (tok) => {
-  try {
-    const data = await notificationApi.list(tok);
-    const cutoff = Date.now() - NOTIFICATION_MAX_AGE_MS;
-    setNotifications(
-      Array.isArray(data)
-        ? data
-            .filter((n) => !n.createdAt || new Date(n.createdAt).getTime() >= cutoff)
-            .map((n) => ({
-              id:        n.id,
-              title:     n.title     ?? "",
-              message:   n.message   ?? "",
-              type:      n.type      ?? "info",
-              createdAt: n.createdAt ?? null,
-              read:      n.isRead    ?? n.read ?? false,
-            }))
-        : []
-    );
-  } catch (_) {}
-};
+  const loadNotifications = async (tok) => {
+    try {
+      const data = await notificationApi.list(tok);
+      const cutoff = Date.now() - NOTIFICATION_MAX_AGE_MS;
+      setNotifications(
+        Array.isArray(data)
+          ? data
+              .filter((n) => !n.createdAt || new Date(n.createdAt).getTime() >= cutoff)
+              .map((n) => ({
+                id:        n.id,
+                title:     n.title     ?? "",
+                message:   n.message   ?? "",
+                type:      n.type      ?? "info",
+                createdAt: n.createdAt ?? null,
+                read:      n.isRead    ?? n.read ?? false,
+              }))
+          : []
+      );
+    } catch (_) {}
+  };
 
   const loadCashRequests = async (tok) => {
     try {
@@ -299,6 +304,33 @@ const loadNotifications = async (tok) => {
     } catch (_) {}
   };
 
+  // NEW — load 12-month leaf history
+  const loadAnnualHistory = async (tok) => {
+    try {
+      const data = await leafApi.historyAnnual(tok);
+      setTwelveMonthHistory(
+        Array.isArray(data)
+          ? data.map((h) => ({
+              key:        h.monthKey   ?? h.key   ?? "",
+              label:      h.monthLabel ?? h.label ?? "",
+              totalGross: h.totalGross ?? 0,
+              totalNet:   h.totalNet   ?? 0,
+              days:       h.days       ?? 0,
+            }))
+          : []
+      );
+    } catch (_) {}
+  };
+
+  // NEW — load monthly requests summary (6 months by default; we load 12 so
+  //        the history screen can filter without re-fetching)
+  const loadMonthlyRequestsSummary = async (tok) => {
+    try {
+      const data = await accountSummaryApi.monthlyRequests(tok, 12);
+      setMonthlyRequestsSummary(Array.isArray(data) ? data : []);
+    } catch (_) {}
+  };
+
   const signIn = async (username, password) => {
     const result = await authApi.login(username, password);
     if (!result?.token) return null;
@@ -373,7 +405,6 @@ const loadNotifications = async (tok) => {
     setAuthState("authenticated");
   };
 
-  // ── NEW: lock the session without clearing credentials ───────────────────────
   const lockSession = () => {
     setAuthState((prev) => (prev === "authenticated" ? "pin-required" : prev));
   };
@@ -414,6 +445,8 @@ const loadNotifications = async (tok) => {
     setRegistrations([]);
     setLeafCache({});
     setSixMonthHistory([]);
+    setTwelveMonthHistory([]);        // NEW
+    setMonthlyRequestsSummary([]);    // NEW
     setTodayLeafTotal(0);
     setNotifications([]);
     setCashRequests([]);
@@ -474,7 +507,8 @@ const loadNotifications = async (tok) => {
       }
     }
 
-    if (data.address !== undefined || data.phone !== undefined || data.name !== undefined || data.phone2 !== undefined || data.phone3 !== undefined) {
+    if (data.address !== undefined || data.phone !== undefined || data.name !== undefined ||
+        data.phone2 !== undefined || data.phone3 !== undefined) {
       await settingsApi.updateSettings(tokenRef.current, {
         name:    data.name,
         address: data.address,
@@ -509,10 +543,12 @@ const loadNotifications = async (tok) => {
     } catch (_) {}
   };
 
-  const getTodayLeaf = () => todayLeafTotal;
-  const getTodayLeafData = () => todayLeafData;
-  const getSixMonthHistory = () => sixMonthHistory;
-  const getFeatureFlags = () => featureFlags;
+  const getTodayLeaf              = () => todayLeafTotal;
+  const getTodayLeafData          = () => todayLeafData;
+  const getSixMonthHistory        = () => sixMonthHistory;
+  const getTwelveMonthHistory     = () => twelveMonthHistory;         // NEW
+  const getMonthlyRequestsSummary = () => monthlyRequestsSummary;     // NEW
+  const getFeatureFlags           = () => featureFlags;
 
   const markNotificationRead = async (id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -544,13 +580,15 @@ const loadNotifications = async (tok) => {
     });
     const mapped = mapCashRequest(result);
     setCashRequests((prev) => [mapped, ...prev]);
+    // Refresh summary so the new request appears immediately
+    loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
     return mapped;
   };
 
   const deleteCashRequest = async (id) => {
-  const token = await tokenStorage.get(); // use tokenStorage directly
-  await cashApi.delete(tokenRef.current, id);
-  setCashRequests((prev) => prev.filter((r) => r.id !== id));
+    await cashApi.delete(tokenRef.current, id);
+    setCashRequests((prev) => prev.filter((r) => r.id !== id));
+    loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
   };
 
   const addFertilizerRequest = async (requestData) => {
@@ -562,29 +600,33 @@ const loadNotifications = async (tok) => {
     });
     const mapped = mapFertilizerRequest(result);
     setFertilizerRequests((prev) => [mapped, ...prev]);
+    loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
     return mapped;
   };
 
   const deleteFertilizerRequest = async (id) => {
-  await fertilizerApi.delete(tokenRef.current, id);
-  setFertilizerRequests((prev) => prev.filter((r) => r.id !== id));
+    await fertilizerApi.delete(tokenRef.current, id);
+    setFertilizerRequests((prev) => prev.filter((r) => r.id !== id));
+    loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
   };
 
   const addItemRequest = async (requestData) => {
-  const result = await itemApi.create(tokenRef.current, {
-    itemType: requestData.itemType,
-    month:    requestData.month,
-    quantity: Number(requestData.quantity),
-    unit:     requestData.unit ?? "units",   // ← ADD
-  });
+    const result = await itemApi.create(tokenRef.current, {
+      itemType: requestData.itemType,
+      month:    requestData.month,
+      quantity: Number(requestData.quantity),
+      unit:     requestData.unit ?? "units",
+    });
     const mapped = mapItemRequest(result);
     setItemRequests((prev) => [mapped, ...prev]);
+    loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
     return mapped;
   };
 
   const deleteItemRequest = async (id) => {
-  await itemApi.delete(tokenRef.current, id);
-  setItemRequests((prev) => prev.filter((r) => r.id !== id));
+    await itemApi.delete(tokenRef.current, id);
+    setItemRequests((prev) => prev.filter((r) => r.id !== id));
+    loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
   };
 
   const updateTheme = async (t) => {
@@ -612,8 +654,12 @@ const loadNotifications = async (tok) => {
       authState, savedRegNo, savedName,
       currentUser, activeReg, registrations,
       signIn, login, logout, setupPin, changePin, pinLogin, resetPin, updateProfile,
-      lockSession, // ── NEW
-      getLeafData, fetchLeafData, getTodayLeaf, getTodayLeafData, getSixMonthHistory,
+      lockSession,
+      getLeafData, fetchLeafData,
+      getTodayLeaf, getTodayLeafData,
+      getSixMonthHistory,
+      getTwelveMonthHistory,         // NEW
+      getMonthlyRequestsSummary,     // NEW
       getFeatureFlags,
       notifications, unreadCount, markNotificationRead, markAllRead, removeNotification,
       cashRequests, addCashRequest, deleteCashRequest,
@@ -639,7 +685,7 @@ function mapUser(u) {
     id:            String(u.regNo ?? u.id ?? ""),
     name:          u.name          ?? u.regName ?? "",
     username:      u.username      ?? "",
-    image:         img ? img.split('?')[0] : null,
+    image:         img ? img.split("?")[0] : null,
     address:       u.address       ?? u.Address ?? "",
     phone:         u.phone         ?? u.Phone   ?? u.telNo ?? "",
     phone2:        u.phone2        ?? u.Phone2  ?? "",
@@ -670,18 +716,18 @@ function mapCashRequest(r) {
 function mapFertilizerRequest(r) {
   if (!r) return r;
   return {
-    id:            r.id,
-    month:         r.month          ?? "",
-    fertType:      r.fertilizerType ?? r.fertType ?? "",
+    id:             r.id,
+    month:          r.month          ?? "",
+    fertType:       r.fertilizerType ?? r.fertType ?? "",
     fertilizerType: r.fertilizerType ?? r.fertType ?? "",
-    quantity:      Number(r.quantity ?? 0),
-    unit:          r.unit           ?? "kg",   // ← ADD
-    date:          r.requestDate    ? r.requestDate.split("T")[0] : (r.date ?? ""),
-    status:        r.status         ?? "pending",
-    createdAt:     r.createdAt      ?? new Date().toISOString(),
-    requestedDate: r.requestDate    ?? r.requestedDate ?? "",
-    regNo:         r.regNo,
-    remarks:       r.remarks        ?? "",
+    quantity:       Number(r.quantity ?? 0),
+    unit:           r.unit           ?? "kg",
+    date:           r.requestDate    ? r.requestDate.split("T")[0] : (r.date ?? ""),
+    status:         r.status         ?? "pending",
+    createdAt:      r.createdAt      ?? new Date().toISOString(),
+    requestedDate:  r.requestDate    ?? r.requestedDate ?? "",
+    regNo:          r.regNo,
+    remarks:        r.remarks        ?? "",
   };
 }
 

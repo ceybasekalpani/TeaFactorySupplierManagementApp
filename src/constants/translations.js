@@ -34,6 +34,15 @@ export const translations = {
     unread: "unread",
     alerts: "Alerts",
 
+    leafAndAccountHistory: "Leaf & Account History",
+    sixMonthOverview:      "6 Month Overview",
+    twelveMonthOverview:   "12 Month Overview",
+    accountSummary:        "Account Summary",
+    monthlyRequestSummary: "Monthly Request Summary",
+    cashRequests:          "Cash Requests",
+    fertilizerRequests:    "Fertilizer Requests",
+    itemRequests:          "Item Requests",
+
     // Profile Screen
     editProfile: "Edit Profile",
     fullName: "Full Name",
@@ -259,6 +268,14 @@ export const translations = {
     kgToday: "කිලෝ · අද",
     unread: "නොකියවූ",
     alerts: "දැනුම්දීම්",
+
+
+    leafAndAccountHistory: "කොළ සහ ගිණුම් ඉතිහාසය",
+    sixMonthOverview:      "මාස 6 දළ විශ්ලේෂණය",
+    twelveMonthOverview:   "මාස 12 දළ විශ්ලේෂණය",
+    accountSummary:        "ගිණුම් සාරාංශය",
+    monthlyRequestSummary: "මාසික ඉල්ලීම් සාරාංශය",
+
 
     // Advance Request
     advanceRequest: "අත්තිකාරම් ඉල්ලීම",

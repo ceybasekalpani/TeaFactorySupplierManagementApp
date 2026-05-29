@@ -22,9 +22,9 @@ const menuItems = (t) => [
   { key: "fertilizerItemRequest",    label: t.fertilizerItemRequest,   icon: "leaf",      route: "/(app)/fertilizerItem-request" },
   { key: "leafCard",         label: t.leafCard,         icon: "card",      route: "/(app)/leaf-details?tab=card" },
   { key: "monthLeafDetails", label: t.monthLeafDetails, icon: "calendar",  route: "/(app)/leaf-details?tab=monthly" },
-  { key: "history",          label: t.history,          icon: "time",      route: "/(app)/history" },
   { key: "landInfo",         label: t.landInfo,         icon: "map",       route: "/(app)/land-info" },
   { key: "settings",         label: t.settings,         icon: "settings",  route: "/(app)/settings" },
+  { key: "history",          label: t.leafAndAccountHistory, icon: "bar-chart-outline", route: "/(app)/history" },
 ];
 
 export default function SidebarMenu({ visible, onClose, activeKey }) {

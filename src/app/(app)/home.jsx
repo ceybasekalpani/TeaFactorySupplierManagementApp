@@ -11,9 +11,9 @@ import { useTheme } from "../../hooks/useTheme";
 
 const iconMap = {
   success: { name: "checkmark-circle", color: "#16a34a", bg: "#dcfce7" },
-  warning: { name: "warning", color: "#d97706", bg: "#fef3c7" },
-  error: { name: "close-circle", color: "#dc2626", bg: "#fee2e2" },
-  info: { name: "information-circle", color: "#2563eb", bg: "#dbeafe" },
+  warning: { name: "warning",          color: "#d97706", bg: "#fef3c7" },
+  error:   { name: "close-circle",     color: "#dc2626", bg: "#fee2e2" },
+  info:    { name: "information-circle", color: "#2563eb", bg: "#dbeafe" },
 };
 
 function getGreeting(t) {
@@ -27,23 +27,29 @@ function timeAgo(isoString) {
   if (!isoString) return "";
   const diff = Date.now() - new Date(isoString).getTime();
   const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
-  if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  const hours   = Math.floor(minutes / 60);
+  const days    = Math.floor(hours / 24);
+  if (days    > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+  if (hours   > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
   if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
   return "Just now";
 }
 
 export default function HomeScreen() {
   const { colors, fs, t } = useTheme();
-  const { currentUser, activeReg, notifications, unreadCount, getTodayLeaf, getTodayLeafData, getFeatureFlags, specialNews, newsShown, setNewsShown, dismissNews } = useApp();
+  const {
+    currentUser, activeReg,
+    notifications, unreadCount,
+    getTodayLeaf, getTodayLeafData, getFeatureFlags,
+    specialNews, newsShown, setNewsShown, dismissNews,
+  } = useApp();
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [newsVisible, setNewsVisible] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const today = new Date();
+  const [menuOpen,     setMenuOpen]     = useState(false);
+  const [newsVisible,  setNewsVisible]  = useState(false);
+  const [refreshing,   setRefreshing]   = useState(false);
+
+  const today   = new Date();
   const dateStr = today.toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
@@ -63,23 +69,61 @@ export default function HomeScreen() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const totalLeaf = getTodayLeaf();
+  const totalLeaf     = getTodayLeaf();
   const todayLeafData = getTodayLeafData();
-  const featureFlags = getFeatureFlags();
+  const featureFlags  = getFeatureFlags();
   const recentNotifications = notifications.slice(0, 3);
 
+  // Quick actions — "Leaf History & Summary" navigates to history tab by default
   const quickActions = [
-    { label: t.cashRequest, icon: "cash-outline", route: "/(app)/cash-request", color: "#22c55e", enabled: featureFlags.cash },
-    { label: t.fertilizerItemRequest, icon: "leaf-outline", route: "/(app)/fertilizerItem-request", color: "#0891b2", enabled: featureFlags.fertilizer || featureFlags.item },
-    { label: t.leafCard, icon: "card-outline", route: "/(app)/leaf-details?tab=card", color: "#7c3aed", enabled: true },
-    { label: t.history, icon: "bar-chart-outline", route: "/(app)/history", color: "#e11d48", enabled: true },
-    { label: t.landInfo, icon: "map-outline", route: "/(app)/land-info", color: "#059669", enabled: true },
-    { label: t.settings, icon: "settings-outline", route: "/(app)/settings", color: "#64748b", enabled: true },
+    {
+      label:   t.cashRequest || "Cash Request",
+      icon:    "cash-outline",
+      route:   "/(app)/cash-request",
+      color:   "#22c55e",
+      enabled: featureFlags.cash,
+    },
+    {
+      label:   t.fertilizerItemRequest || "Fertilizer & Items",
+      icon:    "leaf-outline",
+      route:   "/(app)/fertilizerItem-request",
+      color:   "#0891b2",
+      enabled: featureFlags.fertilizer || featureFlags.item,
+    },
+    {
+      label:   t.leafCard || "Leaf Card",
+      icon:    "card-outline",
+      route:   "/(app)/leaf-details?tab=card",
+      color:   "#7c3aed",
+      enabled: true,
+    },
+    {
+      // ── renamed for clarity; leads to the combined history screen ──
+      label:   "Leaf & Account History",
+      icon:    "bar-chart-outline",
+      route:   "/(app)/history",
+      color:   "#e11d48",
+      enabled: true,
+    },
+    {
+      label:   t.landInfo || "Land Info",
+      icon:    "map-outline",
+      route:   "/(app)/land-info",
+      color:   "#059669",
+      enabled: true,
+    },
+    {
+      label:   t.settings || "Settings",
+      icon:    "settings-outline",
+      route:   "/(app)/settings",
+      color:   "#64748b",
+      enabled: true,
+    },
   ];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={{
         flexDirection: "row",
         alignItems: "center",
@@ -109,16 +153,10 @@ export default function HomeScreen() {
           <Ionicons name="notifications-outline" size={fs.xl} color={colors.text} />
           {unreadCount > 0 && (
             <View style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
+              position: "absolute", top: 0, right: 0,
               backgroundColor: colors.error,
-              minWidth: 18,
-              height: 18,
-              borderRadius: 9,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingHorizontal: 3,
+              minWidth: 18, height: 18, borderRadius: 9,
+              alignItems: "center", justifyContent: "center", paddingHorizontal: 3,
             }}>
               <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
                 {unreadCount > 9 ? "9+" : unreadCount}
@@ -133,39 +171,27 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
-        {/* Welcome Banner */}
-        <View style={{
-          margin: 16,
-          borderRadius: 22,
-          overflow: "hidden",
-          backgroundColor: colors.primary,
-        }}>
-          {/* Decorative circles */}
+        {/* ── Welcome Banner ───────────────────────────────────────────────── */}
+        <View style={{ margin: 16, borderRadius: 22, overflow: "hidden", backgroundColor: colors.primary }}>
           <View style={{ position: "absolute", right: -30, top: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(255,255,255,0.08)" }} />
           <View style={{ position: "absolute", right: 30, bottom: -40, width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(255,255,255,0.06)" }} />
           <View style={{ position: "absolute", left: -20, bottom: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(255,255,255,0.05)" }} />
           <View style={{ padding: 20 }}>
-            <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: fs.sm }}>
-              {getGreeting(t)},
-            </Text>
+            <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: fs.sm }}>{getGreeting(t)},</Text>
             <Text style={{ color: "#fff", fontSize: fs["2xl"], fontWeight: "800", marginTop: 2 }}>
               {currentUser?.name} 👋
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
               <View style={{
-                backgroundColor: "rgba(255,255,255,0.18)",
-                paddingHorizontal: 10, paddingVertical: 5,
+                backgroundColor: "rgba(255,255,255,0.18)", paddingHorizontal: 10, paddingVertical: 5,
                 borderRadius: 20, flexDirection: "row", alignItems: "center", gap: 4,
               }}>
                 <Ionicons name="card-outline" size={fs.xs} color="#fff" />
-                <Text style={{ color: "#fff", fontSize: fs.xs, fontWeight: "600" }}>
-                  {currentUser?.id}
-                </Text>
+                <Text style={{ color: "#fff", fontSize: fs.xs, fontWeight: "600" }}>{currentUser?.id}</Text>
               </View>
               {activeReg?.route && (
                 <View style={{
-                  backgroundColor: "rgba(255,255,255,0.18)",
-                  paddingHorizontal: 10, paddingVertical: 5,
+                  backgroundColor: "rgba(255,255,255,0.18)", paddingHorizontal: 10, paddingVertical: 5,
                   borderRadius: 20, flexDirection: "row", alignItems: "center", gap: 4,
                 }}>
                   <Ionicons name="map-outline" size={fs.xs} color="#fff" />
@@ -175,53 +201,45 @@ export default function HomeScreen() {
                 </View>
               )}
             </View>
-            <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: fs.xs, marginTop: 10 }}>
-              {dateStr}
-            </Text>
+            <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: fs.xs, marginTop: 10 }}>{dateStr}</Text>
           </View>
         </View>
 
-        {/* Stats Row */}
+        {/* ── Stats Row ────────────────────────────────────────────────────── */}
         {todayLeafData.hasSuper ? (
-          /* Super leaf enabled — 3 equal cards in one row */
           <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 16, alignItems: "stretch" }}>
             {[
-              { 
-                label: t.normal || "Normal", 
-                value: todayLeafData.normalNet, 
-                sub: `${t.kg} · ${t.kgToday ? t.kgToday.replace("කිලෝ · අද", "today") : "today"}`, 
-                bg: "#dcfce7", 
-                route: "/(app)/leaf-details?tab=monthly", 
-                content: <Text style={{ fontSize: 18 }}>🍃</Text> 
+              {
+                label: t.normal || "Normal",
+                value: todayLeafData.normalNet,
+                sub: `kg · today`,
+                bg: "#dcfce7",
+                route: "/(app)/leaf-details?tab=monthly",
+                content: <Text style={{ fontSize: 18 }}>🍃</Text>,
               },
-              { 
-                label: t.super || "Super", 
-                value: todayLeafData.superNet, 
-                sub: `${t.kg} · ${t.kgToday ? t.kgToday.replace("කිලෝ · අද", "today") : "today"}`, 
-                bg: "#fef9c3", 
-                route: "/(app)/leaf-details?tab=monthly", 
-                content: <Text style={{ fontSize: 18 }}>⭐</Text> 
+              {
+                label: t.super || "Super",
+                value: todayLeafData.superNet,
+                sub: `kg · today`,
+                bg: "#fef9c3",
+                route: "/(app)/leaf-details?tab=monthly",
+                content: <Text style={{ fontSize: 18 }}>⭐</Text>,
               },
-              { 
-                label: t.alerts || "Alerts", 
-                value: unreadCount, 
-                sub: t.unread || "unread", 
-                bg: "#dbeafe", 
-                route: "/(app)/notifications", 
-                content: <Ionicons name="notifications" size={18} color="#2563eb" /> 
+              {
+                label: t.alerts || "Alerts",
+                value: unreadCount,
+                sub: t.unread || "unread",
+                bg: "#dbeafe",
+                route: "/(app)/notifications",
+                content: <Ionicons name="notifications" size={18} color="#2563eb" />,
               },
             ].map((item) => (
               <TouchableOpacity key={item.label} style={{ flex: 1 }} onPress={() => router.push(item.route)} activeOpacity={0.8}>
                 <View style={{
-                  flex: 1,
-                  backgroundColor: colors.card,
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: colors.cardBorder,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingVertical: 14,
-                  paddingHorizontal: 4,
+                  flex: 1, backgroundColor: colors.card, borderRadius: 16,
+                  borderWidth: 1, borderColor: colors.cardBorder,
+                  alignItems: "center", justifyContent: "center",
+                  paddingVertical: 14, paddingHorizontal: 4,
                 }}>
                   <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: item.bg, alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
                     {item.content}
@@ -234,7 +252,6 @@ export default function HomeScreen() {
             ))}
           </View>
         ) : (
-          /* No super — two equal cards side by side */
           <View style={{ flexDirection: "row", gap: 12, paddingHorizontal: 16, marginBottom: 16 }}>
             <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push("/(app)/leaf-details?tab=monthly")} activeOpacity={0.8}>
               <Card style={{ alignItems: "center", paddingVertical: 16 }}>
@@ -260,7 +277,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Quick Actions */}
+        {/* ── Quick Actions ─────────────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
           <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 12 }}>
             {t.quickActions || "Quick Actions"}
@@ -305,7 +322,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Recent Notifications */}
+        {/* ── Recent Notifications ──────────────────────────────────────────── */}
         <View style={{ paddingHorizontal: 16 }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text }}>
