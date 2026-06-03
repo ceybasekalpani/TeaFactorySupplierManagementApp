@@ -11,17 +11,28 @@ import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 import { fertilizerApi, itemApi, tokenStorage } from "../../utils/api";
 
-export default function FertilizerItemRequestScreen() { 
+// Fixed column widths — header and rows both reference these so they always align
+const COL = {
+  date:     150,
+  category:  80,
+  type:     110,
+  qty:       80,
+  status:    90,
+  action:    50,
+};
+const TABLE_MIN_WIDTH = COL.date + COL.category + COL.type + COL.qty + COL.status + COL.action + 28; // +28 for paddingHorizontal*2
+
+export default function FertilizerItemRequestScreen() {
   const { colors, fs, t } = useTheme();
   const {
-  fertilizerRequests, addFertilizerRequest, deleteFertilizerRequest,
-  itemRequests, addItemRequest, deleteItemRequest,
-  currentUser, activeReg,
-} = useApp();
+    fertilizerRequests, addFertilizerRequest, deleteFertilizerRequest,
+    itemRequests, addItemRequest, deleteItemRequest,
+    currentUser, activeReg,
+  } = useApp();
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [category, setCategory] = useState("fertilizer"); // "fertilizer" | "item"
+  const [category, setCategory] = useState("fertilizer");
   const [selectedType, setSelectedType] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("kg");
@@ -35,7 +46,6 @@ export default function FertilizerItemRequestScreen() {
 
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
-  // Load both fertilizer and item types on mount
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -74,20 +84,19 @@ export default function FertilizerItemRequestScreen() {
     return () => { mounted = false; };
   }, []);
 
-  // Reset selected type when category changes
   useEffect(() => {
     setSelectedType("");
     setQuantity("");
-    setUnit("kg"); 
+    setUnit("kg");
   }, [category]);
 
   const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
   const currentTypes = category === "fertilizer" ? fertilizerTypes : itemTypes;
   const quantityLabel = `${t.quantity} (${
-  category === "fertilizer"
-    ? `${t.unitKg ?? "kg"} / ${t.unitNos ?? "Nos"}`
-    : (t.unitUnits ?? "units")
+    category === "fertilizer"
+      ? `${t.unitKg ?? "kg"} / ${t.unitNos ?? "Nos"}`
+      : (t.unitUnits ?? "units")
   })`;
   const quantityPlaceholder = category === "fertilizer"
     ? unit === "kg"
@@ -130,19 +139,19 @@ export default function FertilizerItemRequestScreen() {
           month: currentMonth,
           fertilizerType: selectedType,
           quantity: quantityNum,
-          unit: unit, 
+          unit: unit,
         });
       } else {
         await addItemRequest({
           month: currentMonth,
           itemType: selectedType,
           quantity: quantityNum,
-          unit: "units", 
+          unit: "units",
         });
       }
       setSelectedType("");
       setQuantity("");
-      setUnit("kg"); 
+      setUnit("kg");
       showToast(t.successRequest);
     } catch (error) {
       console.log("Request error:", error);
@@ -152,7 +161,6 @@ export default function FertilizerItemRequestScreen() {
     }
   };
 
-  // Combined history: merge fertilizer + item requests, sorted by date
   const combinedHistory = useMemo(() => {
     const fReqs = (fertilizerRequests || []).map((r) => ({
       ...r,
@@ -182,38 +190,38 @@ export default function FertilizerItemRequestScreen() {
   };
 
   const formatQty = (qty, unit) => {
-  if (!qty && qty !== 0) return "-";
-  try {
-    const n = parseFloat(qty).toLocaleString("en-US", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 1,
-    });
-    const unitLabel =
-      unit === "kg"    ? t.unitKg    :
-      unit === "units" ? t.unitUnits :
-      unit === "Nos"   ? t.unitNos   : unit;
-    return `${n} ${unitLabel}`;
-  } catch {
-    return "-";
-  }
-};
-
-const handleDelete = async (req) => {
-  setDeleteLoading(true);
-  try {
-    if (req.category === "Fertilizer") {
-      await deleteFertilizerRequest(req.id);
-    } else {
-      await deleteItemRequest(req.id);
+    if (!qty && qty !== 0) return "-";
+    try {
+      const n = parseFloat(qty).toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1,
+      });
+      const unitLabel =
+        unit === "kg"    ? t.unitKg    :
+        unit === "units" ? t.unitUnits :
+        unit === "Nos"   ? t.unitNos   : unit;
+      return `${n} ${unitLabel}`;
+    } catch {
+      return "-";
     }
-    showToast(t.deleteSuccess ?? "Request deleted");
-  } catch {
-    showToast(t.deleteFailed ?? "Failed to delete", "error");
-  } finally {
-    setDeleteLoading(false);
-    setDeleteConfirm(null);
-  }
-};
+  };
+
+  const handleDelete = async (req) => {
+    setDeleteLoading(true);
+    try {
+      if (req.category === "Fertilizer") {
+        await deleteFertilizerRequest(req.id);
+      } else {
+        await deleteItemRequest(req.id);
+      }
+      showToast(t.deleteSuccess ?? "Request deleted");
+    } catch {
+      showToast(t.deleteFailed ?? "Failed to delete", "error");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirm(null);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -344,7 +352,7 @@ const handleDelete = async (req) => {
               }
             />
 
-             {category === "fertilizer" && (
+            {category === "fertilizer" && (
               <View style={{ marginBottom: 16 }}>
                 <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 8 }}>
                   {t.unit}
@@ -424,94 +432,121 @@ const handleDelete = async (req) => {
             </Card>
           ) : (
             <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
-              {/* Table Header */}
-          <View style={{
-            flexDirection: "row",
-            backgroundColor: colors.primary + "10",
-            paddingVertical: 12,
-            paddingHorizontal: 14,
-            borderBottomWidth: 2,
-            borderBottomColor: colors.primary,
-          }}>
-            <Text style={{ flex: 1.8, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>{t.colDate?.charAt(0).toUpperCase() + t.colDate?.slice(1).toLowerCase() || "Date"}</Text>
-            <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colCategory?.charAt(0).toUpperCase() + t.colCategory?.slice(1).toLowerCase() || "Category"}</Text>
-            <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colType?.charAt(0).toUpperCase() + t.colType?.slice(1).toLowerCase() || "Type"}</Text>
-            <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.colQty?.charAt(0).toUpperCase() + t.colQty?.slice(1).toLowerCase() || "Qty"}</Text>
-            <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{t.status?.charAt(0).toUpperCase() + t.status?.slice(1).toLowerCase() || "Status"}</Text>
-            <Text style={{ flex: 0.6, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>{(t.action ?? "Action")?.charAt(0).toUpperCase() + (t.action ?? "Action")?.slice(1).toLowerCase()}</Text>
-          </View>
+              {/* ── Horizontal scroll wrapper for responsive table ── */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ minWidth: TABLE_MIN_WIDTH, flexGrow: 1 }}
+                bounces={false}
+              >
+                <View style={{ minWidth: TABLE_MIN_WIDTH }}>
 
-              {/* Table Rows */}
-              {combinedHistory.map((req, i) => (
-                <View
-                  key={`${req.category}-${req.id || i}`}
-                  style={{
+                  {/* Table Header */}
+                  <View style={{
                     flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 14,
+                    backgroundColor: colors.primary + "10",
+                    paddingVertical: 12,
                     paddingHorizontal: 14,
-                    borderBottomWidth: i < combinedHistory.length - 1 ? 1 : 0,
-                    borderBottomColor: colors.border,
-                    backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40",
-                  }}
-                >
-                  <Text numberOfLines={1} style={{ flex: 1.8, color: colors.text, fontSize: fs.xs, fontWeight: "500" }}>
-                    {formatDate(req.createdAt)}
-                  </Text>
-                  <View style={{ flex: 1, alignItems: "center" }}>
-                    <View style={{
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                      borderRadius: 8,
-                      backgroundColor: req.category === "Fertilizer" ? "#dcfce7" : "#fef3c7",
-                    }}>
-                      <Text style={{
-                        fontSize: fs.xs - 1,
-                        fontWeight: "600",
-                        color: req.category === "Fertilizer" ? "#16a34a" : "#d97706",
-                      }}>
-                        {req.category === "Fertilizer" ? t.fertilizer : t.item}
-                      </Text>
-                    </View>
+                    borderBottomWidth: 2,
+                    borderBottomColor: colors.primary,
+                  }}>
+                    <Text style={{ width: COL.date,     color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
+                      {t.colDate?.charAt(0).toUpperCase() + t.colDate?.slice(1).toLowerCase() || "Date"}
+                    </Text>
+                    <Text style={{ width: COL.category, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
+                      {t.colCategory?.charAt(0).toUpperCase() + t.colCategory?.slice(1).toLowerCase() || "Category"}
+                    </Text>
+                    <Text style={{ width: COL.type,     color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
+                      {t.colType?.charAt(0).toUpperCase() + t.colType?.slice(1).toLowerCase() || "Type"}
+                    </Text>
+                    <Text style={{ width: COL.qty,      color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
+                      {t.colQty?.charAt(0).toUpperCase() + t.colQty?.slice(1).toLowerCase() || "Qty"}
+                    </Text>
+                    <Text style={{ width: COL.status,   color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
+                      {t.status?.charAt(0).toUpperCase() + t.status?.slice(1).toLowerCase() || "Status"}
+                    </Text>
+                    <Text style={{ width: COL.action,   color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
+                      {(t.action ?? "Action")?.charAt(0).toUpperCase() + (t.action ?? "Action")?.slice(1).toLowerCase()}
+                    </Text>
                   </View>
-                  <Text numberOfLines={1} style={{ flex: 1.5, color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>
-                    {req.displayType}
-                  </Text>
-                  <Text numberOfLines={1} style={{ flex: 1.2, color: colors.text, fontSize: fs.xs, fontWeight: "600", textAlign: "center" }}>
-                    {formatQty(req.quantity, req.unit ?? (req.category === "Fertilizer" ? "kg" : "units"))}
-                  </Text>
-                  <View style={{ flex: 1.2, alignItems: "center" }}>
-                    <StatusBadge status={req.status || "pending"} size="small" />
-                  </View>
-                  {/* Action column — delete icon, only for pending requests */}
-                  <View style={{ flex: 0.6, alignItems: "center" }}>
-                    {(req.status === "pending" || req.status === "Pending") && (
-                      <TouchableOpacity onPress={() => setDeleteConfirm(req)}>
-                        <Ionicons name="trash-outline" size={fs.lg} color="#ef4444" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              ))}
 
-              {/* Summary Footer */}
-              <View style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingVertical: 12,
-                paddingHorizontal: 14,
-                backgroundColor: colors.surface,
-                borderTopWidth: 1,
-                borderTopColor: colors.border,
-              }}>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
-                  {t.total}: {combinedHistory.length}
-                </Text>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.xs }}>
-                  {fertilizerRequests?.length || 0} {t.fertilizerLower} · {itemRequests?.length || 0} {t.itemsLower}
-                </Text>
-              </View>
+                  {/* Table Rows */}
+                  {combinedHistory.map((req, i) => (
+                    <View
+                      key={`${req.category}-${req.id || i}`}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        paddingVertical: 14,
+                        paddingHorizontal: 14,
+                        borderBottomWidth: i < combinedHistory.length - 1 ? 1 : 0,
+                        borderBottomColor: colors.border,
+                        backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40",
+                      }}
+                    >
+                      <Text numberOfLines={1} style={{ width: COL.date,     color: colors.text, fontSize: fs.xs, fontWeight: "500" }}>
+                        {formatDate(req.createdAt)}
+                      </Text>
+                      <View style={{ width: COL.category, alignItems: "center" }}>
+                        <View style={{
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 8,
+                          backgroundColor: req.category === "Fertilizer" ? "#dcfce7" : "#fef3c7",
+                        }}>
+                          <Text style={{
+                            fontSize: fs.xs - 1,
+                            fontWeight: "600",
+                            color: req.category === "Fertilizer" ? "#16a34a" : "#d97706",
+                          }}>
+                            {req.category === "Fertilizer" ? t.fertilizer : t.item}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text numberOfLines={1} style={{ width: COL.type,   color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>
+                        {req.displayType}
+                      </Text>
+                      <Text numberOfLines={1} style={{ width: COL.qty,    color: colors.text, fontSize: fs.xs, fontWeight: "600", textAlign: "center" }}>
+                        {formatQty(
+                          req.quantity,
+                          req.category === "Other Item" ? "units" : (req.unit ?? "kg")
+                        )}
+                      </Text>
+                      <View style={{ width: COL.status, alignItems: "center" }}>
+                        <StatusBadge status={req.status || "pending"} size="small" />
+                      </View>
+                      <View style={{ width: COL.action, alignItems: "center" }}>
+                        {(req.status === "pending" || req.status === "Pending") && (
+                          <TouchableOpacity onPress={() => setDeleteConfirm(req)}>
+                            <Ionicons name="trash-outline" size={fs.lg} color="#ef4444" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+
+                  {/* Summary Footer */}
+                  <View style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    backgroundColor: colors.surface,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border,
+                  }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
+                      {t.total}: {combinedHistory.length}
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: fs.xs }}>
+                      {fertilizerRequests?.length || 0} {t.fertilizerLower} · {itemRequests?.length || 0} {t.itemsLower}
+                    </Text>
+                  </View>
+
+                </View>
+              </ScrollView>
+              {/* ── End horizontal scroll wrapper ── */}
             </Card>
           )}
         </ScrollView>

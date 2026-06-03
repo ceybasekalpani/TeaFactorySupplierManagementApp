@@ -31,12 +31,14 @@ const STATUS_COLOR = {
   rejected:   { bg: "#fee2e2", text: "#dc2626" },
 };
 
-function StatusBadge({ status, fs, colors }) {
+function StatusBadge({ status, fs, colors, t }) {
   const s =
     STATUS_COLOR[status?.toLowerCase()] ?? {
       bg: colors.surface,
       text: colors.textSecondary,
     };
+  const statusKey = status?.toLowerCase();
+  const label = (statusKey && t(statusKey)) ? t(statusKey) : (status ?? "—");
   return (
     <View
       style={{
@@ -48,34 +50,31 @@ function StatusBadge({ status, fs, colors }) {
     >
       <Text
         style={{
-          color: s.text,
-          fontSize: fs.xs,
-          fontWeight: "700",
+          color:         s.text,
+          fontSize:      fs.xs,
+          fontWeight:    "700",
           textTransform: "capitalize",
         }}
       >
-        {status ?? "—"}
+        {label}
       </Text>
     </View>
   );
 }
 
 // ─── Helper: parse "yyyy-MM-dd" ISO string → "14 May 2026" ──────────────────
-// The backend now sends requestDate as "yyyy-MM-dd".  We parse it without
-// relying on the Date constructor's locale-specific behaviour by splitting
-// manually, which avoids off-by-one timezone issues on mobile.
 function formatFullDate(isoDate) {
   if (!isoDate) return null;
-  const parts = isoDate.split("-");          // ["2026", "05", "14"]
-  if (parts.length !== 3) return isoDate;   // fallback — return raw string
+  const parts = isoDate.split("-");
+  if (parts.length !== 3) return isoDate;
   const [year, month, day] = parts.map(Number);
   if (!year || !month || !day) return isoDate;
-  const d = new Date(year, month - 1, day); // local midnight, no timezone shift
+  const d = new Date(year, month - 1, day);
   return d.toLocaleDateString("en-GB", {
     day:   "2-digit",
     month: "long",
     year:  "numeric",
-  }); // → "14 May 2026"
+  });
 }
 
 // ─── PDF HTML builder ─────────────────────────────────────────────────────────
@@ -201,21 +200,21 @@ function buildLeafHtml({ historyArray, currentUser, activeReg, periodLabel }) {
 }
 
 // ─── Creative Period Selector (animated sliding pill) ────────────────────────
-function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs }) {
+function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs, t }) {
   const slideAnim = useRef(new Animated.Value(leafPeriod === "6m" ? 0 : 1)).current;
 
   const handleSelect = (val) => {
     Animated.spring(slideAnim, {
-      toValue:      val === "6m" ? 0 : 1,
+      toValue:         val === "6m" ? 0 : 1,
       useNativeDriver: false,
-      speed:        20,
-      bounciness:   6,
+      speed:           20,
+      bounciness:      6,
     }).start();
     setLeafPeriod(val);
   };
 
   const TRACK_H = 52;
-  const PILL_W  = (SCREEN_W - 32 - 8) / 2; // (screen - outer padding - inner padding/2)
+  const PILL_W  = (SCREEN_W - 32 - 8) / 2;
 
   const pillLeft = slideAnim.interpolate({
     inputRange:  [0, 1],
@@ -223,23 +222,23 @@ function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs }) {
   });
 
   const options = [
-    { value: "6m",  label: "6 Months",  icon: "📆", sub: "Half year" },
-    { value: "12m", label: "12 Months", icon: "🗓️", sub: "Full year"  },
+    { value: "6m",  label: t("sixMonths"),    icon: "📆", sub: t("halfYear") },
+    { value: "12m", label: t("twelveMonths"), icon: "🗓️", sub: t("fullYear") },
   ];
 
   return (
     <View style={{ marginBottom: 20 }}>
       <Text
         style={{
-          fontSize:        fs.xs,
-          fontWeight:      "600",
-          color:           colors.textSecondary,
-          letterSpacing:   1,
-          textTransform:   "uppercase",
-          marginBottom:    10,
+          fontSize:      fs.xs,
+          fontWeight:    "600",
+          color:         colors.textSecondary,
+          letterSpacing: 1,
+          textTransform: "uppercase",
+          marginBottom:  10,
         }}
       >
-        Reporting Period
+        {t("reportingPeriod")}
       </Text>
 
       {/* Track */}
@@ -274,7 +273,6 @@ function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs }) {
           }}
         />
 
-        {/* Option buttons (rendered above the pill via zIndex) */}
         {options.map((o) => {
           const active = leafPeriod === o.value;
           return (
@@ -283,13 +281,13 @@ function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs }) {
               onPress={() => handleSelect(o.value)}
               activeOpacity={0.8}
               style={{
-                flex:            1,
-                height:          TRACK_H,
-                flexDirection:   "row",
-                alignItems:      "center",
-                justifyContent:  "center",
-                gap:             8,
-                zIndex:          1,
+                flex:           1,
+                height:         TRACK_H,
+                flexDirection:  "row",
+                alignItems:     "center",
+                justifyContent: "center",
+                gap:            8,
+                zIndex:         1,
               }}
             >
               <Text style={{ fontSize: 16 }}>{o.icon}</Text>
@@ -319,12 +317,12 @@ function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs }) {
         })}
       </View>
 
-      {/* Tick marks — fill to show selection depth */}
+      {/* Tick marks */}
       <View
         style={{
-          flexDirection:   "row",
-          justifyContent:  "space-around",
-          marginTop:       6,
+          flexDirection:  "row",
+          justifyContent: "space-around",
+          marginTop:      6,
         }}
       >
         {[...Array(13)].map((_, i) => {
@@ -351,7 +349,11 @@ function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs }) {
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function HistoryScreen() {
-  const { colors, fs, t } = useTheme();
+  // ── FIX: guard against useTheme returning t as a plain object ──────────────
+  const { colors, fs, t: tRaw } = useTheme();
+  const t = typeof tRaw === "function" ? tRaw : (key) => tRaw?.[key] ?? key;
+  // ──────────────────────────────────────────────────────────────────────────
+
   const {
     getSixMonthHistory,
     getTwelveMonthHistory,
@@ -362,8 +364,8 @@ export default function HistoryScreen() {
   const router = useRouter();
 
   const [menuOpen,      setMenuOpen]      = useState(false);
-  const [leafPeriod,    setLeafPeriod]    = useState("6m"); // "6m" | "12m"
-  const [mainTab,       setMainTab]       = useState("leaf"); // "leaf" | "requests"
+  const [leafPeriod,    setLeafPeriod]    = useState("6m");
+  const [mainTab,       setMainTab]       = useState("leaf");
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [pdfLoading,    setPdfLoading]    = useState(false);
 
@@ -384,7 +386,7 @@ export default function HistoryScreen() {
     try {
       setPdfLoading(true);
       if (!historyArray.length) {
-        Alert.alert("No Data", "No history available to generate PDF.");
+        Alert.alert(t("noData"), t("noHistoryForPdf"));
         return;
       }
       const periodLabel =
@@ -402,10 +404,10 @@ export default function HistoryScreen() {
       await FileSystem.moveAsync({ from: uri, to: dest });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) await Sharing.shareAsync(dest);
-      else          Alert.alert("PDF Saved", `Saved to:\n${dest}`);
+      else          Alert.alert(t("downloadStatement"), dest);
     } catch (e) {
       console.log(e);
-      Alert.alert("Error", "Failed to generate PDF.");
+      Alert.alert(t("noData"), t("pdfError"));
     } finally {
       setPdfLoading(false);
     }
@@ -453,7 +455,7 @@ export default function HistoryScreen() {
     if (!historyArray.length)
       return (
         <View style={{ alignItems: "center", padding: 24 }}>
-          <Text style={{ color: colors.textSecondary }}>No data available</Text>
+          <Text style={{ color: colors.textSecondary }}>{t("noDataAvailable")}</Text>
         </View>
       );
 
@@ -487,11 +489,11 @@ export default function HistoryScreen() {
               />
               <Text
                 style={{
-                  color:       colors.textMuted,
-                  fontSize:    9,
-                  marginTop:   6,
-                  textAlign:   "center",
-                  fontWeight:  "500",
+                  color:      colors.textMuted,
+                  fontSize:   9,
+                  marginTop:  6,
+                  textAlign:  "center",
+                  fontWeight: "500",
                 }}
               >
                 {shortMonth}
@@ -506,7 +508,7 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader
-        title="Leaf & Request History"
+        title={t("leafAndAccountHistory")}
         onBack={() => router.back()}
         rightIcon="menu"
         onRightPress={() => setMenuOpen(true)}
@@ -515,17 +517,17 @@ export default function HistoryScreen() {
       {/* ── Main tab bar ───────────────────────────────────────────────────── */}
       <View
         style={{
-          flexDirection:   "row",
+          flexDirection:    "row",
           marginHorizontal: 16,
-          marginTop:       12,
-          marginBottom:    0,
-          backgroundColor: colors.surface,
-          borderRadius:    14,
-          padding:         4,
+          marginTop:        12,
+          marginBottom:     0,
+          backgroundColor:  colors.surface,
+          borderRadius:     14,
+          padding:          4,
         }}
       >
-        <MainTabBtn id="leaf"     icon="🍃" label="Leaf History"    />
-        <MainTabBtn id="requests" icon="📋" label="Request Summary" />
+        <MainTabBtn id="leaf"     icon="🍃" label={t("leafHistory")}    />
+        <MainTabBtn id="requests" icon="📋" label={t("requestSummary")} />
       </View>
 
       <ScrollView
@@ -535,19 +537,19 @@ export default function HistoryScreen() {
         {/* ═══════════════ LEAF HISTORY TAB ═══════════════ */}
         {mainTab === "leaf" && (
           <>
-            {/* Creative animated period selector */}
             <PeriodSelector
               leafPeriod={leafPeriod}
               setLeafPeriod={setLeafPeriod}
               colors={colors}
               fs={fs}
+              t={t}
             />
 
             {/* Summary KPI cards */}
             <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
               {[
                 {
-                  label: leafPeriod === "6m" ? "Total Net (6 mo)" : "Total Net (12 mo)",
+                  label: leafPeriod === "6m" ? t("totalNetSixMo") : t("totalNetTwelveMo"),
                   value: Math.round(
                     historyArray.reduce((s, h) => s + (h?.totalNet || 0), 0)
                   ),
@@ -555,7 +557,7 @@ export default function HistoryScreen() {
                   icon:  "🍃",
                 },
                 {
-                  label: "Collection Days",
+                  label: t("collectionDays"),
                   value: historyArray.reduce((s, h) => s + (h?.days || 0), 0),
                   color: colors.accent,
                   icon:  "📅",
@@ -585,10 +587,10 @@ export default function HistoryScreen() {
                   </Text>
                   <Text
                     style={{
-                      color:      colors.textSecondary,
-                      fontSize:   fs.xs,
-                      textAlign:  "center",
-                      marginTop:  4,
+                      color:     colors.textSecondary,
+                      fontSize:  fs.xs,
+                      textAlign: "center",
+                      marginTop: 4,
                     }}
                   >
                     {kpi.label}
@@ -608,7 +610,7 @@ export default function HistoryScreen() {
                 textTransform: "uppercase",
               }}
             >
-              Monthly Net Leaf Collection (kg)
+              {t("monthlyNetLeafCollection")}
             </Text>
             <Card style={{ marginBottom: 20, paddingVertical: 16, paddingHorizontal: 8 }}>
               <BarChart />
@@ -625,7 +627,7 @@ export default function HistoryScreen() {
                 textTransform: "uppercase",
               }}
             >
-              {leafPeriod === "6m" ? "6 Month Summary" : "12 Month Summary"}
+              {leafPeriod === "6m" ? t("sixMonthSummary") : t("twelveMonthSummary")}
             </Text>
 
             <View
@@ -641,13 +643,13 @@ export default function HistoryScreen() {
               {/* Table header */}
               <View
                 style={{
-                  flexDirection:   "row",
-                  backgroundColor: colors.primary,
-                  paddingVertical: 14,
+                  flexDirection:     "row",
+                  backgroundColor:   colors.primary,
+                  paddingVertical:   14,
                   paddingHorizontal: 16,
                 }}
               >
-                {["MONTH", "GROSS", "NET", "DAYS"].map((h, i) => (
+                {[t("month"), t("gross"), t("net"), t("days")].map((h, i) => (
                   <Text
                     key={h}
                     style={{
@@ -669,9 +671,9 @@ export default function HistoryScreen() {
                     <View
                       key={m?.key || i}
                       style={{
-                        flexDirection:    "row",
-                        alignItems:       "center",
-                        paddingVertical:  14,
+                        flexDirection:     "row",
+                        alignItems:        "center",
+                        paddingVertical:   14,
                         paddingHorizontal: 16,
                         borderBottomWidth: i < historyArray.length - 1 ? 1 : 0,
                         borderBottomColor: colors.border,
@@ -735,7 +737,7 @@ export default function HistoryScreen() {
                     }}
                   >
                     <Text style={{ flex: 2, color: colors.primary, fontSize: fs.sm, fontWeight: "800" }}>
-                      TOTAL
+                      {t("total")}
                     </Text>
                     <Text style={{ flex: 1, color: colors.primary, fontSize: fs.sm, fontWeight: "800", textAlign: "right" }}>
                       {Math.round(historyArray.reduce((s, m) => s + (m?.totalGross ?? 0), 0)).toLocaleString()}
@@ -751,7 +753,7 @@ export default function HistoryScreen() {
               ) : (
                 <View style={{ padding: 32, alignItems: "center" }}>
                   <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
-                    No data available for the selected period
+                    {t("noDataForPeriod")}
                   </Text>
                 </View>
               )}
@@ -789,23 +791,15 @@ export default function HistoryScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.text, fontSize: fs.md, fontWeight: "700" }}>
-                    {leafPeriod === "6m"
-                      ? "6 Month Leaf Statement"
-                      : "Annual (12 Month) Statement"}
+                    {leafPeriod === "6m" ? t("sixMonthLeafStatement") : t("annualLeafStatement")}
                   </Text>
                   <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>
-                    {leafPeriod === "6m"
-                      ? "Download complete 6-month leaf collection report as PDF"
-                      : "Download full annual leaf collection statement as PDF"}
+                    {leafPeriod === "6m" ? t("downloadSixMonth") : t("downloadAnnual")}
                   </Text>
                 </View>
               </View>
               <Button
-                title={
-                  leafPeriod === "6m"
-                    ? "Download 6 Month Statement"
-                    : "Download Annual Statement"
-                }
+                title={leafPeriod === "6m" ? t("downloadSixMonthBtn") : t("downloadAnnualBtn")}
                 onPress={handleDownloadPDF}
                 loading={pdfLoading}
                 icon="download"
@@ -827,7 +821,7 @@ export default function HistoryScreen() {
                 textTransform: "uppercase",
               }}
             >
-              Select Month
+              {t("selectMonth")}
             </Text>
 
             {/* Month pill picker */}
@@ -873,7 +867,7 @@ export default function HistoryScreen() {
                 {/* ── Cash Requests ── */}
                 <SummarySection
                   icon="💵"
-                  title="Cash Requests"
+                  title={t("cashRequests")}
                   accentColor="#16a34a"
                   count={monthSummary.cash?.count ?? 0}
                   colors={colors}
@@ -881,10 +875,10 @@ export default function HistoryScreen() {
                 >
                   {(monthSummary.cash?.count ?? 0) > 0 ? (
                     <>
-                      <StatRow label="Total Amount" value={`Rs. ${(monthSummary.cash?.totalAmount ?? 0).toLocaleString()}`} colors={colors} fs={fs} />
-                      <StatRow label="Pending"      value={monthSummary.cash?.pendingCount  ?? 0} colors={colors} fs={fs} />
-                      <StatRow label="Approved"     value={monthSummary.cash?.approvedCount ?? 0} colors={colors} fs={fs} />
-                      <StatRow label="Paid"         value={monthSummary.cash?.paidCount     ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("totalAmount")} value={`Rs. ${(monthSummary.cash?.totalAmount ?? 0).toLocaleString()}`} colors={colors} fs={fs} />
+                      <StatRow label={t("pending")}     value={monthSummary.cash?.pendingCount  ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("approved")}    value={monthSummary.cash?.approvedCount ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("paid")}        value={monthSummary.cash?.paidCount     ?? 0} colors={colors} fs={fs} />
                       {(monthSummary.cash?.requests ?? []).map((r, i) => (
                         <RequestRow
                           key={i}
@@ -893,18 +887,19 @@ export default function HistoryScreen() {
                           status={r.status}
                           colors={colors}
                           fs={fs}
+                          t={t}
                         />
                       ))}
                     </>
                   ) : (
-                    <EmptyNote text="No cash requests this month." colors={colors} fs={fs} />
+                    <EmptyNote text={t("noCashRequests")} colors={colors} fs={fs} />
                   )}
                 </SummarySection>
 
                 {/* ── Fertilizer Requests ── */}
                 <SummarySection
                   icon="🌿"
-                  title="Fertilizer Requests"
+                  title={t("fertilizerRequests")}
                   accentColor="#0891b2"
                   count={monthSummary.fertilizer?.count ?? 0}
                   colors={colors}
@@ -912,30 +907,31 @@ export default function HistoryScreen() {
                 >
                   {(monthSummary.fertilizer?.count ?? 0) > 0 ? (
                     <>
-                      <StatRow label="Total Qty"  value={`${monthSummary.fertilizer?.totalQuantity ?? 0} units`} colors={colors} fs={fs} />
-                      <StatRow label="Pending"    value={monthSummary.fertilizer?.pendingCount    ?? 0} colors={colors} fs={fs} />
-                      <StatRow label="Approved"   value={monthSummary.fertilizer?.approvedCount   ?? 0} colors={colors} fs={fs} />
-                      <StatRow label="Dispatched" value={monthSummary.fertilizer?.dispatchedCount ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("totalQty")}    value={`${monthSummary.fertilizer?.totalQuantity ?? 0} units`} colors={colors} fs={fs} />
+                      <StatRow label={t("pending")}     value={monthSummary.fertilizer?.pendingCount    ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("approved")}    value={monthSummary.fertilizer?.approvedCount   ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("dispatched")}  value={monthSummary.fertilizer?.dispatchedCount ?? 0} colors={colors} fs={fs} />
                       {(monthSummary.fertilizer?.requests ?? []).map((r, i) => (
                         <RequestRow
                           key={i}
-                          left={`${r.fertilizerType} — ${r.quantity} ${r.unit}`}
+                          left={`${r.fertilizerType} — ${r.quantity} ${r.unit ?? "kg"}`}
                           requestDate={r.requestDate}
                           status={r.status}
                           colors={colors}
                           fs={fs}
+                          t={t}
                         />
                       ))}
                     </>
                   ) : (
-                    <EmptyNote text="No fertilizer requests this month." colors={colors} fs={fs} />
+                    <EmptyNote text={t("noFertilizerRequests")} colors={colors} fs={fs} />
                   )}
                 </SummarySection>
 
                 {/* ── Item Requests ── */}
                 <SummarySection
                   icon="📦"
-                  title="Item Requests"
+                  title={t("itemRequests")}
                   accentColor="#7c3aed"
                   count={monthSummary.item?.count ?? 0}
                   colors={colors}
@@ -943,23 +939,24 @@ export default function HistoryScreen() {
                 >
                   {(monthSummary.item?.count ?? 0) > 0 ? (
                     <>
-                      <StatRow label="Total Qty" value={`${monthSummary.item?.totalQuantity ?? 0} units`} colors={colors} fs={fs} />
-                      <StatRow label="Pending"   value={monthSummary.item?.pendingCount    ?? 0} colors={colors} fs={fs} />
-                      <StatRow label="Approved"  value={monthSummary.item?.approvedCount   ?? 0} colors={colors} fs={fs} />
-                      <StatRow label="Issued"    value={monthSummary.item?.issuedCount     ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("totalQty")}  value={`${monthSummary.item?.totalQuantity ?? 0} units`} colors={colors} fs={fs} />
+                      <StatRow label={t("pending")}   value={monthSummary.item?.pendingCount    ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("approved")}  value={monthSummary.item?.approvedCount   ?? 0} colors={colors} fs={fs} />
+                      <StatRow label={t("issued")}    value={monthSummary.item?.issuedCount     ?? 0} colors={colors} fs={fs} />
                       {(monthSummary.item?.requests ?? []).map((r, i) => (
                         <RequestRow
                           key={i}
-                          left={`${r.itemType} — ${r.quantity} ${r.unit}`}
+                          left={`${r.itemType} — ${r.quantity} ${r.unit ?? "units"}`}
                           requestDate={r.requestDate}
                           status={r.status}
                           colors={colors}
                           fs={fs}
+                          t={t}
                         />
                       ))}
                     </>
                   ) : (
-                    <EmptyNote text="No item requests this month." colors={colors} fs={fs} />
+                    <EmptyNote text={t("noItemRequests")} colors={colors} fs={fs} />
                   )}
                 </SummarySection>
               </>
@@ -967,15 +964,13 @@ export default function HistoryScreen() {
               <Card>
                 <Text
                   style={{
-                    color:          colors.textSecondary,
-                    textAlign:      "center",
+                    color:           colors.textSecondary,
+                    textAlign:       "center",
                     paddingVertical: 16,
-                    fontSize:       fs.sm,
+                    fontSize:        fs.sm,
                   }}
                 >
-                  {requestsSummary.length === 0
-                    ? "Loading summary data…"
-                    : "No request data found for the selected month."}
+                  {requestsSummary.length === 0 ? t("loadingSummary") : t("noDataForMonth")}
                 </Text>
               </Card>
             )}
@@ -1008,11 +1003,11 @@ function SummarySection({ icon, title, accentColor, count, colors, fs, children 
     >
       <View
         style={{
-          flexDirection:   "row",
-          alignItems:      "center",
-          gap:             12,
-          backgroundColor: accentColor + "12",
-          paddingVertical: 14,
+          flexDirection:     "row",
+          alignItems:        "center",
+          gap:               12,
+          backgroundColor:   accentColor + "12",
+          paddingVertical:   14,
           paddingHorizontal: 16,
           borderBottomWidth: 1,
           borderBottomColor: accentColor + "25",
@@ -1031,12 +1026,12 @@ function SummarySection({ icon, title, accentColor, count, colors, fs, children 
         </Text>
         <View
           style={{
-            backgroundColor:  accentColor,
-            borderRadius:     14,
-            minWidth:         28,
-            height:           28,
-            alignItems:       "center",
-            justifyContent:   "center",
+            backgroundColor:   accentColor,
+            borderRadius:      14,
+            minWidth:          28,
+            height:            28,
+            alignItems:        "center",
+            justifyContent:    "center",
             paddingHorizontal: 8,
           }}
         >
@@ -1065,17 +1060,14 @@ function StatRow({ label, value, colors, fs }) {
   );
 }
 
-// ── RequestRow ────────────────────────────────────────────────────────────────
-// requestDate: ISO string "yyyy-MM-dd" from the backend → formatted to
-// "14 May 2026" by formatFullDate() above.
-function RequestRow({ left, requestDate, status, colors, fs }) {
+function RequestRow({ left, requestDate, status, colors, fs, t }) {
   const dateLabel = formatFullDate(requestDate);
 
   return (
     <View
       style={{
-        marginTop:    8,
-        paddingTop:   8,
+        marginTop:      8,
+        paddingTop:     8,
         borderTopWidth: 1,
         borderTopColor: colors.border,
       }}
@@ -1090,17 +1082,17 @@ function RequestRow({ left, requestDate, status, colors, fs }) {
       >
         <Text
           style={{
-            color:      colors.text,
-            fontSize:   fs.xs,
-            fontWeight: "600",
-            flex:       1,
+            color:       colors.text,
+            fontSize:    fs.xs,
+            fontWeight:  "600",
+            flex:        1,
             marginRight: 10,
           }}
           numberOfLines={1}
         >
           {left}
         </Text>
-        <StatusBadge status={status} fs={fs} colors={colors} />
+        <StatusBadge status={status} fs={fs} colors={colors} t={t} />
       </View>
 
       {/* Row 2: full requested date */}
@@ -1115,7 +1107,7 @@ function RequestRow({ left, requestDate, status, colors, fs }) {
         >
           <Ionicons name="calendar-outline" size={11} color={colors.textMuted} />
           <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: "500" }}>
-            Requested: {dateLabel}
+            {t("requested")}: {dateLabel}
           </Text>
         </View>
       )}

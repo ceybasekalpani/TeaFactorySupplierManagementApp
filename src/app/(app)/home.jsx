@@ -99,7 +99,7 @@ export default function HomeScreen() {
     },
     {
       // ── renamed for clarity; leads to the combined history screen ──
-      label:   "Leaf & Account History",
+      label:   t.leafAndAccountHistory || "Leaf & Account History",
       icon:    "bar-chart-outline",
       route:   "/(app)/history",
       color:   "#e11d48",

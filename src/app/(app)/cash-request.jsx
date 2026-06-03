@@ -36,12 +36,10 @@ export default function CashRequestScreen() {
   const [selectedMonthKey, setSelectedMonthKey] = useState("current");
   const selectedMonthInfo = selectedMonthKey === "current" ? currentMonthInfo : prevMonthInfo;
 
-  // Selected date as YYYY-MM-DD string
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [calendarMonth, setCalendarMonth] = useState(todayStr);
 
-  // When month selection changes, reset date to first of that month
   useEffect(() => {
     if (selectedMonthKey === "prev") {
       const y = prevMonthInfo.year;
@@ -157,6 +155,16 @@ export default function CashRequestScreen() {
   };
 
   const amountNum = parseFloat(amount) || 0;
+
+  // Fixed column widths — header and rows both use these so they always align
+  const COL = {
+    date:   160,
+    month:  110,
+    amount: 110,
+    status: 100,
+    action:  60,
+  };
+  const TABLE_MIN_WIDTH = COL.date + COL.month + COL.amount + COL.status + COL.action + 28; // +28 for paddingHorizontal*2
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -291,85 +299,100 @@ export default function CashRequestScreen() {
             </Card>
           ) : (
             <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
-              <View style={{
-                flexDirection: "row", backgroundColor: colors.primary + "10",
-                paddingVertical: 14, paddingHorizontal: 14,
-                borderBottomWidth: 2, borderBottomColor: colors.primary,
-              }}>
-           
-                 <Text style={{ flex: 2, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
-                {t.requestDate?.charAt(0).toUpperCase() + t.requestDate?.slice(1).toLowerCase() || "Date"}</Text>
-              
+              {/* ── Horizontal scroll wrapper for responsive table ── */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ minWidth: TABLE_MIN_WIDTH, flexGrow: 1 }}
+                bounces={false}
+              >
+                <View style={{ flex: 1, minWidth: TABLE_MIN_WIDTH }}>
 
-                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
-                {t.month?.charAt(0).toUpperCase() + t.month?.slice(1).toLowerCase() || "Month"}</Text>
+                  {/* Table Header */}
+                  <View style={{
+                    flexDirection: "row", backgroundColor: colors.primary + "10",
+                    paddingVertical: 14, paddingHorizontal: 14,
+                    borderBottomWidth: 2, borderBottomColor: colors.primary,
+                  }}>
+                    <Text style={{ width: COL.date, color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
+                      {t.requestDate?.charAt(0).toUpperCase() + t.requestDate?.slice(1).toLowerCase() || "Date"}
+                    </Text>
 
-                <Text style={{ flex: 1.5, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right", marginRight: 8 }}>Amount(Rs)</Text>                   
+                    <Text style={{ width: COL.month, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
+                      {t.month?.charAt(0).toUpperCase() + t.month?.slice(1).toLowerCase() || "Month"}
+                    </Text>
 
-                <Text style={{ flex: 1.2, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
-                  {t.status?.charAt(0).toUpperCase() + t.status?.slice(1).toLowerCase() || "Status"}
-                </Text>
+                    <Text style={{ width: COL.amount, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "right", marginRight: 8 }}>
+                      Amount(Rs)
+                    </Text>
 
-                <Text style={{ flex: 0.6, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
-                  {(t.action ?? "Action")?.charAt(0).toUpperCase() + (t.action ?? "Action")?.slice(1).toLowerCase()}
-                </Text>
-                
-              </View>
+                    <Text style={{ width: COL.status, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
+                      {t.status?.charAt(0).toUpperCase() + t.status?.slice(1).toLowerCase() || "Status"}
+                    </Text>
 
- 
-
-              {advanceRequests.map((req, i) => (
-                <View
-                  key={req.id}
-                  style={{
-                    flexDirection: "row", alignItems: "center",
-                    paddingVertical: 16, paddingHorizontal: 14,
-                    borderBottomWidth: i < advanceRequests.length - 1 ? 1 : 0,
-                    borderBottomColor: colors.border,
-                    backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40",
-                  }}
-                >
-                  <Text style={{ flex: 2, color: colors.text, fontSize: fs.sm, fontWeight: "500" }}>
-                    {formatDate(req.createdAt)}
-                  </Text>
-                  <Text style={{ flex: 1.5, color: colors.textSecondary, fontSize: fs.sm, textAlign: "center" }}>
-                    {req.month || "-"}
-                  </Text>
-                  <Text style={{ flex: 1.5, color: colors.text, fontSize: fs.sm, fontWeight: "600", textAlign: "center" }}>
-                    Rs. {formatCurrency(req.amount)} 
-                  </Text>
-                  <View style={{ flex: 1, alignItems: "center" }}>
-                    <StatusBadge status={req.status || "pending"} size="small" />
+                    <Text style={{ width: COL.action, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
+                      {(t.action ?? "Action")?.charAt(0).toUpperCase() + (t.action ?? "Action")?.slice(1).toLowerCase()}
+                    </Text>
                   </View>
-                  {/* Delete button — only for pending */}
-                  <View style={{ flex: 0.5, alignItems: "center" }}>
-                    {(req.status === "pending" || req.status === "Pending") && (
-                      <TouchableOpacity onPress={() => setDeleteConfirm(req.id)}>
-                        <Ionicons name="trash-outline" size={fs.lg} color="#ef4444" />
-                      </TouchableOpacity>
-                    )}
+
+                  {/* Table Rows */}
+                  {advanceRequests.map((req, i) => (
+                    <View
+                      key={req.id}
+                      style={{
+                        flexDirection: "row", alignItems: "center",
+                        paddingVertical: 16, paddingHorizontal: 14,
+                        borderBottomWidth: i < advanceRequests.length - 1 ? 1 : 0,
+                        borderBottomColor: colors.border,
+                        backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40",
+                      }}
+                    >
+                      <Text style={{ width: COL.date, color: colors.text, fontSize: fs.sm, fontWeight: "500" }}>
+                        {formatDate(req.createdAt)}
+                      </Text>
+                      <Text style={{ width: COL.month, color: colors.textSecondary, fontSize: fs.sm, textAlign: "center" }}>
+                        {req.month || "-"}
+                      </Text>
+                      <Text style={{ width: COL.amount, color: colors.text, fontSize: fs.sm, fontWeight: "600", textAlign: "right", marginRight: 8 }}>
+                        Rs. {formatCurrency(req.amount)}
+                      </Text>
+                      <View style={{ width: COL.status, alignItems: "center" }}>
+                        <StatusBadge status={req.status || "pending"} size="small" />
+                      </View>
+                      {/* Delete button — only for pending */}
+                      <View style={{ width: COL.action, alignItems: "center" }}>
+                        {(req.status === "pending" || req.status === "Pending") && (
+                          <TouchableOpacity onPress={() => setDeleteConfirm(req.id)}>
+                            <Ionicons name="trash-outline" size={fs.lg} color="#ef4444" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+
+                  {/* Table Footer */}
+                  <View style={{
+                    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+                    paddingVertical: 14, paddingHorizontal: 14,
+                    backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border,
+                  }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
+                      {t.totalRequests}: {advanceRequests.length}
+                    </Text>
+                    <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
+                      {t.total}: Rs. {formatCurrency(advanceRequests.reduce((sum, req) => sum + (parseFloat(req.amount) || 0), 0))}
+                    </Text>
                   </View>
+
                 </View>
-              ))}
-
-              <View style={{
-                flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-                paddingVertical: 14, paddingHorizontal: 14,
-                backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border,
-              }}>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
-                  {t.totalRequests}: {advanceRequests.length}
-                </Text>
-                <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
-                  {t.total}: Rs. {formatCurrency(advanceRequests.reduce((sum, req) => sum + (parseFloat(req.amount) || 0), 0))}
-                </Text>
-              </View>
+              </ScrollView>
+              {/* ── End horizontal scroll wrapper ── */}
             </Card>
           )}
         </ScrollView>
       </KeyboardView>
 
-      {/* Calendar Modal - Updated to allow any month and date selection */}
+      {/* Calendar Modal */}
       <Modal visible={calendarVisible} transparent animationType="fade" onRequestClose={() => setCalendarVisible(false)}>
         <TouchableOpacity
           style={{ flex: 1, backgroundColor: "#00000060", justifyContent: "center", padding: 20 }}
@@ -386,7 +409,6 @@ export default function CashRequestScreen() {
               <Calendar
                 current={calendarMonth}
                 onMonthChange={(month) => {
-                  // Update calendar month when user navigates
                   const year = month.year;
                   const monthNum = String(month.month).padStart(2, "0");
                   setCalendarMonth(`${year}-${monthNum}-01`);
@@ -394,11 +416,6 @@ export default function CashRequestScreen() {
                 onDayPress={(day) => {
                   setSelectedDate(day.dateString);
                   setCalendarVisible(false);
-                  // Update the month display based on selected date
-                  const [year, month] = day.dateString.split("-");
-                  const selectedMonthDate = new Date(parseInt(year), parseInt(month) - 1, 1);
-                  const selectedMonthLabel_new = selectedMonthDate.toLocaleString("default", { month: "long", year: "numeric" });
-                  // You can update the month selector or keep as is
                 }}
                 markedDates={{
                   [selectedDate]: { selected: true, selectedColor: colors.primary },
