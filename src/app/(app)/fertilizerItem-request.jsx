@@ -2,14 +2,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Modal, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, EmptyState, Input, Picker, ScreenHeader, StatusBadge, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
-import { fertilizerApi, itemApi, tokenStorage } from "../../utils/api";
 
 // Fixed column widths — header and rows both reference these so they always align
 const COL = {
@@ -27,7 +26,8 @@ export default function FertilizerItemRequestScreen() {
   const {
     fertilizerRequests, addFertilizerRequest, deleteFertilizerRequest,
     itemRequests, addItemRequest, deleteItemRequest,
-    currentUser, activeReg,
+    currentUser, activeReg, refreshRequests,
+    fertilizerTypes, itemTypes, supplyTypesLoading, refreshSupplyTypes,
   } = useApp();
   const router = useRouter();
 
@@ -39,50 +39,9 @@ export default function FertilizerItemRequestScreen() {
   const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const [fertilizerTypes, setFertilizerTypes] = useState([]);
-  const [itemTypes, setItemTypes] = useState([]);
-  const [typesLoading, setTypesLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const token = await tokenStorage.get();
-        if (!token) {
-          console.log("No token found");
-          if (mounted) setTypesLoading(false);
-          return;
-        }
-
-        const [fResult, iResult] = await Promise.allSettled([
-          fertilizerApi.types(token),
-          itemApi.types(token),
-        ]);
-
-        if (mounted) {
-          if (fResult.status === "fulfilled" && Array.isArray(fResult.value)) {
-            setFertilizerTypes(fResult.value.map((tp) => ({ value: tp, label: tp })));
-          } else if (fResult.status === "rejected") {
-            console.log("Failed to fetch fertilizer types:", fResult.reason);
-          }
-
-          if (iResult.status === "fulfilled" && Array.isArray(iResult.value)) {
-            setItemTypes(iResult.value.map((tp) => ({ value: tp, label: tp })));
-          } else if (iResult.status === "rejected") {
-            console.log("Failed to fetch item types:", iResult.reason);
-          }
-        }
-      } catch (error) {
-        console.log("Error loading types:", error);
-      } finally {
-        if (mounted) setTypesLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
 
   useEffect(() => {
     setSelectedType("");
@@ -92,7 +51,24 @@ export default function FertilizerItemRequestScreen() {
 
   const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
-  const currentTypes = category === "fertilizer" ? fertilizerTypes : itemTypes;
+  const currentTypes = useMemo(() => {
+    const toPickerOption = (type) => {
+      const value = typeof type === "string"
+        ? type
+        : (type?.name ?? type?.Name ?? type?.type ?? type?.Type ?? type?.value ?? type?.Value ?? "");
+      return { value, label: value };
+    };
+
+    return (category === "fertilizer" ? fertilizerTypes : itemTypes)
+      .map(toPickerOption)
+      .filter((type) => type.value);
+  }, [category, fertilizerTypes, itemTypes]);
+
+  useEffect(() => {
+    if (selectedType && !currentTypes.some((type) => type.value === selectedType)) {
+      setSelectedType("");
+    }
+  }, [currentTypes, selectedType]);
   const quantityLabel = `${t.quantity} (${
     category === "fertilizer"
       ? `${t.unitKg ?? "kg"} / ${t.unitNos ?? "Nos"}`
@@ -223,6 +199,15 @@ export default function FertilizerItemRequestScreen() {
     }
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.allSettled([
+      refreshRequests(),
+      refreshSupplyTypes(),
+    ]);
+    setRefreshing(false);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScreenHeader
@@ -238,6 +223,7 @@ export default function FertilizerItemRequestScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
           {/* Request Form */}
           <Card style={{ marginBottom: 24 }}>
@@ -342,7 +328,7 @@ export default function FertilizerItemRequestScreen() {
               options={currentTypes}
               onSelect={setSelectedType}
               placeholder={
-                typesLoading
+                supplyTypesLoading
                   ? t.loadingTypes
                   : currentTypes.length === 0
                     ? t.noTypesAvailable

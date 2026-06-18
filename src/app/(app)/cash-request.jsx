@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Modal, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
@@ -15,7 +15,7 @@ const SHOW_LOAN = false;
 
 export default function CashRequestScreen() {
   const { colors, fs, t } = useTheme();
-  const { cashRequests, addCashRequest, deleteCashRequest, currentUser, activeReg } = useApp();
+  const { cashRequests, addCashRequest, deleteCashRequest, currentUser, activeReg, refreshRequests } = useApp();
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,6 +26,7 @@ export default function CashRequestScreen() {
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const now = new Date();
   const currentMonthInfo = { year: now.getFullYear(), month: now.getMonth() };
@@ -116,6 +117,12 @@ export default function CashRequestScreen() {
     }
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshRequests();
+    setRefreshing(false);
+  };
+
   const advanceRequests = useMemo(() =>
     (cashRequests || [])
       .filter(r => r && r.type === "advance")
@@ -181,6 +188,7 @@ export default function CashRequestScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
           {SHOW_LOAN && <View>{loanRequests.map(() => null)}</View>}
 

@@ -41,7 +41,7 @@ export default function HomeScreen() {
     currentUser, activeReg,
     notifications, unreadCount,
     getTodayLeaf, getTodayLeafData, getFeatureFlags,
-    specialNews, newsShown, setNewsShown, dismissNews,
+    specialNews, newsShown, setNewsShown, dismissNews, refreshCommunications,
   } = useApp();
   const router = useRouter();
 
@@ -62,11 +62,12 @@ export default function HomeScreen() {
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [newsShown, setNewsShown, specialNews.length]);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+    await refreshCommunications();
+    setRefreshing(false);
   };
 
   const totalLeaf     = getTodayLeaf();

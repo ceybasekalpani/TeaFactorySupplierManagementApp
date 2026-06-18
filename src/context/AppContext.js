@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 import { API_BASE_URL } from "../constants/config";
 import {
   accountSummaryApi,
@@ -14,6 +15,11 @@ import {
   settingsApi,
   tokenStorage,
 } from "../utils/api";
+import {
+  listenForPushTokenChanges,
+  registerForPushNotificationsAsync,
+  setupNotificationListeners,
+} from "../services/pushNotificationService";
 
 const AppContext = createContext(null);
 
@@ -114,6 +120,9 @@ export function AppProvider({ children }) {
   const [cashRequests, setCashRequests] = useState([]);
   const [fertilizerRequests, setFertilizerRequests] = useState([]);
   const [itemRequests, setItemRequests] = useState([]);
+  const [fertilizerTypes, setFertilizerTypes] = useState([]);
+  const [itemTypes, setItemTypes] = useState([]);
+  const [supplyTypesLoading, setSupplyTypesLoading] = useState(false);
   const [specialNews, setSpecialNews] = useState([]);
   const [newsShown, setNewsShown] = useState(false);
 
@@ -121,6 +130,169 @@ export function AppProvider({ children }) {
   tokenRef.current = token;
   const activeRegRef = useRef(null);
   activeRegRef.current = activeReg;
+  const specialNewsIdsRef = useRef("");
+
+  const refreshCommunications = useCallback((tok = tokenRef.current) => {
+    if (!tok) return Promise.resolve();
+    return Promise.allSettled([
+      loadNotifications(tok),
+      loadSpecialNews(tok),
+    ]);
+  // These loaders read no render-time values; this callback just gives screens a stable refresh command.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const refreshRequests = useCallback((tok = tokenRef.current) => {
+    if (!tok) return Promise.resolve();
+    return Promise.allSettled([
+      loadCashRequests(tok),
+      loadFertilizerRequests(tok),
+      loadItemRequests(tok),
+      loadMonthlyRequestsSummary(tok),
+    ]);
+  // These loaders read no render-time values; this callback just gives screens/listeners a stable refresh command.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const refreshSupplyTypes = useCallback(async (tok = tokenRef.current) => {
+    if (!tok) return;
+
+    setSupplyTypesLoading(true);
+    try {
+      const [fertilizerResult, itemResult] = await Promise.allSettled([
+        fertilizerApi.types(tok),
+        itemApi.types(tok),
+      ]);
+
+      if (fertilizerResult.status === "fulfilled" && Array.isArray(fertilizerResult.value)) {
+        setFertilizerTypes(fertilizerResult.value);
+      } else if (fertilizerResult.status === "rejected") {
+        console.log("[configuration] Failed to load fertilizer types:", fertilizerResult.reason?.message || fertilizerResult.reason);
+      }
+
+      if (itemResult.status === "fulfilled" && Array.isArray(itemResult.value)) {
+        setItemTypes(itemResult.value);
+      } else if (itemResult.status === "rejected") {
+        console.log("[configuration] Failed to load item types:", itemResult.reason?.message || itemResult.reason);
+      }
+    } finally {
+      setSupplyTypesLoading(false);
+    }
+  }, []);
+
+  const applyRequestStatusChange = useCallback((payload = {}) => {
+    const requestType = String(payload.requestType ?? payload.RequestType ?? "").toLowerCase();
+    const requestId = Number(payload.requestId ?? payload.RequestId);
+    const status = String(payload.status ?? payload.Status ?? "").toLowerCase();
+
+    if (!requestId || !status) return;
+
+    const updateMatchingRequest = (request) => (
+      Number(request?.id) === requestId
+        ? { ...request, status, updatedAt: new Date().toISOString() }
+        : request
+    );
+
+    if (requestType === "advance" || requestType === "cash") {
+      setCashRequests((prev) => prev.map(updateMatchingRequest));
+      return;
+    }
+
+    if (requestType === "fertilizer") {
+      setFertilizerRequests((prev) => prev.map(updateMatchingRequest));
+      return;
+    }
+
+    if (requestType === "items" || requestType === "item") {
+      setItemRequests((prev) => prev.map(updateMatchingRequest));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!token || authState !== "authenticated") return;
+
+    let pushTokenSubscription = null;
+
+    registerForPushNotificationsAsync(token)
+      .then(() => {
+        pushTokenSubscription = listenForPushTokenChanges(token);
+      })
+      .catch((error) => {
+        console.log("[push] Registration failed:", error?.message || error);
+      });
+
+    const cleanupNotificationListeners = setupNotificationListeners({
+      refreshNotifications: () => loadNotifications(tokenRef.current),
+      refreshNews: () => loadSpecialNews(tokenRef.current),
+      refreshRequests: () => refreshRequests(tokenRef.current),
+      refreshConfiguration: () => refreshSupplyTypes(tokenRef.current),
+      onRequestStatusChanged: applyRequestStatusChange,
+    });
+
+    return () => {
+      pushTokenSubscription?.remove?.();
+      cleanupNotificationListeners?.();
+    };
+  // Push callbacks read the current token from refs so they stay valid after refreshes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, authState]);
+
+  useEffect(() => {
+    if (!token || authState !== "authenticated") return;
+
+    refreshSupplyTypes();
+    const intervalId = setInterval(refreshSupplyTypes, 15000);
+    const appStateSubscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        refreshSupplyTypes();
+      }
+    });
+
+    return () => {
+      clearInterval(intervalId);
+      appStateSubscription.remove();
+    };
+  // Polling keeps fertilizer/item configuration current in Expo Go, where native FCM is unavailable.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, authState]);
+
+  useEffect(() => {
+    if (!token || authState !== "authenticated") return;
+
+    refreshRequests();
+    const intervalId = setInterval(refreshRequests, 10000);
+    const appStateSubscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        refreshRequests();
+      }
+    });
+
+    return () => {
+      clearInterval(intervalId);
+      appStateSubscription.remove();
+    };
+  // Polling keeps request approval/rejection state current in Expo Go, where native FCM is unavailable.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, authState]);
+
+  useEffect(() => {
+    if (!token || authState !== "authenticated") return;
+
+    refreshCommunications();
+    const intervalId = setInterval(refreshCommunications, 15000);
+    const appStateSubscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        refreshCommunications();
+      }
+    });
+
+    return () => {
+      clearInterval(intervalId);
+      appStateSubscription.remove();
+    };
+  // Polling keeps in-app notifications current in Expo Go, where native FCM is unavailable.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, authState]);
 
   useEffect(() => {
     (async () => {
@@ -189,6 +361,7 @@ export function AppProvider({ children }) {
       loadCashRequests(tok),
       loadFertilizerRequests(tok),
       loadItemRequests(tok),
+      refreshSupplyTypes(tok),
       loadSpecialNews(tok),
       loadTodayLeaf(tok),
       loadHistory(tok),
@@ -207,18 +380,23 @@ export function AppProvider({ children }) {
       setNotifications(
         Array.isArray(data)
           ? data
-              .filter((n) => !n.createdAt || new Date(n.createdAt).getTime() >= cutoff)
+              .filter((n) => {
+                const createdAt = n.createdAt ?? n.CreatedAt ?? n.createdDate ?? n.CreatedDate ?? n.sentAt ?? n.SentAt;
+                return !createdAt || new Date(createdAt).getTime() >= cutoff;
+              })
               .map((n) => ({
-                id:        n.id,
-                title:     n.title     ?? "",
-                message:   n.message   ?? "",
-                type:      n.type      ?? "info",
-                createdAt: n.createdAt ?? null,
-                read:      n.isRead    ?? n.read ?? false,
+                id:        n.id ?? n.Id ?? n.notificationId ?? n.NotificationId,
+                title:     n.title ?? n.Title ?? "",
+                message:   n.message ?? n.Message ?? n.body ?? n.Body ?? n.content ?? n.Content ?? "",
+                type:      String(n.type ?? n.Type ?? "info").toLowerCase(),
+                createdAt: n.createdAt ?? n.CreatedAt ?? n.createdDate ?? n.CreatedDate ?? n.sentAt ?? n.SentAt ?? null,
+                read:      n.isRead ?? n.IsRead ?? n.read ?? n.Read ?? false,
               }))
           : []
       );
-    } catch (_) {}
+    } catch (error) {
+      console.log("[communications] Failed to load notifications:", error?.message || error);
+    }
   };
 
   const loadCashRequests = async (tok) => {
@@ -243,22 +421,32 @@ export function AppProvider({ children }) {
   };
 
   const mapNews = (n) => ({
-    id:      String(n.id),
-    title:   n.title   || "",
-    message: n.content || n.message || "",
+    id:      String(n.id ?? n.Id ?? n.newsId ?? n.NewsId ?? ""),
+    title:   n.title ?? n.Title ?? "",
+    message: n.content ?? n.Content ?? n.message ?? n.Message ?? n.body ?? n.Body ?? "",
   });
 
   const loadSpecialNews = async (tok) => {
     try {
       const data = await newsApi.activePopup(tok);
+      let mappedNews = [];
       if (!data) {
-        setSpecialNews([]);
+        mappedNews = [];
       } else if (Array.isArray(data)) {
-        setSpecialNews(data.map(mapNews));
+        mappedNews = data.map(mapNews);
       } else {
-        setSpecialNews([mapNews(data)]);
+        mappedNews = [mapNews(data)];
       }
-    } catch (_) {}
+
+      const ids = mappedNews.map((n) => n.id).join(",");
+      if (ids && ids !== specialNewsIdsRef.current) {
+        setNewsShown(false);
+      }
+      specialNewsIdsRef.current = ids;
+      setSpecialNews(mappedNews);
+    } catch (error) {
+      console.log("[communications] Failed to load news:", error?.message || error);
+    }
   };
 
   const loadTodayLeaf = async (tok) => {
@@ -452,6 +640,8 @@ export function AppProvider({ children }) {
     setCashRequests([]);
     setFertilizerRequests([]);
     setItemRequests([]);
+    setFertilizerTypes([]);
+    setItemTypes([]);
     setSpecialNews([]);
     setNewsShown(false);
 
@@ -661,10 +851,12 @@ export function AppProvider({ children }) {
       getTwelveMonthHistory,         // NEW
       getMonthlyRequestsSummary,     // NEW
       getFeatureFlags,
+      refreshCommunications, refreshRequests, refreshSupplyTypes,
       notifications, unreadCount, markNotificationRead, markAllRead, removeNotification,
       cashRequests, addCashRequest, deleteCashRequest,
       fertilizerRequests, addFertilizerRequest, deleteFertilizerRequest,
       itemRequests, addItemRequest, deleteItemRequest,
+      fertilizerTypes, itemTypes, supplyTypesLoading,
       specialNews, newsShown, setNewsShown, dismissNews,
     }}>
       {children}
@@ -700,50 +892,56 @@ function mapUser(u) {
 function mapCashRequest(r) {
   if (!r) return r;
   return {
-    id:            r.id,
-    type:          r.requestType    ?? r.type   ?? "",
-    month:         r.month          ?? "",
-    amount:        Number(r.amount  ?? 0),
-    date:          r.requestDate    ? r.requestDate.split("T")[0] : (r.date ?? ""),
-    status:        r.status         ?? "pending",
-    createdAt:     r.createdAt      ?? new Date().toISOString(),
-    requestedDate: r.requestDate    ?? r.requestedDate ?? "",
-    regNo:         r.regNo,
-    remarks:       r.remarks        ?? "",
+    id:            r.id ?? r.Id,
+    requestNo:     r.requestNo ?? r.RequestNo ?? "",
+    type:          r.requestType ?? r.RequestType ?? r.type ?? r.Type ?? "advance",
+    month:         r.month ?? r.Month ?? "",
+    amount:        Number(r.amount ?? r.Amount ?? 0),
+    date:          (r.requestDate ?? r.RequestDate) ? String(r.requestDate ?? r.RequestDate).split("T")[0] : (r.date ?? r.Date ?? ""),
+    status:        String(r.status ?? r.Status ?? "pending").toLowerCase(),
+    createdAt:     r.createdAt ?? r.CreatedAt ?? r.requestDate ?? r.RequestDate ?? new Date().toISOString(),
+    updatedAt:     r.updatedAt ?? r.UpdatedAt ?? null,
+    requestedDate: r.requestDate ?? r.RequestDate ?? r.requestedDate ?? r.RequestedDate ?? "",
+    regNo:         r.regNo ?? r.RegNo,
+    remarks:       r.remarks ?? r.Remarks ?? "",
   };
 }
 
 function mapFertilizerRequest(r) {
   if (!r) return r;
   return {
-    id:             r.id,
-    month:          r.month          ?? "",
-    fertType:       r.fertilizerType ?? r.fertType ?? "",
-    fertilizerType: r.fertilizerType ?? r.fertType ?? "",
-    quantity:       Number(r.quantity ?? 0),
-    unit:           r.unit           ?? "kg",
-    date:           r.requestDate    ? r.requestDate.split("T")[0] : (r.date ?? ""),
-    status:         r.status         ?? "pending",
-    createdAt:      r.createdAt      ?? new Date().toISOString(),
-    requestedDate:  r.requestDate    ?? r.requestedDate ?? "",
-    regNo:          r.regNo,
-    remarks:        r.remarks        ?? "",
+    id:             r.id ?? r.Id,
+    requestNo:      r.requestNo ?? r.RequestNo ?? "",
+    month:          r.month ?? r.Month ?? "",
+    fertType:       r.fertilizerType ?? r.FertilizerType ?? r.fertType ?? r.Type ?? "",
+    fertilizerType: r.fertilizerType ?? r.FertilizerType ?? r.fertType ?? r.Type ?? "",
+    quantity:       Number(r.quantity ?? r.Quantity ?? r.qty ?? r.Qty ?? 0),
+    unit:           r.unit ?? r.Unit ?? "kg",
+    date:           (r.requestDate ?? r.RequestDate) ? String(r.requestDate ?? r.RequestDate).split("T")[0] : (r.date ?? r.Date ?? ""),
+    status:         String(r.status ?? r.Status ?? "pending").toLowerCase(),
+    createdAt:      r.createdAt ?? r.CreatedAt ?? r.requestDate ?? r.RequestDate ?? new Date().toISOString(),
+    updatedAt:      r.updatedAt ?? r.UpdatedAt ?? null,
+    requestedDate:  r.requestDate ?? r.RequestDate ?? r.requestedDate ?? r.RequestedDate ?? "",
+    regNo:          r.regNo ?? r.RegNo,
+    remarks:        r.remarks ?? r.Remarks ?? "",
   };
 }
 
 function mapItemRequest(r) {
   if (!r) return r;
   return {
-    id:            r.id,
-    month:         r.month     ?? "",
-    itemType:      r.itemType  ?? "",
-    quantity:      Number(r.quantity ?? 0),
-    unit:          r.unit      ?? "kg",
-    date:          r.requestDate ? r.requestDate.split("T")[0] : (r.date ?? ""),
-    status:        r.status    ?? "pending",
-    createdAt:     r.createdAt ?? new Date().toISOString(),
-    requestedDate: r.requestDate ?? r.requestedDate ?? "",
-    regNo:         r.regNo,
-    remarks:       r.remarks   ?? "",
+    id:            r.id ?? r.Id,
+    requestNo:     r.requestNo ?? r.RequestNo ?? "",
+    month:         r.month ?? r.Month ?? "",
+    itemType:      r.itemType ?? r.ItemType ?? r.type ?? r.Type ?? "",
+    quantity:      Number(r.quantity ?? r.Quantity ?? r.qty ?? r.Qty ?? 0),
+    unit:          r.unit ?? r.Unit ?? "units",
+    date:          (r.requestDate ?? r.RequestDate) ? String(r.requestDate ?? r.RequestDate).split("T")[0] : (r.date ?? r.Date ?? ""),
+    status:        String(r.status ?? r.Status ?? "pending").toLowerCase(),
+    createdAt:     r.createdAt ?? r.CreatedAt ?? r.requestDate ?? r.RequestDate ?? new Date().toISOString(),
+    updatedAt:     r.updatedAt ?? r.UpdatedAt ?? null,
+    requestedDate: r.requestDate ?? r.RequestDate ?? r.requestedDate ?? r.RequestedDate ?? "",
+    regNo:         r.regNo ?? r.RegNo,
+    remarks:       r.remarks ?? r.Remarks ?? "",
   };
 }

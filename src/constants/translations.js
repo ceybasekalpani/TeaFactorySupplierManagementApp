@@ -493,12 +493,6 @@ export const translations = {
     markAllRead: "සියල්ල කියවූ ලෙස සලකුණු කරන්න",
     noNotifications: "දැනුම්දීම් නොමැත",
 
-    // History (legacy)
-    history: "මාස 6 ඉතිහාසය",
-    downloadStatement: "ලේඛනය බාගන්න (PDF)",
-    totalNetWeight: "මුළු ශුද්ධ බර",
-    collectionDays: "එකතු කිරීමේ දින",
-
     // Special news
     specialNews: "විශේෂ ප්‍රවෘත්ති",
     close: "වසන්න",

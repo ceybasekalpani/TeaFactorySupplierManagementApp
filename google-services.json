@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "498112209360",
+    "project_id": "teafactorysuppliermanagement",
+    "storage_bucket": "teafactorysuppliermanagement.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:498112209360:android:6fb39439f86075579499d5",
+        "android_client_info": {
+          "package_name": "com.teafactory.supplierapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCubuKBk0aFMFZHMASmh1Id4spcgbzCLeg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
