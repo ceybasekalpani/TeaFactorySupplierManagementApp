@@ -9,7 +9,7 @@ import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
 export default function SelectAccountScreen() {
-  const { colors, fs, t } = useTheme();
+  const { t } = useTheme();
   const { currentUser, registrations, login } = useApp();
   const router = useRouter();
 
@@ -46,76 +46,62 @@ export default function SelectAccountScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
       <KeyboardView>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }}>
-          {/* Top banner */}
-          <View style={{
-            backgroundColor: colors.primary,
-            borderRadius: 20,
-            padding: 24,
-            marginBottom: 24,
-            alignItems: "center",
-          }}>
-            <View style={{
-              width: 72, height: 72, borderRadius: 36,
-              backgroundColor: "rgba(255,255,255,0.2)",
-              alignItems: "center", justifyContent: "center",
-              marginBottom: 12,
-            }}>
-              <Ionicons name="person" size={36} color="#fff" />
+        <ScrollView className="flex-1">
+          <View className="min-h-full p-6">
+            <View className="mb-6 items-center rounded-[20px] bg-[#2e7d32] p-6 dark:bg-[#66bb6a]">
+              <View className="mb-3 h-[72px] w-[72px] items-center justify-center rounded-full bg-white/20">
+                <Ionicons name="person" size={36} color="#fff" />
+              </View>
+              <Text className="text-[17px] text-white/80">
+                {t.welcome}
+              </Text>
+              <Text className="mt-1 text-[26px] font-extrabold text-white">
+                {currentUser?.name ?? ""}
+              </Text>
             </View>
-            <Text style={{ fontSize: fs.md, color: "rgba(255,255,255,0.8)" }}>
-              {t.welcome}
-            </Text>
-            <Text style={{ fontSize: fs["2xl"], fontWeight: "800", color: "#fff", marginTop: 4 }}>
-              {currentUser?.name ?? ""}
-            </Text>
+
+            <Card>
+              <Text className="mb-1 text-[19px] font-bold text-[#212121] dark:text-white">
+                Select Your Account
+              </Text>
+              <Text className="mb-5 text-[13px] text-[#757575] dark:text-[#b0b0b0]">
+                You have multiple registrations. Please select one to continue.
+              </Text>
+
+              <Picker
+                label={t.selectRegNo}
+                value={selectedRegNo}
+                options={regOptions}
+                onSelect={handleRegSelect}
+                placeholder={t.selectRegNo}
+              />
+
+              {selectedReg?.route ? (
+                <View className="mb-4 flex-row items-center gap-2 rounded-[10px] bg-[#f5f5f5] p-3 dark:bg-[#1e1e1e]">
+                  <Ionicons name="map-outline" size={17} color="#2e7d32" />
+                  <Text className="text-[13px] text-[#212121] dark:text-white">
+                    {selectedReg.route}
+                  </Text>
+                </View>
+              ) : null}
+
+              {error ? (
+                <View className="mb-3 flex-row items-center gap-1.5">
+                  <Ionicons name="alert-circle" size={15} color="#b71c1c" />
+                  <Text className="text-[13px] text-[#b71c1c] dark:text-[#ef5350]">{error}</Text>
+                </View>
+              ) : null}
+
+              <Button
+                title={loading ? "Loading..." : t.open}
+                onPress={handleOpen}
+                icon="checkmark-circle-outline"
+                disabled={loading}
+              />
+            </Card>
           </View>
-
-          <Card>
-            <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-              Select Your Account
-            </Text>
-            <Text style={{ fontSize: fs.sm, color: colors.textSecondary, marginBottom: 20 }}>
-              You have multiple registrations. Please select one to continue.
-            </Text>
-
-            <Picker
-              label={t.selectRegNo}
-              value={selectedRegNo}
-              options={regOptions}
-              onSelect={handleRegSelect}
-              placeholder={t.selectRegNo}
-            />
-
-            {selectedReg?.route ? (
-              <View style={{
-                flexDirection: "row", alignItems: "center", gap: 8,
-                backgroundColor: colors.surface, borderRadius: 10,
-                padding: 12, marginBottom: 16,
-              }}>
-                <Ionicons name="map-outline" size={fs.md} color={colors.primary} />
-                <Text style={{ color: colors.text, fontSize: fs.sm }}>
-                  {selectedReg.route}
-                </Text>
-              </View>
-            ) : null}
-
-            {error ? (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 }}>
-                <Ionicons name="alert-circle" size={fs.base} color={colors.error} />
-                <Text style={{ color: colors.error, fontSize: fs.sm }}>{error}</Text>
-              </View>
-            ) : null}
-
-            <Button
-              title={loading ? "Loading..." : t.open}
-              onPress={handleOpen}
-              icon="checkmark-circle-outline"
-              disabled={loading}
-            />
-          </Card>
         </ScrollView>
       </KeyboardView>
     </SafeAreaView>

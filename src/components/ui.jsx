@@ -16,6 +16,7 @@ export function Card({ children, style, className }) {
   const { colors } = useTheme();
   return (
     <View
+      className={className}
       style={[
         {
           backgroundColor: colors.card,

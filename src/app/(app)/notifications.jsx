@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { Animated, PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, PanResponder, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Card, EmptyState, ScreenHeader } from "../../components/ui";
@@ -9,10 +9,10 @@ import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
 const iconMap = {
-  success: { name: "checkmark-circle", color: "#16a34a", bg: "#dcfce7" },
-  warning: { name: "warning",           color: "#d97706", bg: "#fef3c7" },
-  error:   { name: "close-circle",      color: "#dc2626", bg: "#fee2e2" },
-  info:    { name: "information-circle", color: "#2563eb", bg: "#dbeafe" },
+  success: { name: "checkmark-circle", color: "#16a34a", bgClass: "bg-[#dcfce7]", borderClass: "border-l-[#16a34a]" },
+  warning: { name: "warning", color: "#d97706", bgClass: "bg-[#fef3c7]", borderClass: "border-l-[#d97706]" },
+  error:   { name: "close-circle", color: "#dc2626", bgClass: "bg-[#fee2e2]", borderClass: "border-l-[#dc2626]" },
+  info:    { name: "information-circle", color: "#2563eb", bgClass: "bg-[#dbeafe]", borderClass: "border-l-[#2563eb]" },
 };
 
 const DISMISS_THRESHOLD = 80;
@@ -29,7 +29,7 @@ function timeAgo(isoString) {
   return "Just now";
 }
 
-function SwipeableNotif({ notif, onRemove, onMarkRead, colors, fs }) {
+function SwipeableNotif({ notif, onRemove, onMarkRead, fs }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
   const ic = iconMap[notif.type] || iconMap.info;
@@ -66,30 +66,23 @@ function SwipeableNotif({ notif, onRemove, onMarkRead, colors, fs }) {
   ).current;
 
   return (
-    <Animated.View style={{ transform: [{ translateX }], opacity, marginBottom: 12 }} {...panResponder.panHandlers}>
+    <Animated.View className="mb-3" style={{ transform: [{ translateX }], opacity }} {...panResponder.panHandlers}>
       <TouchableOpacity onPress={() => onMarkRead(notif.id)} activeOpacity={0.9}>
         <Card
-          style={{
-            flexDirection: "row",
-            gap: 12,
-            padding: 14,
-            opacity: notif.read ? 0.7 : 1,
-            borderLeftWidth: notif.read ? 1 : 4,
-            borderLeftColor: notif.read ? colors.cardBorder : ic.color,
-          }}
+          className={`flex-row gap-3 p-3.5 ${notif.read ? "opacity-70 border-l border-l-[#e0e0e0] dark:border-l-[#333333]" : `border-l-4 ${ic.borderClass}`}`}
         >
-          <View style={[styles.iconCircle, { backgroundColor: ic.bg }]}>
+          <View className={`h-10 w-10 items-center justify-center rounded-full ${ic.bgClass}`}>
             <Ionicons name={ic.name} size={fs.xl} color={ic.color} />
           </View>
-          <View style={{ flex: 1 }}>
-            <View style={styles.titleRow}>
-              <Text style={[styles.title, { color: colors.text, fontSize: fs.sm, fontWeight: notif.read ? "500" : "700" }]}>
+          <View className="flex-1">
+            <View className="flex-row items-center justify-between">
+              <Text className={`mr-2 flex-1 text-[13px] text-[#212121] dark:text-white ${notif.read ? "font-medium" : "font-bold"}`}>
                 {notif.title}
               </Text>
-              {!notif.read && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}
+              {!notif.read && <View className="h-2 w-2 rounded-full bg-[#2e7d32] dark:bg-[#66bb6a]" />}
             </View>
-            <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>{notif.message}</Text>
-            <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 6 }}>{timeAgo(notif.createdAt)}</Text>
+            <Text className="mt-0.5 text-[11px] text-[#757575] dark:text-[#b0b0b0]">{notif.message}</Text>
+            <Text className="mt-1.5 text-[10px] text-[#9e9e9e]">{timeAgo(notif.createdAt)}</Text>
           </View>
         </Card>
       </TouchableOpacity>
@@ -98,7 +91,7 @@ function SwipeableNotif({ notif, onRemove, onMarkRead, colors, fs }) {
 }
 
 export default function NotificationsScreen() {
-  const { colors, fs, t } = useTheme();
+  const { fs, t } = useTheme();
   const { notifications, markNotificationRead, removeNotification } = useApp();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -106,37 +99,31 @@ export default function NotificationsScreen() {
   const handleRemove = (id) => removeNotification(id);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
       <ScreenHeader title={t.notifications} onBack={() => router.back()} rightIcon="menu" onRightPress={() => setMenuOpen(true)} />
 
       <ScrollView 
+        className="flex-1"
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 }}
       >
-        {notifications.length === 0 ? (
-          <Card><EmptyState icon="notifications-off-outline" message={t.noNotifications} /></Card>
-        ) : (
-          notifications.map((notif) => (
-            <SwipeableNotif
-              key={notif.id}
-              notif={notif}
-              onRemove={handleRemove}
-              onMarkRead={markNotificationRead}
-              colors={colors}
-              fs={fs}
-            />
-          ))
-        )}
+        <View className="px-4 pt-5 pb-10">
+          {notifications.length === 0 ? (
+            <Card><EmptyState icon="notifications-off-outline" message={t.noNotifications} /></Card>
+          ) : (
+            notifications.map((notif) => (
+              <SwipeableNotif
+                key={notif.id}
+                notif={notif}
+                onRemove={handleRemove}
+                onMarkRead={markNotificationRead}
+                fs={fs}
+              />
+            ))
+          )}
+        </View>
       </ScrollView>
 
       <SidebarMenu visible={menuOpen} onClose={() => setMenuOpen(false)} activeKey="notifications" />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  iconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between"},
-  title: { flex: 1, marginRight: 8 },
-  unreadDot: { width: 8, height: 8, borderRadius: 4 },
-});

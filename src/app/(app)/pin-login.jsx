@@ -4,62 +4,54 @@ import { useState } from "react";
 import { Text, TouchableOpacity, Vibration, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
-import { useTheme } from "../../hooks/useTheme";
 
 const PIN_LENGTH = 4;
 
 function PinDots({ value, hasError }) {
-  const { colors } = useTheme();
   return (
-    <View style={{ flexDirection: "row", gap: 18, justifyContent: "center", marginVertical: 28 }}>
-      {Array.from({ length: PIN_LENGTH }).map((_, i) => (
-        <View
-          key={i}
-          style={{
-            width: 18, height: 18, borderRadius: 9,
-            backgroundColor: i < value.length
-              ? (hasError ? colors.error : colors.primary)
-              : "transparent",
-            borderWidth: 2,
-            borderColor: hasError ? colors.error : (i < value.length ? colors.primary : colors.border),
-          }}
-        />
-      ))}
+    <View className="my-7 flex-row justify-center gap-[18px]">
+      {Array.from({ length: PIN_LENGTH }).map((_, i) => {
+        const filled = i < value.length;
+        return (
+          <View
+            key={i}
+            className={`h-[18px] w-[18px] rounded-full border-2 ${
+              hasError
+                ? "border-[#b71c1c] bg-[#b71c1c] dark:border-[#ef5350] dark:bg-[#ef5350]"
+                : filled
+                  ? "border-[#2e7d32] bg-[#2e7d32] dark:border-[#66bb6a] dark:bg-[#66bb6a]"
+                  : "border-[#e0e0e0] bg-transparent dark:border-[#333333]"
+            }`}
+          />
+        );
+      })}
     </View>
   );
 }
 
 function NumPad({ onPress, onDelete }) {
-  const { colors, fs } = useTheme();
-  const keys = ["1","2","3","4","5","6","7","8","9","","0","del"];
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
 
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", width: 270, gap: 16, justifyContent: "center" }}>
+    <View className="w-[270px] flex-row flex-wrap justify-center gap-4">
       {keys.map((key, i) => {
-        if (key === "") return <View key={i} style={{ width: 74 }} />;
+        if (key === "") return <View key={i} className="w-[74px]" />;
         const isDel = key === "del";
         return (
           <TouchableOpacity
             key={i}
             onPress={() => isDel ? onDelete() : onPress(key)}
             activeOpacity={0.7}
-            style={{
-              width: 74, height: 74, borderRadius: 37,
-              backgroundColor: isDel ? "transparent" : colors.card,
-              alignItems: "center", justifyContent: "center",
-              borderWidth: isDel ? 0 : 1,
-              borderColor: colors.border,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: isDel ? 0 : 0.06,
-              shadowRadius: 4,
-              elevation: isDel ? 0 : 2,
-            }}
+            className={`h-[74px] w-[74px] items-center justify-center rounded-full ${
+              isDel
+                ? "bg-transparent"
+                : "border border-[#e0e0e0] bg-white shadow-sm dark:border-[#333333] dark:bg-[#242424]"
+            }`}
           >
             {isDel ? (
-              <Ionicons name="backspace-outline" size={26} color={colors.textSecondary} />
+              <Ionicons name="backspace-outline" size={26} color="#757575" />
             ) : (
-              <Text style={{ fontSize: fs["2xl"], fontWeight: "500", color: colors.text }}>{key}</Text>
+              <Text className="text-[26px] font-medium text-[#212121] dark:text-white">{key}</Text>
             )}
           </TouchableOpacity>
         );
@@ -69,7 +61,6 @@ function NumPad({ onPress, onDelete }) {
 }
 
 export default function PinLoginScreen() {
-  const { colors, fs } = useTheme();
   const { savedRegNo, savedName, pinLogin, login } = useApp();
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -78,10 +69,9 @@ export default function PinLoginScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Retrieve params if forwarded from landing, otherwise use saved context 
   const activeRegNo = params.regNo || savedRegNo;
   const displayName = params.name || savedName || "User";
-  
+
   const initials = displayName
     .split(" ")
     .slice(0, 2)
@@ -120,7 +110,7 @@ export default function PinLoginScreen() {
       if (regs.length > 1) {
         router.replace("/(auth)/select-account");
       } else if (regs.length === 1) {
-        await login(regs[0], result.token); 
+        await login(regs[0], result.token);
         router.replace("/(app)/home");
       } else {
         router.replace("/(app)/home");
@@ -134,64 +124,47 @@ export default function PinLoginScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ flex: 1, alignItems: "center", paddingTop: 60, paddingHorizontal: 24 }}>
-
-        {/* Avatar */}
-        <View style={{
-          width: 84, height: 84, borderRadius: 42,
-          backgroundColor: colors.primary,
-          alignItems: "center", justifyContent: "center",
-          marginBottom: 16,
-          borderWidth: 3, borderColor: colors.primary + "40",
-        }}>
-          <Text style={{ fontSize: 32, fontWeight: "700", color: "#fff" }}>
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
+      <View className="flex-1 items-center px-6 pt-[60px]">
+        <View className="mb-4 h-[84px] w-[84px] items-center justify-center rounded-full border-[3px] border-[#2e7d32]/40 bg-[#2e7d32] dark:border-[#66bb6a]/40 dark:bg-[#66bb6a]">
+          <Text className="text-[32px] font-bold text-white">
             {initials || "?"}
           </Text>
         </View>
 
-        {/* Greeting */}
-        <Text style={{ fontSize: fs.sm, color: colors.textSecondary, marginBottom: 2 }}>
+        <Text className="mb-0.5 text-[13px] text-[#757575] dark:text-[#b0b0b0]">
           Welcome back
         </Text>
-        <Text style={{ fontSize: fs["2xl"], fontWeight: "800", color: colors.text, textAlign: "center" }}>
+        <Text className="text-center text-[26px] font-extrabold text-[#212121] dark:text-white">
           {displayName}
         </Text>
-        <Text style={{ fontSize: fs.sm, color: colors.textMuted, marginTop: 6 }}>
+        <Text className="mt-1.5 text-[13px] text-[#9e9e9e]">
           Enter your PIN to continue
         </Text>
 
-        {/* Dots */}
         <PinDots value={pin} hasError={!!error} />
 
-        {/* Error */}
         {!!error && (
-          <View style={{
-            flexDirection: "row", alignItems: "center", gap: 6,
-            backgroundColor: colors.error + "14", borderRadius: 10,
-            paddingHorizontal: 14, paddingVertical: 8, marginBottom: 16,
-          }}>
-            <Ionicons name="alert-circle" size={fs.base} color={colors.error} />
-            <Text style={{ color: colors.error, fontSize: fs.sm }}>{error}</Text>
+          <View className="mb-4 flex-row items-center gap-1.5 rounded-[10px] bg-[#b71c1c]/15 px-3.5 py-2 dark:bg-[#ef5350]/15">
+            <Ionicons name="alert-circle" size={15} color="#b71c1c" />
+            <Text className="text-[13px] text-[#b71c1c] dark:text-[#ef5350]">{error}</Text>
           </View>
         )}
 
-        {/* Number pad */}
         {loading ? (
-          <View style={{ marginTop: 24 }}>
-            <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>Verifying...</Text>
+          <View className="mt-6">
+            <Text className="text-[13px] text-[#757575] dark:text-[#b0b0b0]">Verifying...</Text>
           </View>
         ) : (
           <>
             <NumPad onPress={handlePress} onDelete={handleDelete} />
 
-            {/* PIN Reset Route */}
             <TouchableOpacity
               onPress={() => router.replace({ pathname: "/(auth)/landing", params: { reset: "true" } })}
-              style={{ marginTop: 32, paddingVertical: 8, paddingHorizontal: 16 }}
+              className="mt-8 px-4 py-2"
               activeOpacity={0.7}
             >
-              <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "600" }}>
+              <Text className="text-[13px] font-semibold text-[#2e7d32] dark:text-[#66bb6a]">
                 Forgot / Reset PIN?
               </Text>
             </TouchableOpacity>

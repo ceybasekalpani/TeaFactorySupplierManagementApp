@@ -66,83 +66,58 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
       {/* Overlay */}
       <Animated.View
-        style={{ flex: 1, backgroundColor: "#000", opacity: fadeAnim }}
+        className="flex-1 bg-black"
+        style={{ opacity: fadeAnim }}
         pointerEvents="none"
       />
       <TouchableOpacity
-        style={{ position: "absolute", inset: 0 }}
+        className="absolute inset-0"
         onPress={onClose}
         activeOpacity={1}
       />
 
       {/* Drawer */}
       <Animated.View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          bottom: 0,
-          width: MENU_WIDTH,
-          backgroundColor: colors.card,
-          transform: [{ translateX: slideAnim }],
-          shadowColor: "#000",
-          shadowOffset: { width: 4, height: 0 },
-          shadowOpacity: 0.3,
-          shadowRadius: 16,
-          elevation: 20,
-        }}
+        className="absolute bottom-0 left-0 top-0 bg-white shadow-2xl dark:bg-[#242424]"
+        style={{ width: MENU_WIDTH, transform: [{ translateX: slideAnim }] }}
       >
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView className="flex-1">
           {/* User Header */}
-          <View style={{
-            backgroundColor: colors.primary,
-            padding: 24,
-            paddingTop: 32,
-          }}>
+          <View className="bg-[#2e7d32] p-6 pt-8 dark:bg-[#66bb6a]">
             {/* Close */}
-            <TouchableOpacity onPress={onClose} style={{ alignSelf: "flex-end", marginBottom: 16 }}>
+            <TouchableOpacity onPress={onClose} className="mb-4 self-end">
               <Ionicons name="close" size={fs.xl} color="#fff" />
             </TouchableOpacity>
 
             {/* Avatar */}
-            <View style={{
-              width: 72,
-              height: 72,
-              borderRadius: 36,
-              backgroundColor: "rgba(255,255,255,0.25)",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 12,
-              borderWidth: 2,
-              borderColor: "rgba(255,255,255,0.5)",
-            }}>
+            <View className="mb-3 h-[72px] w-[72px] items-center justify-center rounded-full border-2 border-white/50 bg-white/25">
               {currentUser?.image ? (
-                <Image source={{ uri: currentUser.image }} style={{ width: 72, height: 72, borderRadius: 36 }} />
+                <Image source={{ uri: currentUser.image }} className="h-[72px] w-[72px] rounded-full" />
               ) : (
                 <Ionicons name="person" size={36} color="#fff" />
               )}
             </View>
 
-            <Text style={{ color: "#fff", fontSize: fs.lg, fontWeight: "700" }}>
+            <Text className="text-[19px] font-bold text-white">
               {currentUser?.name}
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+            <View className="mt-1 flex-row items-center gap-1.5">
               <Ionicons name="card-outline" size={fs.sm} color="rgba(255,255,255,0.7)" />
-              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: fs.sm }}>
+              <Text className="text-[13px] text-white/70">
                 {activeReg?.regNo}
               </Text>
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+            <View className="mt-0.5 flex-row items-center gap-1.5">
               <Ionicons name="map-outline" size={fs.sm} color="rgba(255,255,255,0.7)" />
-              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: fs.sm }}>
+              <Text className="text-[13px] text-white/70">
                 {activeReg?.route}
               </Text>
             </View>
           </View>
 
           {/* Menu Items */}
-          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-            <View style={{ paddingVertical: 8 }}>
+          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            <View className="py-2">
               {menuItems(t).map((item) => {
                 const isActive = item.key === activeKey;
                 const isDisabled =
@@ -154,39 +129,16 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
                     onPress={() => !isDisabled && navigate(item.route)}
                     activeOpacity={isDisabled ? 1 : 0.7}
                     disabled={isDisabled}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 14,
-                      paddingHorizontal: 20,
-                      paddingVertical: 14,
-                      marginHorizontal: 8,
-                      marginVertical: 2,
-                      borderRadius: 12,
-                      backgroundColor: isActive ? colors.surface : "transparent",
-                      opacity: isDisabled ? 0.4 : 1,
-                    }}
+                    className={`mx-2 my-0.5 flex-row items-center gap-3.5 rounded-xl px-5 py-3.5 ${isActive ? "bg-[#f5f5f5] dark:bg-[#1e1e1e]" : "bg-transparent"} ${isDisabled ? "opacity-40" : "opacity-100"}`}
                   >
-                    <View style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      backgroundColor: isActive ? colors.primary : colors.surface,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
+                    <View className={`h-9 w-9 items-center justify-center rounded-[10px] ${isActive ? "bg-[#2e7d32] dark:bg-[#66bb6a]" : "bg-[#f5f5f5] dark:bg-[#1e1e1e]"}`}>
                       <Ionicons
                         name={item.icon}
                         size={fs.lg}
                         color={isActive ? "#fff" : isDisabled ? colors.textMuted : colors.textSecondary}
                       />
                     </View>
-                    <Text style={{
-                      color: isActive ? colors.primary : isDisabled ? colors.textMuted : colors.text,
-                      fontSize: fs.base,
-                      fontWeight: isActive ? "700" : "500",
-                      flex: 1,
-                    }}>
+                    <Text className={`flex-1 text-[15px] ${isActive ? "font-bold text-[#2e7d32] dark:text-[#66bb6a]" : isDisabled ? "font-medium text-[#9e9e9e]" : "font-medium text-[#212121] dark:text-white"}`}>
                       {item.label}
                     </Text>
                     {isActive && (
@@ -201,21 +153,12 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
           {/* Logout */}
           <TouchableOpacity
             onPress={handleLogout}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 14,
-              paddingHorizontal: 20,
-              paddingVertical: 18,
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-              marginBottom: 8,
-            }}
+            className="mb-2 flex-row items-center gap-3.5 border-t border-[#e0e0e0] px-5 py-[18px] dark:border-[#333333]"
           >
-            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center" }}>
+            <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-[#fee2e2]">
               <Ionicons name="log-out-outline" size={fs.lg} color={colors.error} />
             </View>
-            <Text style={{ color: colors.error, fontSize: fs.base, fontWeight: "600" }}>
+            <Text className="text-[15px] font-semibold text-[#b71c1c] dark:text-[#ef5350]">
               {t.logout}
             </Text>
           </TouchableOpacity>

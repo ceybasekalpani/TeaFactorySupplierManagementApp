@@ -11,14 +11,14 @@ import { KeyboardAvoidingView, Platform, View } from "react-native";
  * iOS      – The OS does not resize the window, so we use KeyboardAvoidingView
  *            with behavior="padding" to push content above the keyboard.
  */
-export default function KeyboardView({ children, style }) {
+export default function KeyboardView({ children, className = "" }) {
   if (Platform.OS === "android") {
-    return <View style={[{ flex: 1 }, style]}>{children}</View>;
+    return <View className={`flex-1 ${className}`}>{children}</View>;
   }
 
   return (
     <KeyboardAvoidingView
-      style={[{ flex: 1 }, style]}
+      className={`flex-1 ${className}`}
       behavior="padding"
       keyboardVerticalOffset={0}
     >

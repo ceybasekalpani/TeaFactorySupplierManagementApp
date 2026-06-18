@@ -4,62 +4,54 @@ import { useState } from "react";
 import { Text, TouchableOpacity, Vibration, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
-import { useTheme } from "../../hooks/useTheme";
 
 const PIN_LENGTH = 4;
 
 function PinDots({ value, hasError }) {
-  const { colors } = useTheme();
   return (
-    <View style={{ flexDirection: "row", gap: 18, justifyContent: "center", marginVertical: 28 }}>
-      {Array.from({ length: PIN_LENGTH }).map((_, i) => (
-        <View
-          key={i}
-          style={{
-            width: 18, height: 18, borderRadius: 9,
-            backgroundColor: i < value.length
-              ? (hasError ? colors.error : colors.primary)
-              : "transparent",
-            borderWidth: 2,
-            borderColor: hasError ? colors.error : (i < value.length ? colors.primary : colors.border),
-          }}
-        />
-      ))}
+    <View className="my-7 flex-row justify-center gap-[18px]">
+      {Array.from({ length: PIN_LENGTH }).map((_, i) => {
+        const filled = i < value.length;
+        return (
+          <View
+            key={i}
+            className={`h-[18px] w-[18px] rounded-full border-2 ${
+              hasError
+                ? "border-[#b71c1c] bg-[#b71c1c] dark:border-[#ef5350] dark:bg-[#ef5350]"
+                : filled
+                  ? "border-[#2e7d32] bg-[#2e7d32] dark:border-[#66bb6a] dark:bg-[#66bb6a]"
+                  : "border-[#e0e0e0] bg-transparent dark:border-[#333333]"
+            }`}
+          />
+        );
+      })}
     </View>
   );
 }
 
 function NumPad({ onPress, onDelete }) {
-  const { colors, fs } = useTheme();
-  const keys = ["1","2","3","4","5","6","7","8","9","","0","del"];
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
 
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", width: 270, gap: 16, justifyContent: "center" }}>
+    <View className="w-[270px] flex-row flex-wrap justify-center gap-4">
       {keys.map((key, i) => {
-        if (key === "") return <View key={i} style={{ width: 74 }} />;
+        if (key === "") return <View key={i} className="w-[74px]" />;
         const isDel = key === "del";
         return (
           <TouchableOpacity
             key={i}
             onPress={() => isDel ? onDelete() : onPress(key)}
             activeOpacity={0.7}
-            style={{
-              width: 74, height: 74, borderRadius: 37,
-              backgroundColor: isDel ? "transparent" : colors.card,
-              alignItems: "center", justifyContent: "center",
-              borderWidth: isDel ? 0 : 1,
-              borderColor: colors.border,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: isDel ? 0 : 0.06,
-              shadowRadius: 4,
-              elevation: isDel ? 0 : 2,
-            }}
+            className={`h-[74px] w-[74px] items-center justify-center rounded-full ${
+              isDel
+                ? "bg-transparent"
+                : "border border-[#e0e0e0] bg-white shadow-sm dark:border-[#333333] dark:bg-[#242424]"
+            }`}
           >
             {isDel ? (
-              <Ionicons name="backspace-outline" size={26} color={colors.textSecondary} />
+              <Ionicons name="backspace-outline" size={26} color="#757575" />
             ) : (
-              <Text style={{ fontSize: fs["2xl"], fontWeight: "500", color: colors.text }}>{key}</Text>
+              <Text className="text-[26px] font-medium text-[#212121] dark:text-white">{key}</Text>
             )}
           </TouchableOpacity>
         );
@@ -69,12 +61,10 @@ function NumPad({ onPress, onDelete }) {
 }
 
 export default function PinSetupScreen() {
-  const { colors, fs } = useTheme();
-  // registrations and token come from AppContext state set during signIn
   const { setupPin, login, registrations } = useApp();
   const router = useRouter();
 
-  const [step, setStep] = useState("enter"); // "enter" | "confirm"
+  const [step, setStep] = useState("enter");
   const [firstPin, setFirstPin] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -111,14 +101,11 @@ export default function PinSetupScreen() {
       }
       setLoading(true);
       try {
-        // Save PIN server-side (uses the token already stored in AppContext)
         await setupPin(entered);
 
-        // Navigate based on how many registrations exist
         if (registrations.length > 1) {
           router.replace("/(auth)/select-account");
         } else if (registrations.length === 1) {
-          // login() will load settings + app data and set authState → "authenticated"
           await login(registrations[0]);
           router.replace("/(app)/home");
         } else {
@@ -137,57 +124,41 @@ export default function PinSetupScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ flex: 1, alignItems: "center", paddingTop: 60, paddingHorizontal: 24 }}>
-
-        {/* Icon */}
-        <View style={{
-          width: 80, height: 80, borderRadius: 40,
-          backgroundColor: colors.primary + "18",
-          alignItems: "center", justifyContent: "center",
-          marginBottom: 20,
-        }}>
-          <Ionicons name="keypad-outline" size={38} color={colors.primary} />
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
+      <View className="flex-1 items-center px-6 pt-[60px]">
+        <View className="mb-5 h-20 w-20 items-center justify-center rounded-full bg-[#2e7d32]/15 dark:bg-[#66bb6a]/15">
+          <Ionicons name="keypad-outline" size={38} color="#2e7d32" />
         </View>
 
-        {/* Title */}
-        <Text style={{ fontSize: fs["2xl"], fontWeight: "800", color: colors.text, textAlign: "center" }}>
+        <Text className="text-center text-[26px] font-extrabold text-[#212121] dark:text-white">
           {step === "enter" ? "Create Your PIN" : "Confirm Your PIN"}
         </Text>
-        <Text style={{ fontSize: fs.sm, color: colors.textSecondary, marginTop: 8, textAlign: "center", lineHeight: 20 }}>
+        <Text className="mt-2 text-center text-[13px] leading-5 text-[#757575] dark:text-[#b0b0b0]">
           {step === "enter"
             ? "Set a 4-digit PIN for quick access next time"
             : "Re-enter your PIN to confirm"}
         </Text>
 
-        {/* Dots */}
         <PinDots value={pin} hasError={!!error} />
 
-        {/* Error */}
         {!!error && (
-          <View style={{
-            flexDirection: "row", alignItems: "center", gap: 6,
-            backgroundColor: colors.error + "14", borderRadius: 10,
-            paddingHorizontal: 14, paddingVertical: 8, marginBottom: 16,
-          }}>
-            <Ionicons name="alert-circle" size={fs.base} color={colors.error} />
-            <Text style={{ color: colors.error, fontSize: fs.sm }}>{error}</Text>
+          <View className="mb-4 flex-row items-center gap-1.5 rounded-[10px] bg-[#b71c1c]/15 px-3.5 py-2 dark:bg-[#ef5350]/15">
+            <Ionicons name="alert-circle" size={15} color="#b71c1c" />
+            <Text className="text-[13px] text-[#b71c1c] dark:text-[#ef5350]">{error}</Text>
           </View>
         )}
 
-        {/* Step indicator */}
-        <View style={{ flexDirection: "row", gap: 6, marginBottom: 28 }}>
-          {["enter","confirm"].map((s) => (
-            <View key={s} style={{
-              width: step === s ? 20 : 8, height: 8, borderRadius: 4,
-              backgroundColor: step === s ? colors.primary : colors.border,
-            }} />
+        <View className="mb-7 flex-row gap-1.5">
+          {["enter", "confirm"].map((s) => (
+            <View
+              key={s}
+              className={`h-2 rounded-full ${step === s ? "w-5 bg-[#2e7d32] dark:bg-[#66bb6a]" : "w-2 bg-[#e0e0e0] dark:bg-[#333333]"}`}
+            />
           ))}
         </View>
 
-        {/* Number pad */}
         {loading ? (
-          <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>Saving PIN...</Text>
+          <Text className="text-[13px] text-[#757575] dark:text-[#b0b0b0]">Saving PIN...</Text>
         ) : (
           <NumPad onPress={handlePress} onDelete={handleDelete} />
         )}

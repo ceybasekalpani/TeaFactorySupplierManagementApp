@@ -12,7 +12,7 @@ const SLIDER_MIN = 10;
 const SLIDER_MAX = 100;
 const THUMB_SIZE = 26;
 
-function FontSizeSlider({ value, onChange, colors }) {
+function FontSizeSlider({ value, onChange }) {
   const [trackWidth, setTrackWidth] = React.useState(0);
 
   const clamp = (v) => Math.min(SLIDER_MAX, Math.max(SLIDER_MIN, Math.round(v)));
@@ -30,7 +30,7 @@ function FontSizeSlider({ value, onChange, colors }) {
       const ratio = (e.nativeEvent.locationX - THUMB_SIZE / 2) / (trackWidth - THUMB_SIZE);
       onChange(clamp(SLIDER_MIN + ratio * (SLIDER_MAX - SLIDER_MIN)));
     },
-  }), [trackWidth]);
+  }), [onChange, trackWidth]);
 
   const thumbLeft = trackWidth > 0
     ? ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * (trackWidth - THUMB_SIZE)
@@ -39,55 +39,36 @@ function FontSizeSlider({ value, onChange, colors }) {
 
   return (
     <View
+      className="h-11 justify-center"
       onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
       {...panResponder.panHandlers}
-      style={{ height: 44, justifyContent: "center" }}
     >
-      <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: "hidden" }}>
-        <View style={{ width: `${fillPercent}%`, height: "100%", backgroundColor: colors.primary, borderRadius: 2 }} />
+      <View className="h-1 overflow-hidden rounded-sm bg-[#e0e0e0] dark:bg-[#333333]">
+        <View className="h-full rounded-sm bg-[#2e7d32] dark:bg-[#66bb6a]" style={{ width: `${fillPercent}%` }} />
       </View>
       {trackWidth > 0 && (
-        <View style={{
-          position: "absolute",
-          left: thumbLeft,
-          width: THUMB_SIZE,
-          height: THUMB_SIZE,
-          borderRadius: THUMB_SIZE / 2,
-          backgroundColor: colors.primary,
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.4,
-          shadowRadius: 4,
-          elevation: 4,
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#fff" }} />
+        <View className="absolute h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2e7d32] shadow-md dark:bg-[#66bb6a]" style={{ left: thumbLeft }}>
+          <View className="h-2 w-2 rounded-full bg-white" />
         </View>
       )}
     </View>
   );
 }
 
-
-function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBg, iconColor }) {
+function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBgClass, iconColor }) {
   const { colors, fs } = useTheme();
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
-      style={{ flexDirection: "row", alignItems: "center", paddingVertical: 14, gap: 12 }}
+      className="flex-row items-center gap-3 py-3.5"
     >
-      <View style={{
-        width: 40, height: 40, borderRadius: 10,
-        backgroundColor: iconBg || colors.surface,
-        alignItems: "center", justifyContent: "center",
-      }}>
+      <View className={`h-10 w-10 items-center justify-center rounded-[10px] ${iconBgClass || "bg-[#f5f5f5] dark:bg-[#1e1e1e]"}`}>
         <Ionicons name={icon} size={fs.lg} color={iconColor || colors.primary} />
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{title}</Text>
-        {subtitle ? <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>{subtitle}</Text> : null}
+      <View className="flex-1">
+        <Text className="text-[15px] font-semibold text-[#212121] dark:text-white">{title}</Text>
+        {subtitle ? <Text className="mt-0.5 text-[11px] text-[#757575] dark:text-[#b0b0b0]">{subtitle}</Text> : null}
       </View>
       {rightElement || (onPress && <Ionicons name="chevron-forward" size={fs.md} color={colors.textMuted} />)}
     </TouchableOpacity>
@@ -95,29 +76,37 @@ function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBg, icon
 }
 
 function SectionHeader({ title }) {
-  const { colors, fs } = useTheme();
   return (
-    <Text style={{
-      color: colors.textMuted,
-      fontSize: fs.xs,
-      fontWeight: "700",
-      letterSpacing: 1.2,
-      marginTop: 20,
-      marginBottom: 4,
-      paddingHorizontal: 4,
-    }}>
-      {title.toUpperCase()}
+    <Text className="mb-1 mt-5 px-1 text-[11px] font-bold uppercase tracking-[1.2px] text-[#9e9e9e]">
+      {title}
     </Text>
+  );
+}
+
+function PinInput({ label, value, onChangeText, placeholder, colors }) {
+  return (
+    <View>
+      <Text className="mb-1.5 text-[13px] font-semibold text-[#757575] dark:text-[#b0b0b0]">{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry
+        keyboardType="numeric"
+        maxLength={4}
+        placeholder={placeholder}
+        placeholderTextColor={colors.placeholder}
+        className="h-12 rounded-xl border border-[#e0e0e0] bg-[#f5f5f5] px-3.5 text-[15px] text-[#212121] dark:border-[#333333] dark:bg-[#252525] dark:text-white"
+      />
+    </View>
   );
 }
 
 export default function SettingsScreen() {
   const { colors, fs, t, isDark } = useTheme();
-  const { theme, updateTheme, language, updateLanguage, fontSize, updateFontSize, currentUser, changePin } = useApp();
+  const { updateTheme, language, updateLanguage, fontSize, updateFontSize, currentUser, changePin } = useApp();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Change PIN modal state
   const [isPinModalVisible, setPinModalVisible] = useState(false);
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -167,7 +156,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
       <ScreenHeader
         title={t.settings}
         onBack={() => router.back()}
@@ -175,241 +164,155 @@ export default function SettingsScreen() {
         onRightPress={() => setMenuOpen(true)}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="px-4 pt-4 pb-10">
+          <SectionHeader title="Account" />
+          <Card>
+            <SettingRow
+              icon="person"
+              iconBgClass="bg-[#dbeafe]"
+              iconColor="#2563eb"
+              title={t.profile}
+              subtitle={currentUser ? `${currentUser.name} - ${currentUser.phone}` : "Update photo, address & phone"}
+              onPress={() => router.push("/(app)/profile")}
+            />
+            <View className="h-px bg-[#e0e0e0] dark:bg-[#333333]" />
+            <SettingRow
+              icon="card"
+              iconBgClass="bg-[#dcfce7]"
+              iconColor="#16a34a"
+              title={t.accountDetails}
+              subtitle={currentUser ? `${currentUser.bankName} - ${currentUser.accountNumber}` : "Bank name, account number"}
+              onPress={() => router.push("/(app)/account-details")}
+            />
+            <View className="h-px bg-[#e0e0e0] dark:bg-[#333333]" />
+            <SettingRow
+              icon="keypad"
+              iconBgClass="bg-[#fef08a]"
+              iconColor="#ca8a04"
+              title="Change PIN"
+              subtitle="Update your 4-digit security PIN"
+              onPress={() => {
+                resetPinState();
+                setPinModalVisible(true);
+              }}
+            />
+          </Card>
 
-        {/* ACCOUNT */}
-        <SectionHeader title="Account" />
-        <Card>
-          <SettingRow
-            icon="person"
-            iconBg="#dbeafe"
-            iconColor="#2563eb"
-            title={t.profile}
-            subtitle={currentUser ? `${currentUser.name} · ${currentUser.phone}` : "Update photo, address & phone"}
-            onPress={() => router.push("/(app)/profile")}
-          />
-          <View style={{ height: 1, backgroundColor: colors.border }} />
-          <SettingRow
-            icon="card"
-            iconBg="#dcfce7"
-            iconColor="#16a34a"
-            title={t.accountDetails}
-            subtitle={currentUser ? `${currentUser.bankName} · ${currentUser.accountNumber}` : "Bank name, account number"}
-            onPress={() => router.push("/(app)/account-details")}
-          />
-          <View style={{ height: 1, backgroundColor: colors.border }} />
-          <SettingRow
-            icon="keypad"
-            iconBg="#fef08a"
-            iconColor="#ca8a04"
-            title="Change PIN"
-            subtitle="Update your 4-digit security PIN"
-            onPress={() => {
-              resetPinState();
-              setPinModalVisible(true);
-            }}
-          />
-        </Card>
+          <SectionHeader title="Appearance" />
+          <Card>
+            <SettingRow
+              icon={isDark ? "moon" : "sunny"}
+              iconBgClass={isDark ? "bg-[#1e1b4b]" : "bg-[#fef3c7]"}
+              iconColor={isDark ? "#818cf8" : "#d97706"}
+              title={t.theme}
+              subtitle={isDark ? t.dark : t.light}
+              rightElement={
+                <Switch
+                  value={isDark}
+                  onValueChange={(v) => updateTheme(v ? "dark" : "light")}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.white}
+                />
+              }
+            />
+            <View className="h-px bg-[#e0e0e0] dark:bg-[#333333]" />
 
-        {/* APPEARANCE */}
-        <SectionHeader title="Appearance" />
-        <Card>
-          <SettingRow
-            icon={isDark ? "moon" : "sunny"}
-            iconBg={isDark ? "#1e1b4b" : "#fef3c7"}
-            iconColor={isDark ? "#818cf8" : "#d97706"}
-            title={t.theme}
-            subtitle={isDark ? t.dark : t.light}
-            rightElement={
-              <Switch
-                value={isDark}
-                onValueChange={(v) => updateTheme(v ? "dark" : "light")}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={colors.white}
-              />
-            }
-          />
-          <View style={{ height: 1, backgroundColor: colors.border }} />
-
-          <View style={{ paddingVertical: 14 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <View style={{
-                width: 40, height: 40, borderRadius: 10,
-                backgroundColor: "#f3e8ff",
-                alignItems: "center", justifyContent: "center",
-              }}>
-                <Ionicons name="text" size={fs.lg} color="#7c3aed" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{t.fontSize}</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>
-                  {typeof fontSize === "number" ? `Size ${fontSize}` : t[fontSize]}
+            <View className="py-3.5">
+              <View className="mb-4 flex-row items-center gap-3">
+                <View className="h-10 w-10 items-center justify-center rounded-[10px] bg-[#f3e8ff]">
+                  <Ionicons name="text" size={fs.lg} color="#7c3aed" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[15px] font-semibold text-[#212121] dark:text-white">{t.fontSize}</Text>
+                  <Text className="mt-0.5 text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+                    {typeof fontSize === "number" ? `Size ${fontSize}` : t[fontSize]}
+                  </Text>
+                </View>
+                <Text className="min-w-8 text-right text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
+                  {typeof fontSize === "number" ? fontSize : 50}
                 </Text>
               </View>
-              <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700", minWidth: 32, textAlign: "right" }}>
-                {typeof fontSize === "number" ? fontSize : 50}
-              </Text>
+
+              <FontSizeSlider
+                value={typeof fontSize === "number" ? fontSize : 50}
+                onChange={updateFontSize}
+              />
             </View>
+          </Card>
 
-            <FontSizeSlider
-              value={typeof fontSize === "number" ? fontSize : 50}
-              onChange={updateFontSize}
-              colors={colors}
-            />
-          </View>
-        </Card>
-
-        {/* LANGUAGE */}
-        <SectionHeader title="Language" />
-        <Card>
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            {[
-              { key: "english", label: t.english, flag: "🇬🇧" },
-              { key: "sinhala", label: t.sinhala, flag: "🇱🇰" },
-            ].map((lang) => {
-              const isActive = language === lang.key;
-              return (
-                <TouchableOpacity
-                  key={lang.key}
-                  onPress={() => updateLanguage(lang.key)}
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    borderRadius: 12,
-                    backgroundColor: isActive ? colors.primary : colors.surface,
-                    borderWidth: 1.5,
-                    borderColor: isActive ? colors.primary : colors.border,
-                  }}
-                >
-                  <Text style={{ fontSize: fs.lg }}>{lang.flag}</Text>
-                  <Text style={{
-                    color: isActive ? "#fff" : colors.text,
-                    fontWeight: isActive ? "700" : "500",
-                    fontSize: fs.sm,
-                    flex: 1,
-                  }}>
-                    {lang.label}
-                  </Text>
-                  {isActive && <Ionicons name="checkmark-circle" size={fs.lg} color="#fff" />}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Card>
+          <SectionHeader title="Language" />
+          <Card>
+            <View className="flex-row gap-2.5">
+              {[
+                { key: "english", label: t.english, flag: "\uD83C\uDDEC\uD83C\uDDE7" },
+                { key: "sinhala", label: t.sinhala, flag: "\uD83C\uDDF1\uD83C\uDDF0" },
+              ].map((lang) => {
+                const isActive = language === lang.key;
+                return (
+                  <TouchableOpacity
+                    key={lang.key}
+                    onPress={() => updateLanguage(lang.key)}
+                    className={`flex-1 flex-row items-center gap-2 rounded-xl border-[1.5px] px-3.5 py-3 ${isActive ? "border-[#2e7d32] bg-[#2e7d32] dark:border-[#66bb6a] dark:bg-[#66bb6a]" : "border-[#e0e0e0] bg-[#f5f5f5] dark:border-[#333333] dark:bg-[#1e1e1e]"}`}
+                  >
+                    <Text className="text-[19px]">{lang.flag}</Text>
+                    <Text className={`flex-1 text-[13px] ${isActive ? "font-bold text-white" : "font-medium text-[#212121] dark:text-white"}`}>
+                      {lang.label}
+                    </Text>
+                    {isActive && <Ionicons name="checkmark-circle" size={fs.lg} color="#fff" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </Card>
+        </View>
       </ScrollView>
 
-      {/* CHANGE PIN MODAL */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={isPinModalVisible}
         onRequestClose={() => setPinModalVisible(false)}
       >
-        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <View style={{
-            backgroundColor: colors.card,
-            padding: 24,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 10,
-          }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text }}>Change Security PIN</Text>
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="rounded-t-[28px] bg-white p-6 shadow-lg dark:bg-[#242424]">
+            <View className="mb-5 flex-row items-center justify-between">
+              <Text className="text-[19px] font-bold text-[#212121] dark:text-white">Change Security PIN</Text>
               <TouchableOpacity onPress={() => setPinModalVisible(false)}>
                 <Ionicons name="close-circle" size={28} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
-            {/* Error Message */}
             {!!pinError && (
-              <View style={{ backgroundColor: "#fee2e2", padding: 10, borderRadius: 8, marginBottom: 16 }}>
-                <Text style={{ color: "#ef4444", fontSize: fs.sm, fontWeight: "600" }}>{pinError}</Text>
+              <View className="mb-4 rounded-lg bg-[#fee2e2] p-2.5">
+                <Text className="text-[13px] font-semibold text-[#ef4444]">{pinError}</Text>
               </View>
             )}
 
-            {/* Success Message */}
             {!!pinSuccess && (
-              <View style={{ backgroundColor: "#dcfce7", padding: 10, borderRadius: 8, marginBottom: 16 }}>
-                <Text style={{ color: "#16a34a", fontSize: fs.sm, fontWeight: "600" }}>{pinSuccess}</Text>
+              <View className="mb-4 rounded-lg bg-[#dcfce7] p-2.5">
+                <Text className="text-[13px] font-semibold text-[#16a34a]">{pinSuccess}</Text>
               </View>
             )}
 
-            <View style={{ gap: 16, marginBottom: 24 }}>
-              <View>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>Current PIN</Text>
-                <TextInput
-                  value={currentPin}
-                  onChangeText={setCurrentPin}
-                  secureTextEntry
-                  keyboardType="numeric"
-                  maxLength={4}
-                  placeholder="Enter current PIN"
-                  placeholderTextColor={colors.placeholder}
-                  style={{
-                    backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border,
-                    borderRadius: 12, paddingHorizontal: 14, height: 48, color: colors.text, fontSize: fs.base
-                  }}
-                />
-              </View>
-
-              <View>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>New PIN</Text>
-                <TextInput
-                  value={newPin}
-                  onChangeText={setNewPin}
-                  secureTextEntry
-                  keyboardType="numeric"
-                  maxLength={4}
-                  placeholder="Enter new 4-digit PIN"
-                  placeholderTextColor={colors.placeholder}
-                  style={{
-                    backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border,
-                    borderRadius: 12, paddingHorizontal: 14, height: 48, color: colors.text, fontSize: fs.base
-                  }}
-                />
-              </View>
-
-              <View>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>Confirm New PIN</Text>
-                <TextInput
-                  value={confirmPin}
-                  onChangeText={setConfirmPin}
-                  secureTextEntry
-                  keyboardType="numeric"
-                  maxLength={4}
-                  placeholder="Confirm new 4-digit PIN"
-                  placeholderTextColor={colors.placeholder}
-                  style={{
-                    backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border,
-                    borderRadius: 12, paddingHorizontal: 14, height: 48, color: colors.text, fontSize: fs.base
-                  }}
-                />
-              </View>
+            <View className="mb-6 gap-4">
+              <PinInput label="Current PIN" value={currentPin} onChangeText={setCurrentPin} placeholder="Enter current PIN" colors={colors} />
+              <PinInput label="New PIN" value={newPin} onChangeText={setNewPin} placeholder="Enter new 4-digit PIN" colors={colors} />
+              <PinInput label="Confirm New PIN" value={confirmPin} onChangeText={setConfirmPin} placeholder="Confirm new 4-digit PIN" colors={colors} />
             </View>
 
             <TouchableOpacity
               onPress={handleChangePinSubmit}
               disabled={isChangingPin}
-              style={{
-                backgroundColor: isChangingPin ? colors.disabled : colors.primary,
-                paddingVertical: 14, borderRadius: 14, alignItems: "center", justifyContent: "center",
-                flexDirection: "row", gap: 8
-              }}
+              className={`flex-row items-center justify-center gap-2 rounded-[14px] py-3.5 ${isChangingPin ? "bg-[#bdbdbd]" : "bg-[#2e7d32] dark:bg-[#66bb6a]"}`}
             >
               {isChangingPin ? (
                 <>
                   <ActivityIndicator color="#fff" size="small" />
-                  <Text style={{ color: "#fff", fontSize: fs.base, fontWeight: "700" }}>Updating...</Text>
+                  <Text className="text-[15px] font-bold text-white">Updating...</Text>
                 </>
               ) : (
-                <Text style={{ color: "#fff", fontSize: fs.base, fontWeight: "700" }}>Change PIN</Text>
+                <Text className="text-[15px] font-bold text-white">Change PIN</Text>
               )}
             </TouchableOpacity>
           </View>

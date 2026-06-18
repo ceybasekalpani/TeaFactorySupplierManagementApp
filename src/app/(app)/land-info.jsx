@@ -12,7 +12,7 @@ import { useTheme } from "../../hooks/useTheme";
 const LAND_INFO_KEY = "landInfo";
 
 export default function LandInfoScreen() {
-  const { colors, fs, t } = useTheme(); // Added 't' for translations
+  const { colors, fs, t } = useTheme();
   const router = useRouter();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -125,29 +125,8 @@ export default function LandInfoScreen() {
   const hasSummary = dataLoaded && landName;
   const hasSizeData = acres || rood || perches;
 
-  // Shared style for the raw TextInput boxes
-  const sizeInputStyle = {
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: fs.base,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    textAlign: "center",
-  };
-
-  const sizeLabelStyle = {
-    color: colors.textSecondary,
-    fontSize: fs.xs,
-    fontWeight: "600",
-    marginBottom: 6,
-    textAlign: "center",
-  };
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
       <ScreenHeader
         title={t.landInfo}
         onBack={() => router.back()}
@@ -157,195 +136,159 @@ export default function LandInfoScreen() {
 
       <KeyboardView>
         <ScrollView
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          {/* Summary card */}
-          {hasSummary && (
-            <Card style={{
-              marginBottom: 16,
-              backgroundColor: colors.primary + "10",
-              borderColor: colors.primary + "30",
-            }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <View style={{
-                  width: 44, height: 44, borderRadius: 22,
-                  backgroundColor: colors.primary + "20",
-                  alignItems: "center", justifyContent: "center",
-                }}>
-                  <Ionicons name="map" size={fs.lg} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fs.base }}>
-                    {landName}
-                  </Text>
-                  {hasSizeData ? (
-                    <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>
-                      {acres || "0"} Ac  {rood || "0"} Ro  {perches || "0"} Pe
+          <View className="px-4 pt-4 pb-[60px]">
+            {hasSummary && (
+              <Card className="mb-4 border-[#2e7d32]/30 bg-[#2e7d32]/10 dark:border-[#66bb6a]/30 dark:bg-[#66bb6a]/10">
+                <View className="flex-row items-center gap-3">
+                  <View className="h-11 w-11 items-center justify-center rounded-full bg-[#2e7d32]/20 dark:bg-[#66bb6a]/20">
+                    <Ionicons name="map" size={fs.lg} color={colors.primary} />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[15px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
+                      {landName}
                     </Text>
-                  ) : null}
-                  {(maxLeaves || minLeaves) ? (
-                    <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 2 }}>
-                      {t.dailySupplyRange}: {minLeaves || "—"} – {maxLeaves || "—"} {t.kg}
-                    </Text>
-                  ) : null}
+                    {hasSizeData ? (
+                      <Text className="mt-0.5 text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+                        {acres || "0"} Ac  {rood || "0"} Ro  {perches || "0"} Pe
+                      </Text>
+                    ) : null}
+                    {(maxLeaves || minLeaves) ? (
+                      <Text className="mt-0.5 text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+                        {t.dailySupplyRange}: {minLeaves || "-"} - {maxLeaves || "-"} {t.kg}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
-            </Card>
-          )}
+              </Card>
+            )}
 
-          {/* Land Details Form */}
-          <Card style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
-              {t.landDetails}
-            </Text>
-
-            <Input
-              label={t.landNameLabel}
-              value={landName}
-              onChangeText={setLandName}
-              placeholder={t.landNamePlaceholder}
-            />
-
-            {/* Size: Acres / Rood / Perches */}
-            <View style={{ marginBottom: 12 }}>
-              <Text style={{
-                color: colors.textSecondary,
-                fontSize: fs.sm,
-                fontWeight: "600",
-                marginBottom: 10,
-              }}>
-                {t.sizeOfLand}
+            <Card className="mb-5">
+              <Text className="mb-4 text-[17px] font-bold text-[#212121] dark:text-white">
+                {t.landDetails}
               </Text>
 
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                {/* Acres */}
-                <View style={{ flex: 1 }}>
-                  <TextInput
-                    ref={acresRef}
-                    style={sizeInputStyle}
-                    value={acres}
-                    onChangeText={handleAcresChange}
-                    placeholder={t.acres}
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    returnKeyType="next"
-                    onSubmitEditing={() => roodRef.current?.focus()}
-                    blurOnSubmit={false}
-                  />
+              <Input
+                label={t.landNameLabel}
+                value={landName}
+                onChangeText={setLandName}
+                placeholder={t.landNamePlaceholder}
+              />
+
+              <View className="mb-3">
+                <Text className="mb-2.5 text-[13px] font-semibold text-[#757575] dark:text-[#b0b0b0]">
+                  {t.sizeOfLand}
+                </Text>
+
+                <View className="flex-row gap-2.5">
+                  <View className="flex-1">
+                    <TextInput
+                      ref={acresRef}
+                      className="rounded-[10px] border-[1.5px] border-[#e0e0e0] bg-[#f5f5f5] px-3 py-3 text-center text-[15px] text-[#212121] dark:border-[#333333] dark:bg-[#1e1e1e] dark:text-white"
+                      value={acres}
+                      onChangeText={handleAcresChange}
+                      placeholder={t.acres}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      returnKeyType="next"
+                      onSubmitEditing={() => roodRef.current?.focus()}
+                      blurOnSubmit={false}
+                    />
+                  </View>
+
+                  <View className="flex-1">
+                    <TextInput
+                      ref={roodRef}
+                      className="rounded-[10px] border-[1.5px] border-[#e0e0e0] bg-[#f5f5f5] px-3 py-3 text-center text-[15px] text-[#212121] dark:border-[#333333] dark:bg-[#1e1e1e] dark:text-white"
+                      value={rood}
+                      onChangeText={handleRoodChange}
+                      placeholder={t.rood}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      returnKeyType="next"
+                      onSubmitEditing={() => perchesRef.current?.focus()}
+                      blurOnSubmit={false}
+                    />
+                  </View>
+
+                  <View className="flex-1">
+                    <TextInput
+                      ref={perchesRef}
+                      className="rounded-[10px] border-[1.5px] border-[#e0e0e0] bg-[#f5f5f5] px-3 py-3 text-center text-[15px] text-[#212121] dark:border-[#333333] dark:bg-[#1e1e1e] dark:text-white"
+                      value={perches}
+                      onChangeText={handlePerchesChange}
+                      placeholder={t.perches}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      returnKeyType="done"
+                    />
+                  </View>
                 </View>
 
-                {/* Rood */}
-                <View style={{ flex: 1 }}>
-                  <TextInput
-                    ref={roodRef}
-                    style={sizeInputStyle}
-                    value={rood}
-                    onChangeText={handleRoodChange}
-                    placeholder={t.rood}
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    returnKeyType="next"
-                    onSubmitEditing={() => perchesRef.current?.focus()}
-                    blurOnSubmit={false}
+                {hasSizeData && (
+                  <View className="mt-2.5 flex-row items-center gap-1.5 rounded-lg bg-[#2e7d32]/10 px-3 py-2 dark:bg-[#66bb6a]/10">
+                    <Ionicons name="resize-outline" size={fs.sm} color={colors.primary} />
+                    <Text className="text-[11px] font-semibold text-[#2e7d32] dark:text-[#66bb6a]">
+                      {acres || "0"} {t.acres}  {rood || "0"} {t.rood}  {perches || "0"} {t.perches}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </Card>
+
+            <Card className="mb-5">
+              <Text className="mb-1 text-[17px] font-bold text-[#212121] dark:text-white">
+                {t.leafCapacity}
+              </Text>
+              <Text className="mb-4 text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+                {t.leafCapacityDesc}
+              </Text>
+
+              <View className="flex-row gap-2.5">
+                <View className="flex-1">
+                  <Input
+                    label={t.minLeaves}
+                    value={minLeaves}
+                    onChangeText={setMinLeaves}
+                    placeholder="e.g. 50"
+                    keyboardType="numeric"
                   />
                 </View>
-
-                {/* Perches */}
-                <View style={{ flex: 1 }}>
-                  <TextInput
-                    ref={perchesRef}
-                    style={sizeInputStyle}
-                    value={perches}
-                    onChangeText={handlePerchesChange}
-                    placeholder={t.perches}
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    returnKeyType="done"
+                <View className="flex-1">
+                  <Input
+                    label={t.maxLeaves}
+                    value={maxLeaves}
+                    onChangeText={setMaxLeaves}
+                    placeholder="e.g. 200"
+                    keyboardType="numeric"
                   />
                 </View>
               </View>
 
-              {/* Size preview badge */}
-              {hasSizeData && (
-                <View style={{
-                  marginTop: 10,
-                  backgroundColor: colors.primary + "10",
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                }}>
-                  <Ionicons name="resize-outline" size={fs.sm} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontSize: fs.xs, fontWeight: "600" }}>
-                    {acres || "0"} {t.acres}  {rood || "0"} {t.rood}  {perches || "0"} {t.perches}
+              {(minLeaves || maxLeaves) && (
+                <View className="mt-1 flex-row items-center gap-2 rounded-[10px] bg-[#dbeafe] p-3">
+                  <Ionicons name="leaf-outline" size={fs.lg} color="#2563eb" />
+                  <Text className="flex-1 text-[11px] text-[#1e40af]">
+                    {t.dailySupplyRange}: {minLeaves || "-"} - {maxLeaves || "-"} {t.kg}
                   </Text>
                 </View>
               )}
-            </View>
-          </Card>
+            </Card>
 
-          {/* Leaf Capacity */}
-          <Card style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 4 }}>
-              {t.leafCapacity}
-            </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginBottom: 16 }}>
-              {t.leafCapacityDesc}
-            </Text>
-
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Input
-                  label={t.minLeaves}
-                  value={minLeaves}
-                  onChangeText={setMinLeaves}
-                  placeholder="e.g. 50"
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Input
-                  label={t.maxLeaves}
-                  value={maxLeaves}
-                  onChangeText={setMaxLeaves}
-                  placeholder="e.g. 200"
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            {(minLeaves || maxLeaves) && (
-              <View style={{
-                backgroundColor: "#dbeafe",
-                borderRadius: 10,
-                padding: 12,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                marginTop: 4,
-              }}>
-                <Ionicons name="leaf-outline" size={fs.lg} color="#2563eb" />
-                <Text style={{ color: "#1e40af", fontSize: fs.xs, flex: 1 }}>
-                  {t.dailySupplyRange}: {minLeaves || "—"} – {maxLeaves || "—"} {t.kg}
-                </Text>
-              </View>
-            )}
-          </Card>
-
-          <Button
-            title={t.saveLandInfo}
-            onPress={handleSave}
-            loading={loading}
-            icon="save-outline"
-          />
+            <Button
+              title={t.saveLandInfo}
+              onPress={handleSave}
+              loading={loading}
+              icon="save-outline"
+            />
+          </View>
         </ScrollView>
       </KeyboardView>
 

@@ -3,10 +3,6 @@ import { useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../hooks/useTheme";
 
-const RED = "#920704";
-const RED_SOFT = "#ffebee";
-const RED_BORDER = "#ef9a9a";
-
 export default function SpecialNewsModal({ news, visible, onClose }) {
   const { fs, t } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -17,50 +13,18 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={() => onClose(current?.id)}>
-      <View style={{
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.55)",
-        justifyContent: "center",
-        padding: 24,
-      }}>
-        <View style={{
-          backgroundColor: "#fff",
-          borderRadius: 20,
-          overflow: "hidden",
-          maxHeight: 420,
-          borderWidth: 1.5,
-          borderColor: RED_BORDER,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 12,
-          elevation: 8,
-        }}>
-          {/* Header */}
-          <View style={{
-            backgroundColor: RED,
-            paddingHorizontal: 20,
-            paddingVertical: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <View style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: "rgba(255,255,255,0.2)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
+      <View className="flex-1 justify-center bg-black/55 p-6">
+        <View className="max-h-[420px] overflow-hidden rounded-[20px] border-[1.5px] border-[#ef9a9a] bg-white shadow-lg">
+          <View className="flex-row items-center justify-between bg-[#920704] px-5 py-4">
+            <View className="flex-row items-center gap-2.5">
+              <View className="h-9 w-9 items-center justify-center rounded-full bg-white/20">
                 <Ionicons name="megaphone" size={fs.lg} color="#fff" />
               </View>
               <View>
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: fs.md, letterSpacing: 0.5 }}>
+                <Text className="text-[17px] font-extrabold tracking-[0.5px] text-white">
                   {t.specialNews}
                 </Text>
-                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: fs.xs, marginTop: 1 }}>
+                <Text className="mt-px text-[11px] text-white/75">
                   Important Announcement
                 </Text>
               </View>
@@ -68,60 +32,29 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
 
             <TouchableOpacity
               onPress={() => onClose(current?.id)}
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 15,
-                backgroundColor: "rgba(255,255,255,0.25)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              className="h-[30px] w-[30px] items-center justify-center rounded-full bg-white/25"
             >
               <Ionicons name="close" size={fs.md} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          {/* Content */}
-          <ScrollView style={{ padding: 20, backgroundColor: RED_SOFT }}>
-            <View style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              gap: 10,
-              marginBottom: 4,
-            }}>
-              <Ionicons name="alert-circle" size={fs.lg} color={RED} style={{ marginTop: 2 }} />
-              <Text style={{
-                color: "#1a1a1a",
-                fontSize: fs.base,
-                lineHeight: fs.base * 1.7,
-                flex: 1,
-                fontWeight: "500",
-              }}>
+          <ScrollView className="bg-[#ffebee] p-5">
+            <View className="mb-1 flex-row items-start gap-2.5">
+              <View className="mt-0.5">
+                <Ionicons name="alert-circle" size={fs.lg} color="#920704" />
+              </View>
+              <Text className="flex-1 text-[15px] font-medium leading-[25px] text-[#1a1a1a]">
                 {current?.message}
               </Text>
             </View>
           </ScrollView>
 
-          {/* Navigation and close */}
-          <View style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: 16,
-            backgroundColor: "#fff",
-            borderTopWidth: 1,
-            borderTopColor: "#e5e7eb",
-          }}>
+          <View className="flex-row items-center justify-between border-t border-[#e5e7eb] bg-white p-4">
             {news.length > 1 ? (
-              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+              <View className="flex-row items-center gap-2">
                 {news.map((_, i) => (
                   <TouchableOpacity key={i} onPress={() => setCurrentIndex(i)}>
-                    <View style={{
-                      width: i === currentIndex ? 20 : 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: i === currentIndex ? RED : "#d1d5db",
-                    }} />
+                    <View className={`h-2 rounded ${i === currentIndex ? "w-5 bg-[#920704]" : "w-2 bg-[#d1d5db]"}`} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -129,15 +62,9 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
 
             <TouchableOpacity
               onPress={() => onClose(current?.id)}
-              style={{
-                backgroundColor: RED,
-                paddingHorizontal: 24,
-                paddingVertical: 10,
-                borderRadius: 10,
-                elevation: 2,
-              }}
+              className="rounded-[10px] bg-[#920704] px-6 py-2.5 shadow-sm"
             >
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: fs.sm }}>
+              <Text className="text-[13px] font-bold text-white">
                 {t.close}
               </Text>
             </TouchableOpacity>

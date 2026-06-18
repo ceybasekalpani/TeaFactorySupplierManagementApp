@@ -10,19 +10,8 @@ import { Button, Card, EmptyState, Input, Picker, ScreenHeader, StatusBadge, Toa
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
-// Fixed column widths — header and rows both reference these so they always align
-const COL = {
-  date:     150,
-  category:  80,
-  type:     110,
-  qty:       80,
-  status:    90,
-  action:    50,
-};
-const TABLE_MIN_WIDTH = COL.date + COL.category + COL.type + COL.qty + COL.status + COL.action + 28; // +28 for paddingHorizontal*2
-
 export default function FertilizerItemRequestScreen() {
-  const { colors, fs, t } = useTheme();
+  const { colors, t } = useTheme();
   const {
     fertilizerRequests, addFertilizerRequest, deleteFertilizerRequest,
     itemRequests, addItemRequest, deleteItemRequest,
@@ -69,6 +58,7 @@ export default function FertilizerItemRequestScreen() {
       setSelectedType("");
     }
   }, [currentTypes, selectedType]);
+
   const quantityLabel = `${t.quantity} (${
     category === "fertilizer"
       ? `${t.unitKg ?? "kg"} / ${t.unitNos ?? "Nos"}`
@@ -165,7 +155,7 @@ export default function FertilizerItemRequestScreen() {
     } catch { return dateString || "-"; }
   };
 
-  const formatQty = (qty, unit) => {
+  const formatQty = (qty, unitValue) => {
     if (!qty && qty !== 0) return "-";
     try {
       const n = parseFloat(qty).toLocaleString("en-US", {
@@ -173,9 +163,9 @@ export default function FertilizerItemRequestScreen() {
         maximumFractionDigits: 1,
       });
       const unitLabel =
-        unit === "kg"    ? t.unitKg    :
-        unit === "units" ? t.unitUnits :
-        unit === "Nos"   ? t.unitNos   : unit;
+        unitValue === "kg"    ? t.unitKg    :
+        unitValue === "units" ? t.unitUnits :
+        unitValue === "Nos"   ? t.unitNos   : unitValue;
       return `${n} ${unitLabel}`;
     } catch {
       return "-";
@@ -208,8 +198,12 @@ export default function FertilizerItemRequestScreen() {
     setRefreshing(false);
   };
 
+  const titleText = "text-[19px] font-bold text-[#212121] dark:text-white";
+  const labelText = "text-[13px] font-semibold text-[#757575] dark:text-[#b0b0b0]";
+  const mutedText = "text-[11px] text-[#757575] dark:text-[#b0b0b0]";
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
       <ScreenHeader
         title={t.fertilizerItemRequest}
         onBack={() => router.back()}
@@ -219,322 +213,230 @@ export default function FertilizerItemRequestScreen() {
 
       <KeyboardView>
         <ScrollView
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
-          {/* Request Form */}
-          <Card style={{ marginBottom: 24 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
-              <View style={{
-                width: 48, height: 48, borderRadius: 24,
-                backgroundColor: category === "fertilizer" ? "#dcfce7" : "#fef3c7",
-                alignItems: "center", justifyContent: "center",
-              }}>
-                <Text style={{ fontSize: 24 }}>{category === "fertilizer" ? "🌿" : "📦"}</Text>
+          <View className="px-4 pt-4 pb-[60px]">
+            <Card className="mb-6">
+              <View className="mb-5 flex-row items-center gap-2.5">
+                <View className={`h-12 w-12 items-center justify-center rounded-full ${category === "fertilizer" ? "bg-[#dcfce7]" : "bg-[#fef3c7]"}`}>
+                  <Ionicons
+                    name={category === "fertilizer" ? "leaf-outline" : "cube-outline"}
+                    size={24}
+                    color={category === "fertilizer" ? "#16a34a" : "#d97706"}
+                  />
+                </View>
+                <View>
+                  <Text className={titleText}>
+                    {t.newFertilizerItemRequest}
+                  </Text>
+                  <Text className={mutedText}>
+                    {currentUser?.name || t.guest} - {activeReg?.regNo || t.noRegistration}
+                  </Text>
+                </View>
               </View>
-              <View>
-                <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text }}>
-                  {t.newFertilizerItemRequest}
+
+              <View className="mb-4">
+                <Text className={`${labelText} mb-2`}>
+                  {t.requestType}
                 </Text>
-                <Text style={{ fontSize: fs.xs, color: colors.textSecondary }}>
-                  {currentUser?.name || t.guest} · {activeReg?.regNo || t.noRegistration}
-                </Text>
-              </View>
-            </View>
-
-            {/* Category Selector */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 8 }}>
-                {t.requestType}
-              </Text>
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                {[
-                  { key: "fertilizer", label: t.fertilizer, icon: "leaf-outline", color: "#16a34a", bg: "#dcfce7" },
-                  { key: "item",       label: t.item,       icon: "cube-outline", color: "#d97706", bg: "#fef3c7" },
-                ].map((cat) => {
-                  const isActive = category === cat.key;
-                  return (
-                    <TouchableOpacity
-                      key={cat.key}
-                      onPress={() => setCategory(cat.key)}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        paddingHorizontal: 10,
-                        borderRadius: 12,
-                        borderWidth: 2,
-                        borderColor: isActive ? cat.color : colors.border,
-                        backgroundColor: isActive ? cat.bg : colors.surface,
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <View style={{
-                        width: 36, height: 36, borderRadius: 18,
-                        backgroundColor: isActive ? cat.color + "20" : colors.border + "30",
-                        alignItems: "center", justifyContent: "center",
-                      }}>
-                        <Ionicons
-                          name={cat.icon}
-                          size={fs.lg}
-                          color={isActive ? cat.color : colors.textMuted}
-                        />
-                      </View>
-                      <Text style={{
-                        color: isActive ? cat.color : colors.text,
-                        fontSize: fs.xs,
-                        fontWeight: isActive ? "700" : "500",
-                        textAlign: "center",
-                      }}>
-                        {cat.label}
-                      </Text>
-                      {isActive && (
-                        <Ionicons name="checkmark-circle" size={fs.base} color={cat.color} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Month display */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 6 }}>
-                {t.month}
-              </Text>
-              <View style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                backgroundColor: colors.surface,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: 14,
-                paddingVertical: 13,
-              }}>
-                <Ionicons name="calendar-outline" size={fs.lg} color={colors.primary} />
-                <Text style={{ color: colors.text, fontSize: fs.base, fontWeight: "600" }}>{currentMonth}</Text>
-              </View>
-            </View>
-
-            {/* Type picker */}
-            <Picker
-              label={category === "fertilizer" ? t.fertilizerType : t.itemType}
-              value={selectedType}
-              options={currentTypes}
-              onSelect={setSelectedType}
-              placeholder={
-                supplyTypesLoading
-                  ? t.loadingTypes
-                  : currentTypes.length === 0
-                    ? t.noTypesAvailable
-                    : category === "fertilizer"
-                      ? t.selectFertilizerType
-                      : t.selectItemType
-              }
-            />
-
-            {category === "fertilizer" && (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 8 }}>
-                  {t.unit}
-                </Text>
-                <View style={{ flexDirection: "row", gap: 10 }}>
+                <View className="flex-row gap-2.5">
                   {[
-                    { key: "kg",  label: t.unitKg  },
-                    { key: "Nos", label: t.unitNos },
-                  ].map((u) => {
-                    const isActive = unit === u.key;
+                    { key: "fertilizer", label: t.fertilizer, icon: "leaf-outline", activeClass: "border-[#16a34a] bg-[#dcfce7]", inactiveClass: "border-[#e0e0e0] bg-[#f5f5f5] dark:border-[#333333] dark:bg-[#1e1e1e]", iconColor: "#16a34a" },
+                    { key: "item", label: t.item, icon: "cube-outline", activeClass: "border-[#d97706] bg-[#fef3c7]", inactiveClass: "border-[#e0e0e0] bg-[#f5f5f5] dark:border-[#333333] dark:bg-[#1e1e1e]", iconColor: "#d97706" },
+                  ].map((cat) => {
+                    const isActive = category === cat.key;
                     return (
                       <TouchableOpacity
-                        key={u.key}
-                        onPress={() => setUnit(u.key)}
-                        style={{
-                          flex: 1, paddingVertical: 10, borderRadius: 10,
-                          borderWidth: 2,
-                          borderColor: isActive ? colors.primary : colors.border,
-                          backgroundColor: isActive ? colors.primary + "15" : colors.surface,
-                          alignItems: "center",
-                        }}
+                        key={cat.key}
+                        onPress={() => setCategory(cat.key)}
+                        className={`flex-1 items-center gap-1.5 rounded-xl border-2 px-2.5 py-3 ${isActive ? cat.activeClass : cat.inactiveClass}`}
                       >
-                        <Text style={{
-                          color: isActive ? colors.primary : colors.text,
-                          fontWeight: isActive ? "700" : "500",
-                          fontSize: fs.sm,
-                        }}>
-                          {u.label}
+                        <View className={`h-9 w-9 items-center justify-center rounded-full ${isActive ? "bg-white/40" : "bg-[#e0e0e0]/30 dark:bg-[#333333]/30"}`}>
+                          <Ionicons
+                            name={cat.icon}
+                            size={19}
+                            color={isActive ? cat.iconColor : colors.textMuted}
+                          />
+                        </View>
+                        <Text className={`text-center text-[11px] ${isActive ? "font-bold" : "font-medium"} ${cat.key === "fertilizer" && isActive ? "text-[#16a34a]" : ""}${cat.key === "item" && isActive ? "text-[#d97706]" : ""}${!isActive ? " text-[#212121] dark:text-white" : ""}`}>
+                          {cat.label}
                         </Text>
+                        {isActive && (
+                          <Ionicons name="checkmark-circle" size={15} color={cat.iconColor} />
+                        )}
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               </View>
-            )}
 
-            {/* Quantity */}
-            <Input
-              label={quantityLabel}
-              value={quantity}
-              onChangeText={setQuantity}
-              placeholder={quantityPlaceholder}
-              keyboardType="numeric"
-            />
+              <View className="mb-4">
+                <Text className={`${labelText} mb-1.5`}>
+                  {t.month}
+                </Text>
+                <View className="flex-row items-center gap-2 rounded-[10px] border border-[#e0e0e0] bg-[#f5f5f5] px-3.5 py-3 dark:border-[#333333] dark:bg-[#1e1e1e]">
+                  <Ionicons name="calendar-outline" size={19} color={colors.primary} />
+                  <Text className="text-[15px] font-semibold text-[#212121] dark:text-white">{currentMonth}</Text>
+                </View>
+              </View>
 
-            <View style={{
-              backgroundColor: "#dbeafe",
-              borderRadius: 10,
-              padding: 12,
-              flexDirection: "row",
-              alignItems: "flex-start",
-              gap: 8,
-              marginBottom: 20,
-            }}>
-              <Ionicons name="information-circle" size={fs.lg} color="#2563eb" />
-              <Text style={{ color: "#1e40af", fontSize: fs.xs, flex: 1 }}>
-                {category === "fertilizer" ? t.fertilizerInfoNote : t.itemInfoNote}
-              </Text>
-            </View>
+              <Picker
+                label={category === "fertilizer" ? t.fertilizerType : t.itemType}
+                value={selectedType}
+                options={currentTypes}
+                onSelect={setSelectedType}
+                placeholder={
+                  supplyTypesLoading
+                    ? t.loadingTypes
+                    : currentTypes.length === 0
+                      ? t.noTypesAvailable
+                      : category === "fertilizer"
+                        ? t.selectFertilizerType
+                        : t.selectItemType
+                }
+              />
 
-            <Button
-              title={t.submitRequest}
-              onPress={handleRequest}
-              loading={loading}
-              icon="send-outline"
-            />
-          </Card>
+              {category === "fertilizer" && (
+                <View className="mb-4">
+                  <Text className={`${labelText} mb-2`}>
+                    {t.unit}
+                  </Text>
+                  <View className="flex-row gap-2.5">
+                    {[
+                      { key: "kg", label: t.unitKg },
+                      { key: "Nos", label: t.unitNos },
+                    ].map((u) => {
+                      const isActive = unit === u.key;
+                      return (
+                        <TouchableOpacity
+                          key={u.key}
+                          onPress={() => setUnit(u.key)}
+                          className={`flex-1 items-center rounded-[10px] border-2 py-2.5 ${isActive ? "border-[#2e7d32] bg-[#2e7d32]/15 dark:border-[#66bb6a] dark:bg-[#66bb6a]/15" : "border-[#e0e0e0] bg-[#f5f5f5] dark:border-[#333333] dark:bg-[#1e1e1e]"}`}
+                        >
+                          <Text className={`text-[13px] ${isActive ? "font-bold text-[#2e7d32] dark:text-[#66bb6a]" : "font-medium text-[#212121] dark:text-white"}`}>
+                            {u.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
 
-          {/* Combined History */}
-          {combinedHistory.length === 0 ? (
-            <Card>
-              <EmptyState
-                icon="leaf-outline"
-                message={t.noSupplyRequestsYet}
-                description={t.supplyRequestHistoryWillAppear}
+              <Input
+                label={quantityLabel}
+                value={quantity}
+                onChangeText={setQuantity}
+                placeholder={quantityPlaceholder}
+                keyboardType="numeric"
+              />
+
+              <View className="mb-5 flex-row items-start gap-2 rounded-[10px] bg-[#dbeafe] p-3">
+                <Ionicons name="information-circle" size={19} color="#2563eb" />
+                <Text className="flex-1 text-[11px] text-[#1e40af]">
+                  {category === "fertilizer" ? t.fertilizerInfoNote : t.itemInfoNote}
+                </Text>
+              </View>
+
+              <Button
+                title={t.submitRequest}
+                onPress={handleRequest}
+                loading={loading}
+                icon="send-outline"
               />
             </Card>
-          ) : (
-            <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
-              {/* ── Horizontal scroll wrapper for responsive table ── */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ minWidth: TABLE_MIN_WIDTH, flexGrow: 1 }}
-                bounces={false}
-              >
-                <View style={{ minWidth: TABLE_MIN_WIDTH }}>
 
-                  {/* Table Header */}
-                  <View style={{
-                    flexDirection: "row",
-                    backgroundColor: colors.primary + "10",
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    borderBottomWidth: 2,
-                    borderBottomColor: colors.primary,
-                  }}>
-                    <Text style={{ width: COL.date,     color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
-                      {t.colDate?.charAt(0).toUpperCase() + t.colDate?.slice(1).toLowerCase() || "Date"}
-                    </Text>
-                    <Text style={{ width: COL.category, color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
-                      {t.colCategory?.charAt(0).toUpperCase() + t.colCategory?.slice(1).toLowerCase() || "Category"}
-                    </Text>
-                    <Text style={{ width: COL.type,     color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
-                      {t.colType?.charAt(0).toUpperCase() + t.colType?.slice(1).toLowerCase() || "Type"}
-                    </Text>
-                    <Text style={{ width: COL.qty,      color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
-                      {t.colQty?.charAt(0).toUpperCase() + t.colQty?.slice(1).toLowerCase() || "Qty"}
-                    </Text>
-                    <Text style={{ width: COL.status,   color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
-                      {t.status?.charAt(0).toUpperCase() + t.status?.slice(1).toLowerCase() || "Status"}
-                    </Text>
-                    <Text style={{ width: COL.action,   color: colors.primary, fontSize: fs.sm, fontWeight: "700", textAlign: "center" }}>
-                      {(t.action ?? "Action")?.charAt(0).toUpperCase() + (t.action ?? "Action")?.slice(1).toLowerCase()}
-                    </Text>
-                  </View>
-
-                  {/* Table Rows */}
-                  {combinedHistory.map((req, i) => (
-                    <View
-                      key={`${req.category}-${req.id || i}`}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        paddingVertical: 14,
-                        paddingHorizontal: 14,
-                        borderBottomWidth: i < combinedHistory.length - 1 ? 1 : 0,
-                        borderBottomColor: colors.border,
-                        backgroundColor: i % 2 === 0 ? "transparent" : colors.surface + "40",
-                      }}
-                    >
-                      <Text numberOfLines={1} style={{ width: COL.date,     color: colors.text, fontSize: fs.xs, fontWeight: "500" }}>
-                        {formatDate(req.createdAt)}
+            {combinedHistory.length === 0 ? (
+              <Card>
+                <EmptyState
+                  icon="leaf-outline"
+                  message={t.noSupplyRequestsYet}
+                  description={t.supplyRequestHistoryWillAppear}
+                />
+              </Card>
+            ) : (
+              <Card className="mb-4 overflow-hidden p-0">
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  bounces={false}
+                >
+                  <View className="min-w-[588px]">
+                    <View className="flex-row border-b-2 border-[#2e7d32] bg-[#2e7d32]/10 px-3.5 py-3 dark:border-[#66bb6a] dark:bg-[#66bb6a]/10">
+                      <Text className="w-[150px] text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
+                        {t.colDate?.charAt(0).toUpperCase() + t.colDate?.slice(1).toLowerCase() || "Date"}
                       </Text>
-                      <View style={{ width: COL.category, alignItems: "center" }}>
-                        <View style={{
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 8,
-                          backgroundColor: req.category === "Fertilizer" ? "#dcfce7" : "#fef3c7",
-                        }}>
-                          <Text style={{
-                            fontSize: fs.xs - 1,
-                            fontWeight: "600",
-                            color: req.category === "Fertilizer" ? "#16a34a" : "#d97706",
-                          }}>
-                            {req.category === "Fertilizer" ? t.fertilizer : t.item}
-                          </Text>
+                      <Text className="w-[80px] text-center text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
+                        {t.colCategory?.charAt(0).toUpperCase() + t.colCategory?.slice(1).toLowerCase() || "Category"}
+                      </Text>
+                      <Text className="w-[110px] text-center text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
+                        {t.colType?.charAt(0).toUpperCase() + t.colType?.slice(1).toLowerCase() || "Type"}
+                      </Text>
+                      <Text className="w-[80px] text-center text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
+                        {t.colQty?.charAt(0).toUpperCase() + t.colQty?.slice(1).toLowerCase() || "Qty"}
+                      </Text>
+                      <Text className="w-[90px] text-center text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
+                        {t.status?.charAt(0).toUpperCase() + t.status?.slice(1).toLowerCase() || "Status"}
+                      </Text>
+                      <Text className="w-[50px] text-center text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
+                        {(t.action ?? "Action")?.charAt(0).toUpperCase() + (t.action ?? "Action")?.slice(1).toLowerCase()}
+                      </Text>
+                    </View>
+
+                    {combinedHistory.map((req, i) => (
+                      <View
+                        key={`${req.category}-${req.id || i}`}
+                        className={`flex-row items-center px-3.5 py-3.5 ${i < combinedHistory.length - 1 ? "border-b border-[#e0e0e0] dark:border-[#333333]" : ""} ${i % 2 === 0 ? "bg-transparent" : "bg-[#f5f5f5]/40 dark:bg-[#1e1e1e]/40"}`}
+                      >
+                        <Text numberOfLines={1} className="w-[150px] text-[11px] font-medium text-[#212121] dark:text-white">
+                          {formatDate(req.createdAt)}
+                        </Text>
+                        <View className="w-[80px] items-center">
+                          <View className={`rounded-lg px-1.5 py-0.5 ${req.category === "Fertilizer" ? "bg-[#dcfce7]" : "bg-[#fef3c7]"}`}>
+                            <Text className={`text-[10px] font-semibold ${req.category === "Fertilizer" ? "text-[#16a34a]" : "text-[#d97706]"}`}>
+                              {req.category === "Fertilizer" ? t.fertilizer : t.item}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text numberOfLines={1} className="w-[110px] text-center text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+                          {req.displayType}
+                        </Text>
+                        <Text numberOfLines={1} className="w-[80px] text-center text-[11px] font-semibold text-[#212121] dark:text-white">
+                          {formatQty(
+                            req.quantity,
+                            req.category === "Other Item" ? "units" : (req.unit ?? "kg")
+                          )}
+                        </Text>
+                        <View className="w-[90px] items-center">
+                          <StatusBadge status={req.status || "pending"} size="small" />
+                        </View>
+                        <View className="w-[50px] items-center">
+                          {(req.status === "pending" || req.status === "Pending") && (
+                            <TouchableOpacity onPress={() => setDeleteConfirm(req)}>
+                              <Ionicons name="trash-outline" size={19} color="#ef4444" />
+                            </TouchableOpacity>
+                          )}
                         </View>
                       </View>
-                      <Text numberOfLines={1} style={{ width: COL.type,   color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>
-                        {req.displayType}
+                    ))}
+
+                    <View className="flex-row items-center justify-between border-t border-[#e0e0e0] bg-[#f5f5f5] px-3.5 py-3 dark:border-[#333333] dark:bg-[#1e1e1e]">
+                      <Text className="text-[13px] text-[#757575] dark:text-[#b0b0b0]">
+                        {t.total}: {combinedHistory.length}
                       </Text>
-                      <Text numberOfLines={1} style={{ width: COL.qty,    color: colors.text, fontSize: fs.xs, fontWeight: "600", textAlign: "center" }}>
-                        {formatQty(
-                          req.quantity,
-                          req.category === "Other Item" ? "units" : (req.unit ?? "kg")
-                        )}
+                      <Text className="text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+                        {fertilizerRequests?.length || 0} {t.fertilizerLower} - {itemRequests?.length || 0} {t.itemsLower}
                       </Text>
-                      <View style={{ width: COL.status, alignItems: "center" }}>
-                        <StatusBadge status={req.status || "pending"} size="small" />
-                      </View>
-                      <View style={{ width: COL.action, alignItems: "center" }}>
-                        {(req.status === "pending" || req.status === "Pending") && (
-                          <TouchableOpacity onPress={() => setDeleteConfirm(req)}>
-                            <Ionicons name="trash-outline" size={fs.lg} color="#ef4444" />
-                          </TouchableOpacity>
-                        )}
-                      </View>
                     </View>
-                  ))}
-
-                  {/* Summary Footer */}
-                  <View style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    backgroundColor: colors.surface,
-                    borderTopWidth: 1,
-                    borderTopColor: colors.border,
-                  }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
-                      {t.total}: {combinedHistory.length}
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: fs.xs }}>
-                      {fertilizerRequests?.length || 0} {t.fertilizerLower} · {itemRequests?.length || 0} {t.itemsLower}
-                    </Text>
                   </View>
-
-                </View>
-              </ScrollView>
-              {/* ── End horizontal scroll wrapper ── */}
-            </Card>
-          )}
+                </ScrollView>
+              </Card>
+            )}
+          </View>
         </ScrollView>
       </KeyboardView>
 
@@ -547,27 +449,27 @@ export default function FertilizerItemRequestScreen() {
       <SidebarMenu visible={menuOpen} onClose={() => setMenuOpen(false)} activeKey="fertilizerItemRequest" />
 
       <Modal visible={!!deleteConfirm} transparent animationType="fade" onRequestClose={() => setDeleteConfirm(null)}>
-        <View style={{ flex: 1, backgroundColor: "#00000060", justifyContent: "center", padding: 24 }}>
-          <View style={{ backgroundColor: colors.bg, borderRadius: 16, padding: 24 }}>
-            <Text style={{ fontSize: fs.lg, fontWeight: "700", color: colors.text, marginBottom: 8 }}>
+        <View className="flex-1 justify-center bg-black/60 p-6">
+          <View className="rounded-2xl bg-[#f5f1ea] p-6 dark:bg-[#121212]">
+            <Text className={titleText}>
               {t.confirm ?? "Confirm"}
             </Text>
-            <Text style={{ fontSize: fs.sm, color: colors.textSecondary, marginBottom: 24 }}>
+            <Text className={`${mutedText} mb-6 mt-2`}>
               {t.deleteConfirmMessage ?? "Are you sure you want to delete this request?"}
             </Text>
-            <View style={{ flexDirection: "row", gap: 12 }}>
+            <View className="flex-row gap-3">
               <TouchableOpacity
                 onPress={() => setDeleteConfirm(null)}
-                style={{ flex: 1, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}
+                className="flex-1 items-center rounded-[10px] border border-[#e0e0e0] p-3 dark:border-[#333333]"
               >
-                <Text style={{ color: colors.text, fontWeight: "600" }}>{t.cancel}</Text>
+                <Text className="font-semibold text-[#212121] dark:text-white">{t.cancel}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleDelete(deleteConfirm)}
                 disabled={deleteLoading}
-                style={{ flex: 1, padding: 12, borderRadius: 10, backgroundColor: "#ef4444", alignItems: "center" }}
+                className="flex-1 items-center rounded-[10px] bg-[#ef4444] p-3"
               >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>
+                <Text className="font-semibold text-white">
                   {deleteLoading ? "..." : (t.delete ?? "Delete")}
                 </Text>
               </TouchableOpacity>

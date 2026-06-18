@@ -120,136 +120,111 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
       <ScreenHeader title={t.profile} onBack={() => router.back()} />
 
       <KeyboardView>
         <ScrollView
+          className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          {/* Profile Image */}
-          <View style={{ alignItems: "center", marginBottom: 24 }}>
-            <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
-              <View style={{
-                width: 110,
-                height: 110,
-                borderRadius: 55,
-                backgroundColor: colors.surface,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 3,
-                borderColor: colors.primary,
-                overflow: "hidden",
-              }}>
-                {displayImage ? (
-                  <Image
-                    source={{ uri: displayImage }}
-                    style={{ width: 110, height: 110 }}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    key={imageKey}
-                  />
-                ) : (
-                  <Ionicons name="person" size={52} color={colors.primary} />
-                )}
-              </View>
-              <View style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                backgroundColor: colors.primary,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 2,
-                borderColor: colors.bg,
-              }}>
-                <Ionicons name="camera" size={fs.base} color="#fff" />
-              </View>
-            </TouchableOpacity>
-            <Text style={{ color: colors.textSecondary, fontSize: fs.xs, marginTop: 8 }}>
-              {t.changeProfileImage}
-            </Text>
-          </View>
-
-          {/* Account Information */}
-          <Card style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
-              {t.accountDetails}
-            </Text>
-            <View style={{ gap: 10 }}>
-              {[
-                { label: t.fullName || "Full Name", value: currentUser?.name, icon: "person-outline" },
-                { label: t.supplierID || "Supplier ID", value: currentUser?.id, icon: "card-outline" },
-              ].map((item) => (
-                <View key={item.label} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                  <Ionicons name={item.icon} size={fs.lg} color={colors.textMuted} />
-                  <View>
-                    <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>{item.label}</Text>
-                    <Text style={{ color: colors.text, fontSize: fs.sm, fontWeight: "600" }}>{item.value}</Text>
-                  </View>
+          <View className="px-4 pt-4 pb-[60px]">
+            <View className="mb-6 items-center">
+              <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
+                <View className="h-[110px] w-[110px] items-center justify-center overflow-hidden rounded-full border-[3px] border-[#2e7d32] bg-[#f5f5f5] dark:border-[#66bb6a] dark:bg-[#1e1e1e]">
+                  {displayImage ? (
+                    <Image
+                      source={{ uri: displayImage }}
+                      className="h-[110px] w-[110px]"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      key={imageKey}
+                    />
+                  ) : (
+                    <Ionicons name="person" size={52} color={colors.primary} />
+                  )}
                 </View>
-              ))}
+                <View className="absolute bottom-0 right-0 h-[34px] w-[34px] items-center justify-center rounded-full border-2 border-[#f5f1ea] bg-[#2e7d32] dark:border-[#121212] dark:bg-[#66bb6a]">
+                  <Ionicons name="camera" size={fs.base} color="#fff" />
+                </View>
+              </TouchableOpacity>
+              <Text className="mt-2 text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+                {t.changeProfileImage}
+              </Text>
             </View>
-          </Card>
 
-          {/* Edit Profile */}
-          <Card style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
-              {t.editProfile || "Edit Profile"}
-            </Text>
+            <Card className="mb-4">
+              <Text className="mb-4 text-[17px] font-bold text-[#212121] dark:text-white">
+                {t.accountDetails}
+              </Text>
+              <View className="gap-2.5">
+                {[
+                  { label: t.fullName || "Full Name", value: currentUser?.name, icon: "person-outline" },
+                  { label: t.supplierID || "Supplier ID", value: currentUser?.id, icon: "card-outline" },
+                ].map((item) => (
+                  <View key={item.label} className="flex-row items-center gap-2.5">
+                    <Ionicons name={item.icon} size={fs.lg} color={colors.textMuted} />
+                    <View>
+                      <Text className="text-[11px] text-[#9e9e9e]">{item.label}</Text>
+                      <Text className="text-[13px] font-semibold text-[#212121] dark:text-white">{item.value}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </Card>
 
-            <Input
-              label={t.fullName || "Full Name"}
-              value={name}
-              onChangeText={setName}
-              placeholder={t.enterFullName || "Enter your full name"}
-            />
+            <Card className="mb-4">
+              <Text className="mb-4 text-[17px] font-bold text-[#212121] dark:text-white">
+                {t.editProfile || "Edit Profile"}
+              </Text>
 
-            <Input
-              label={t.address}
-              value={address}
-              onChangeText={setAddress}
-              placeholder={t.enterAddress || "Enter your address"}
-            />
+              <Input
+                label={t.fullName || "Full Name"}
+                value={name}
+                onChangeText={setName}
+                placeholder={t.enterFullName || "Enter your full name"}
+              />
 
-            <Input
-              label={t.primaryPhone || "Primary Phone"}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder={t.phoneExample || "e.g. 0771234567"}
-              keyboardType="phone-pad"
-            />
+              <Input
+                label={t.address}
+                value={address}
+                onChangeText={setAddress}
+                placeholder={t.enterAddress || "Enter your address"}
+              />
 
-            <Input
-              label={t.secondaryPhone || "Secondary Phone (Optional)"}
-              value={phone2}
-              onChangeText={setPhone2}
-              placeholder={t.phoneExample || "e.g. 0771112223"}
-              keyboardType="phone-pad"
-            />
+              <Input
+                label={t.primaryPhone || "Primary Phone"}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder={t.phoneExample || "e.g. 0771234567"}
+                keyboardType="phone-pad"
+              />
 
-            <Input
-              label={t.additionalPhone || "Additional Phone (Optional)"}
-              value={phone3}
-              onChangeText={setPhone3}
-              placeholder={t.phoneExample || "e.g. 0112223334"}
-              keyboardType="phone-pad"
-            />
+              <Input
+                label={t.secondaryPhone || "Secondary Phone (Optional)"}
+                value={phone2}
+                onChangeText={setPhone2}
+                placeholder={t.phoneExample || "e.g. 0771112223"}
+                keyboardType="phone-pad"
+              />
 
-            <Button title={t.save} onPress={handleSave} loading={loading} icon="checkmark-circle" />
-          </Card>
+              <Input
+                label={t.additionalPhone || "Additional Phone (Optional)"}
+                value={phone3}
+                onChangeText={setPhone3}
+                placeholder={t.phoneExample || "e.g. 0112223334"}
+                keyboardType="phone-pad"
+              />
 
-          {/* Change Password */}
-          <Card style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text, marginBottom: 16 }}>
-              {t.changePassword || "Change Password"}
-            </Text>
+              <Button title={t.save} onPress={handleSave} loading={loading} icon="checkmark-circle" />
+            </Card>
+
+            <Card className="mb-4">
+              <Text className="mb-4 text-[17px] font-bold text-[#212121] dark:text-white">
+                {t.changePassword || "Change Password"}
+              </Text>
 
             <Input
               label={t.currentPassword || "Current Password"}
@@ -290,13 +265,14 @@ export default function ProfileScreen() {
               }
             />
 
-            <Button 
-              title={t.changePassword || "Change Password"} 
-              onPress={handleChangePassword} 
-              loading={pwLoading} 
-              icon="lock-closed-outline" 
-            />
-          </Card>
+              <Button 
+                title={t.changePassword || "Change Password"} 
+                onPress={handleChangePassword} 
+                loading={pwLoading} 
+                icon="lock-closed-outline" 
+              />
+            </Card>
+          </View>
         </ScrollView>
       </KeyboardView>
 

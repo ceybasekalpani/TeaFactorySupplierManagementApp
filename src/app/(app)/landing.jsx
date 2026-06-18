@@ -14,20 +14,10 @@ import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 
 function Field({ icon, placeholder, value, onChangeText, secureTextEntry, right, hasError, keyboardType }) {
-  const { colors, fs } = useTheme();
+  const { colors } = useTheme();
   return (
-    <View style={{
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.inputBg,
-      borderWidth: 1.5,
-      borderColor: hasError ? colors.error : colors.border,
-      borderRadius: 14,
-      paddingHorizontal: 14,
-      height: 52,
-      gap: 10,
-    }}>
-      <Ionicons name={icon} size={fs.lg} color={hasError ? colors.error : colors.textMuted} />
+    <View className={`h-[52px] flex-row items-center gap-2.5 rounded-[14px] border-[1.5px] bg-[#f5f5f5] px-3.5 dark:bg-[#252525] ${hasError ? "border-[#b71c1c] dark:border-[#ef5350]" : "border-[#e0e0e0] dark:border-[#333333]"}`}>
+      <Ionicons name={icon} size={19} color={hasError ? colors.error : colors.textMuted} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -36,12 +26,7 @@ function Field({ icon, placeholder, value, onChangeText, secureTextEntry, right,
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize="none"
-        style={{
-          flex: 1,
-          fontSize: fs.base,
-          color: colors.text,
-          paddingVertical: 0,
-        }}
+        className="flex-1 py-0 text-[15px] text-[#212121] dark:text-white"
       />
       {right}
     </View>
@@ -50,7 +35,7 @@ function Field({ icon, placeholder, value, onChangeText, secureTextEntry, right,
 
 export default function LandingScreen() {
   const { colors, fs, t } = useTheme();
-  const { signIn, login } = useApp(); // Implemented login fetch here
+  const { signIn, login } = useApp();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -80,19 +65,17 @@ export default function LandingScreen() {
         setError("No active registration found for this account. Please contact the factory.");
         return;
       }
-      
-      // If the isCreatePin boolean returned true from the API login response
+
       if (result.isCreatePin) {
         if (result.registrations.length > 1) {
           router.replace("/(auth)/select-account");
         } else if (result.registrations.length === 1) {
-          await login(result.registrations[0], result.token); 
+          await login(result.registrations[0], result.token);
           router.replace("/(app)/home");
         } else {
           router.replace("/(app)/home");
         }
       } else {
-        // Fallback flag directs them to standard PIN Setup View
         router.replace("/(auth)/pin-setup");
       }
 
@@ -104,150 +87,100 @@ export default function LandingScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
       <KeyboardView>
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
+          className="flex-1"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero Section ─────────────────────────────────── */}
-          <View style={{
-            backgroundColor: colors.primary,
-            paddingTop: 56,
-            paddingBottom: 90,
-            paddingHorizontal: 24,
-            alignItems: "center",
-            borderBottomLeftRadius: 44,
-            borderBottomRightRadius: 44,
-            overflow: "hidden",
-          }}>
-            <View style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: "rgba(255,255,255,0.07)" }} />
-            <View style={{ position: "absolute", top: 30, right: 20, width: 70, height: 70, borderRadius: 35, backgroundColor: "rgba(255,255,255,0.06)" }} />
-            <View style={{ position: "absolute", bottom: 10, left: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: "rgba(255,255,255,0.06)" }} />
-            <View style={{ position: "absolute", bottom: 40, right: -10, width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(255,255,255,0.05)" }} />
+          <View className="min-h-full">
+            <View className="items-center overflow-hidden rounded-b-[44px] bg-[#2e7d32] px-6 pb-[90px] pt-14 dark:bg-[#66bb6a]">
+              <View className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
+              <View className="absolute right-5 top-[30px] h-[70px] w-[70px] rounded-full bg-white/10" />
+              <View className="absolute -left-[30px] bottom-2.5 h-[120px] w-[120px] rounded-full bg-white/10" />
+              <View className="absolute -right-2.5 bottom-10 h-[60px] w-[60px] rounded-full bg-white/5" />
 
-            <View style={{
-              width: 96, height: 96, borderRadius: 48,
-              backgroundColor: "rgba(255,255,255,0.18)",
-              alignItems: "center", justifyContent: "center",
-              marginBottom: 18,
-              borderWidth: 2, borderColor: "rgba(255,255,255,0.25)",
-            }}>
-              <Text style={{ fontSize: 50 }}>🍃</Text>
+              <View className="mb-[18px] h-24 w-24 items-center justify-center rounded-full border-2 border-white/25 bg-white/20">
+                <Text className="text-[50px]">{"\uD83C\uDF43"}</Text>
+              </View>
+
+              <Text className="text-center text-[32px] font-black tracking-[0.5px] text-white">
+                Tea Factory
+              </Text>
+              <Text className="mt-1.5 text-center text-[13px] tracking-[0.3px] text-white/75">
+                Supplier Management Portal
+              </Text>
             </View>
 
-            <Text style={{ fontSize: fs["3xl"], fontWeight: "900", color: "#fff", letterSpacing: 0.5, textAlign: "center" }}>
-              Tea Factory
-            </Text>
-            <Text style={{ fontSize: fs.sm, color: "rgba(255,255,255,0.72)", marginTop: 6, letterSpacing: 0.3, textAlign: "center" }}>
-              Supplier Management Portal
-            </Text>
-          </View>
+            <View className="-mt-11 flex-1 px-5 pb-7">
+              <View className="rounded-[28px] border border-[#e0e0e0] bg-white p-[26px] shadow-lg dark:border-[#333333] dark:bg-[#242424]">
+                <Text className="text-[22px] font-extrabold text-[#212121] dark:text-white">
+                  Welcome Back {"\uD83D\uDC4B"}
+                </Text>
+                <Text className="mb-[26px] mt-1 text-[13px] text-[#757575] dark:text-[#b0b0b0]">
+                  Sign in to your supplier account
+                </Text>
 
-          {/* ── Login Card ───────────────────────────────────── */}
-          <View style={{ flex: 1, paddingHorizontal: 20, paddingBottom: 28, marginTop: -44 }}>
-            <View style={{
-              backgroundColor: colors.card,
-              borderRadius: 28,
-              padding: 26,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.14,
-              shadowRadius: 28,
-              elevation: 10,
-              borderWidth: 1,
-              borderColor: colors.cardBorder,
-            }}>
-              <Text style={{ fontSize: fs.xl, fontWeight: "800", color: colors.text }}>
-                Welcome Back 👋
-              </Text>
-              <Text style={{ fontSize: fs.sm, color: colors.textSecondary, marginTop: 4, marginBottom: 26 }}>
-                Sign in to your supplier account
-              </Text>
+                <Text className="mb-2 text-[13px] font-semibold text-[#757575] dark:text-[#b0b0b0]">
+                  {t.username}
+                </Text>
+                <Field
+                  icon="person-outline"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChangeText={(v) => { setUsername(v); setError(""); }}
+                  hasError={!!error}
+                />
 
-              {/* Username */}
-              <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginBottom: 8 }}>
-                {t.username}
-              </Text>
-              <Field
-                icon="person-outline"
-                placeholder="Enter your username"
-                value={username}
-                onChangeText={(v) => { setUsername(v); setError(""); }}
-                hasError={!!error}
-              />
+                <Text className="mb-2 mt-4 text-[13px] font-semibold text-[#757575] dark:text-[#b0b0b0]">
+                  {t.password}
+                </Text>
+                <Field
+                  icon="lock-closed-outline"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={(v) => { setPassword(v); setError(""); }}
+                  secureTextEntry={!showPassword}
+                  hasError={!!error}
+                  right={
+                    <TouchableOpacity onPress={() => setShowPassword((p) => !p)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons
+                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                        size={fs.lg}
+                        color={colors.textMuted}
+                      />
+                    </TouchableOpacity>
+                  }
+                />
 
-              {/* Password */}
-              <Text style={{ color: colors.textSecondary, fontSize: fs.sm, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>
-                {t.password}
-              </Text>
-              <Field
-                icon="lock-closed-outline"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={(v) => { setPassword(v); setError(""); }}
-                secureTextEntry={!showPassword}
-                hasError={!!error}
-                right={
-                  <TouchableOpacity onPress={() => setShowPassword((p) => !p)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons
-                      name={showPassword ? "eye-off-outline" : "eye-outline"}
-                      size={fs.lg}
-                      color={colors.textMuted}
-                    />
-                  </TouchableOpacity>
-                }
-              />
-
-              {/* Error */}
-              {!!error && (
-                <View style={{
-                  flexDirection: "row", alignItems: "center", gap: 6,
-                  marginTop: 12,
-                  backgroundColor: colors.error + "12",
-                  borderRadius: 10,
-                  paddingHorizontal: 12, paddingVertical: 8,
-                }}>
-                  <Ionicons name="alert-circle" size={fs.base} color={colors.error} />
-                  <Text style={{ color: colors.error, fontSize: fs.sm, flex: 1 }}>{error}</Text>
-                </View>
-              )}
-
-              {/* Sign In Button */}
-              <TouchableOpacity
-                onPress={handleSignIn}
-                disabled={loading}
-                activeOpacity={0.85}
-                style={{
-                  marginTop: 22,
-                  backgroundColor: loading ? colors.disabled : colors.primary,
-                  borderRadius: 14,
-                  paddingVertical: 15,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  shadowColor: colors.primary,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.35,
-                  shadowRadius: 10,
-                  elevation: 5,
-                }}
-              >
-                {loading ? (
-                  <>
-                    <Ionicons name="sync-outline" size={fs.md} color="#fff" />
-                    <Text style={{ color: "#fff", fontWeight: "700", fontSize: fs.md }}>Signing in...</Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={{ color: "#fff", fontWeight: "800", fontSize: fs.md }}>{t.signIn}</Text>
-                    <Ionicons name="arrow-forward" size={fs.md} color="#fff" />
-                  </>
+                {!!error && (
+                  <View className="mt-3 flex-row items-center gap-1.5 rounded-[10px] bg-[#b71c1c]/10 px-3 py-2 dark:bg-[#ef5350]/10">
+                    <Ionicons name="alert-circle" size={15} color={colors.error} />
+                    <Text className="flex-1 text-[13px] text-[#b71c1c] dark:text-[#ef5350]">{error}</Text>
+                  </View>
                 )}
-              </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                  className={`mt-[22px] flex-row items-center justify-center gap-2 rounded-[14px] py-[15px] shadow-md ${loading ? "bg-[#bdbdbd]" : "bg-[#2e7d32] dark:bg-[#66bb6a]"}`}
+                >
+                  {loading ? (
+                    <>
+                      <Ionicons name="sync-outline" size={fs.md} color="#fff" />
+                      <Text className="text-[17px] font-bold text-white">Signing in...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text className="text-[17px] font-extrabold text-white">{t.signIn}</Text>
+                      <Ionicons name="arrow-forward" size={fs.md} color="#fff" />
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </ScrollView>

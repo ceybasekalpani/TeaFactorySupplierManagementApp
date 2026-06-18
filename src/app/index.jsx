@@ -19,22 +19,17 @@ export default function Index() {
   }, [authState]);
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#2D6A4F", gap: 20 }}>
-      <View style={{
-        width: 100, height: 100, borderRadius: 50,
-        backgroundColor: "rgba(255,255,255,0.15)",
-        alignItems: "center", justifyContent: "center",
-        borderWidth: 2, borderColor: "rgba(255,255,255,0.25)",
-      }}>
-        <Text style={{ fontSize: 52 }}>🍃</Text>
+    <View className="flex-1 items-center justify-center gap-5 bg-[#2D6A4F]">
+      <View className="h-[100px] w-[100px] items-center justify-center rounded-full border-2 border-white/25 bg-white/15">
+        <Text className="text-[52px]">{"\uD83C\uDF43"}</Text>
       </View>
-      <Text style={{ fontSize: 26, fontWeight: "900", color: "#fff", letterSpacing: 0.5 }}>
+      <Text className="text-[26px] font-black tracking-[0.5px] text-white">
         Tea Factory
       </Text>
-      <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginTop: -10 }}>
+      <Text className="-mt-2.5 text-[13px] text-white/65">
         Supplier Management Portal
       </Text>
-      <ActivityIndicator size="large" color="rgba(255,255,255,0.7)" style={{ marginTop: 20 }} />
+      <ActivityIndicator size="large" color="rgba(255,255,255,0.7)" className="mt-5" />
     </View>
   );
 }
