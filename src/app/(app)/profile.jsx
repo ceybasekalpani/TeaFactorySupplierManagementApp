@@ -13,7 +13,7 @@ import { authApi, tokenStorage } from "../../utils/api";
 
 export default function ProfileScreen() {
   const { colors, fs, t } = useTheme();
-  const { currentUser, updateProfile } = useApp();
+  const { currentUser, updateProfile, pauseSessionLock } = useApp();
   const router = useRouter();
 
   const [imageAsset, setImageAsset] = useState(null);
@@ -50,23 +50,43 @@ export default function ProfileScreen() {
     setTimeout(() => setToast({ visible: false, message: "", type: "success" }), 3000);
   };
 
+  const getProfileUpdateError = (err) => {
+    const message = err?.message || "";
+    if (
+      err?.status >= 500 &&
+      (message.includes("supabase.co") ||
+        message.includes("No such host") ||
+        message.includes("HttpRequestException"))
+    ) {
+      return "Profile image storage is not reachable. Please check backend Supabase settings.";
+    }
+    return message || (t.updateFailed || "Update failed");
+  };
+
   const pickImage = async () => {
+    pauseSessionLock?.();
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(t.permissionNeeded || "Permission needed", 
                   t.allowPhotoAccess || "Please allow photo library access to change your profile picture.");
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.6,
-      exif: false,
-      base64: true,
-    });
-    if (!result.canceled) {
-      setImageAsset(result.assets[0]);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.6,
+        exif: false,
+        base64: true,
+      });
+      pauseSessionLock?.(5000);
+      if (!result.canceled) {
+        setImageAsset(result.assets[0]);
+      }
+    } catch (err) {
+      pauseSessionLock?.(5000);
+      showToast(err.message || "Failed to select image", "error");
     }
   };
 
@@ -113,7 +133,7 @@ export default function ProfileScreen() {
       setImageAsset(null);
       showToast(t.profileUpdatedSuccess || "Profile updated successfully!");
     } catch (err) {
-      showToast(err?.message || (t.updateFailed || "Update failed"), "error");
+      showToast(getProfileUpdateError(err), "error");
     } finally {
       setLoading(false);
     }

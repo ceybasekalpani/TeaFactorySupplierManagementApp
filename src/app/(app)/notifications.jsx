@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, PanResponder, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
@@ -92,9 +92,13 @@ function SwipeableNotif({ notif, onRemove, onMarkRead, fs }) {
 
 export default function NotificationsScreen() {
   const { fs, t } = useTheme();
-  const { notifications, markNotificationRead, removeNotification } = useApp();
+  const { notifications, markNotificationRead, markAllRead, removeNotification } = useApp();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    markAllRead();
+  }, []);
 
   const handleRemove = (id) => removeNotification(id);
 

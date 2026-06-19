@@ -131,6 +131,7 @@ export function AppProvider({ children }) {
   const activeRegRef = useRef(null);
   activeRegRef.current = activeReg;
   const specialNewsIdsRef = useRef("");
+  const sessionLockPausedUntilRef = useRef(0);
 
   const refreshCommunications = useCallback((tok = tokenRef.current) => {
     if (!tok) return Promise.resolve();
@@ -593,7 +594,12 @@ export function AppProvider({ children }) {
     setAuthState("authenticated");
   };
 
+  const pauseSessionLock = (durationMs = 60000) => {
+    sessionLockPausedUntilRef.current = Date.now() + durationMs;
+  };
+
   const lockSession = () => {
+    if (Date.now() < sessionLockPausedUntilRef.current) return;
     setAuthState((prev) => (prev === "authenticated" ? "pin-required" : prev));
   };
 
@@ -844,7 +850,7 @@ export function AppProvider({ children }) {
       authState, savedRegNo, savedName,
       currentUser, activeReg, registrations,
       signIn, login, logout, setupPin, changePin, pinLogin, resetPin, updateProfile,
-      lockSession,
+      lockSession, pauseSessionLock,
       getLeafData, fetchLeafData,
       getTodayLeaf, getTodayLeafData,
       getSixMonthHistory,
