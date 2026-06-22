@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../hooks/useTheme";
 
@@ -7,9 +7,16 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
   const { fs, t } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  useEffect(() => {
+    if (currentIndex >= (news?.length ?? 0)) {
+      setCurrentIndex(0);
+    }
+  }, [currentIndex, news?.length]);
+
   if (!news || news.length === 0 || !visible) return null;
 
   const current = news[currentIndex];
+  const body = current?.message || current?.content || current?.description || "";
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={() => onClose(current?.id)}>
@@ -39,12 +46,18 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
           </View>
 
           <ScrollView className="bg-[#ffebee] p-5">
+            {!!current?.title && (
+              <Text className="mb-3 text-[18px] font-extrabold text-[#920704]">
+                {current.title}
+              </Text>
+            )}
+
             <View className="mb-1 flex-row items-start gap-2.5">
               <View className="mt-0.5">
                 <Ionicons name="alert-circle" size={fs.lg} color="#920704" />
               </View>
               <Text className="flex-1 text-[15px] font-medium leading-[25px] text-[#1a1a1a]">
-                {current?.message}
+                {body}
               </Text>
             </View>
           </ScrollView>

@@ -363,7 +363,6 @@ export function AppProvider({ children }) {
       loadFertilizerRequests(tok),
       loadItemRequests(tok),
       refreshSupplyTypes(tok),
-      loadSpecialNews(tok),
       loadTodayLeaf(tok),
       loadHistory(tok),
       loadAnnualHistory(tok),          // NEW
@@ -421,11 +420,21 @@ export function AppProvider({ children }) {
     } catch (_) {}
   };
 
-  const mapNews = (n) => ({
-    id:      String(n.id ?? n.Id ?? n.newsId ?? n.NewsId ?? ""),
-    title:   n.title ?? n.Title ?? "",
-    message: n.content ?? n.Content ?? n.message ?? n.Message ?? n.body ?? n.Body ?? "",
-  });
+  const mapNews = (n) => {
+    const content = n.content ?? n.Content ?? "";
+    const message = n.message ?? n.Message ?? "";
+    const description = n.description ?? n.Description ?? "";
+
+    return {
+      id:          String(n.id ?? n.Id ?? n.newsId ?? n.NewsId ?? ""),
+      title:       n.title ?? n.Title ?? "",
+      content,
+      message:     content || message || description,
+      description,
+      showPopup:   n.showPopup ?? n.ShowPopup ?? true,
+      createdAt:   n.createdAt ?? n.CreatedAt ?? null,
+    };
+  };
 
   const loadSpecialNews = async (tok) => {
     try {
@@ -438,6 +447,8 @@ export function AppProvider({ children }) {
       } else {
         mappedNews = [mapNews(data)];
       }
+
+      mappedNews = mappedNews.filter((n) => n.id && n.showPopup !== false && (n.title || n.message));
 
       const ids = mappedNews.map((n) => n.id).join(",");
       if (ids && ids !== specialNewsIdsRef.current) {
@@ -590,8 +601,10 @@ export function AppProvider({ children }) {
     setCurrentUser((prev) => prev ? { ...prev, image: null } : prev);
     await AsyncStorage.setItem("activeReg", JSON.stringify(reg));
     await loadSettings(activeTok, reg?.regNo);
-    await loadAppData(activeTok);
     setAuthState("authenticated");
+    loadAppData(activeTok).catch((error) => {
+      console.log("[startup] Failed to load initial app data:", error?.message || error);
+    });
   };
 
   const pauseSessionLock = (durationMs = 60000) => {

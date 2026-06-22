@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/config";
 
 const TOKEN_KEY = "authToken";
+const REQUEST_TIMEOUT_MS = 15000;
 
 export const tokenStorage = {
   get: () => AsyncStorage.getItem(TOKEN_KEY),
@@ -13,11 +14,27 @@ async function request(method, path, body, token) {
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let res;
+
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeoutError = new Error(`Request timed out: ${path}`);
+      timeoutError.status = 408;
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     let message = res.statusText;
@@ -42,6 +59,20 @@ async function request(method, path, body, token) {
   } catch (_) {
     return null;
   }
+}
+
+async function requestWithFallback(method, paths, body, token) {
+  let lastError = null;
+
+  for (const path of paths) {
+    try {
+      return await request(method, path, body, token);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
 }
 
 async function uploadFile(method, path, formData, token) {
@@ -144,8 +175,14 @@ export const notificationApi = {
 };
 
 export const newsApi = {
-  activePopup: (token) => request("GET", "/api/news/active-popup", undefined, token),
-  dismiss:     (token, id) => request("POST", `/api/news/${id}/dismiss`, undefined, token),
+  list: (token) =>
+    requestWithFallback("GET", ["/api/mobile/news", "/api/news"], undefined, token),
+  byId: (token, id) =>
+    requestWithFallback("GET", [`/api/mobile/news/${id}`, `/api/news/${id}`], undefined, token),
+  activePopup: (token) =>
+    requestWithFallback("GET", ["/api/mobile/news/active-popup", "/api/news/active-popup"], undefined, token),
+  dismiss: (token, id) =>
+    requestWithFallback("POST", [`/api/mobile/news/${id}/dismiss`, `/api/news/${id}/dismiss`], undefined, token),
 };
 
 export const settingsApi = {
