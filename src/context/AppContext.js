@@ -28,6 +28,40 @@ const PROFILE_IMAGE_DIR = (FileSystem.documentDirectory ?? "") + "profiles/";
 
 const profileImagePathKey = (regNo) => `profileImageLocalPath_${regNo}`;
 
+function normalizeNotificationType(value) {
+  const type = String(value ?? "info").toLowerCase();
+  if (type === "approved" || type === "approve" || type === "success") return "success";
+  if (type === "rejected" || type === "reject" || type === "failed" || type === "error") return "error";
+  if (type === "warning" || type === "warn") return "warning";
+  return "info";
+}
+
+function getPushNotificationType(data = {}) {
+  const eventType = String(data.eventType ?? data.EventType ?? "").toLowerCase();
+  const type = String(data.notificationType ?? data.NotificationType ?? data.type ?? data.Type ?? "").toLowerCase();
+  const status = String(data.status ?? data.Status ?? "").toLowerCase();
+
+  if (status) return normalizeNotificationType(status);
+  if (eventType) return normalizeNotificationType(eventType);
+  if (type === "notification" || type === "news" || type.includes("_changed")) return "info";
+  return normalizeNotificationType(type);
+}
+
+function formatRequestType(value) {
+  const requestType = String(value ?? "request").trim().toLowerCase();
+  if (requestType === "advance" || requestType === "cash") return "Advance";
+  if (requestType === "fertilizer") return "Fertilizer";
+  if (requestType === "items" || requestType === "item") return "Item";
+  return requestType ? requestType.charAt(0).toUpperCase() + requestType.slice(1) : "Request";
+}
+
+function formatStatus(value) {
+  const status = String(value ?? "").trim().toLowerCase();
+  if (status === "approved") return "Approved";
+  if (status === "rejected") return "Rejected";
+  return status ? status.charAt(0).toUpperCase() + status.slice(1) : "Updated";
+}
+
 async function getStoredLocalImagePath(regNo) {
   try {
     if (!regNo) return null;
@@ -132,32 +166,51 @@ export function AppProvider({ children }) {
   activeRegRef.current = activeReg;
   const specialNewsIdsRef = useRef("");
   const sessionLockPausedUntilRef = useRef(0);
+  const communicationsLoadingRef = useRef(false);
+  const requestsLoadingRef = useRef(false);
+  const supplyTypesLoadingRef = useRef(false);
 
-  const refreshCommunications = useCallback((tok = tokenRef.current) => {
+  const refreshCommunications = useCallback(async (tok = tokenRef.current) => {
     if (!tok) return Promise.resolve();
-    return Promise.allSettled([
-      loadNotifications(tok),
-      loadSpecialNews(tok),
-    ]);
+    if (communicationsLoadingRef.current) return Promise.resolve();
+
+    communicationsLoadingRef.current = true;
+    try {
+      return await Promise.allSettled([
+        loadNotifications(tok),
+        loadSpecialNews(tok),
+      ]);
+    } finally {
+      communicationsLoadingRef.current = false;
+    }
   // These loaders read no render-time values; this callback just gives screens a stable refresh command.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const refreshRequests = useCallback((tok = tokenRef.current) => {
+  const refreshRequests = useCallback(async (tok = tokenRef.current) => {
     if (!tok) return Promise.resolve();
-    return Promise.allSettled([
-      loadCashRequests(tok),
-      loadFertilizerRequests(tok),
-      loadItemRequests(tok),
-      loadMonthlyRequestsSummary(tok),
-    ]);
+    if (requestsLoadingRef.current) return Promise.resolve();
+
+    requestsLoadingRef.current = true;
+    try {
+      return await Promise.allSettled([
+        loadCashRequests(tok),
+        loadFertilizerRequests(tok),
+        loadItemRequests(tok),
+        loadMonthlyRequestsSummary(tok),
+      ]);
+    } finally {
+      requestsLoadingRef.current = false;
+    }
   // These loaders read no render-time values; this callback just gives screens/listeners a stable refresh command.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refreshSupplyTypes = useCallback(async (tok = tokenRef.current) => {
     if (!tok) return;
+    if (supplyTypesLoadingRef.current) return;
 
+    supplyTypesLoadingRef.current = true;
     setSupplyTypesLoading(true);
     try {
       const [fertilizerResult, itemResult] = await Promise.allSettled([
@@ -177,6 +230,7 @@ export function AppProvider({ children }) {
         console.log("[configuration] Failed to load item types:", itemResult.reason?.message || itemResult.reason);
       }
     } finally {
+      supplyTypesLoadingRef.current = false;
       setSupplyTypesLoading(false);
     }
   }, []);
@@ -209,6 +263,42 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  const addPushNotification = useCallback(({ content = {}, data = {} } = {}) => {
+    const status = String(data.status ?? data.Status ?? "").toLowerCase();
+    const requestType = String(data.requestType ?? data.RequestType ?? "request").toLowerCase();
+    const requestId = data.requestId ?? data.RequestId ?? "";
+    const displayRequestType = formatRequestType(requestType);
+    const displayStatus = formatStatus(status);
+    const requestSummary = data.requestSummary ?? data.RequestSummary ?? data.summary ?? data.Summary ?? "";
+    const remarks = data.remarks ?? data.Remarks ?? "";
+    const fallbackTitle = status === "approved" || status === "rejected"
+      ? `${displayRequestType} request ${displayStatus}`
+      : "Notification";
+    const title = content.title ?? data.title ?? data.Title ?? fallbackTitle;
+    const message =
+      content.body ??
+      data.message ??
+      data.Message ??
+      data.body ??
+      data.Body ??
+      (requestSummary
+        ? `Your ${displayRequestType.toLowerCase()} request (${requestSummary}) has been ${displayStatus.toLowerCase()}.`
+        : remarks || `Your ${displayRequestType.toLowerCase()} request has been ${displayStatus.toLowerCase()}.`);
+    const id = String(data.notificationId ?? data.NotificationId ?? `push-${requestType}-${requestId}-${status}-${Date.now()}`);
+
+    setNotifications((prev) => {
+      if (prev.some((n) => n.id === id)) return prev;
+      return [{
+        id,
+        title,
+        message,
+        type: getPushNotificationType(data),
+        createdAt: new Date().toISOString(),
+        read: false,
+      }, ...prev];
+    });
+  }, []);
+
   useEffect(() => {
     if (!token || authState !== "authenticated") return;
 
@@ -228,6 +318,7 @@ export function AppProvider({ children }) {
       refreshRequests: () => refreshRequests(tokenRef.current),
       refreshConfiguration: () => refreshSupplyTypes(tokenRef.current),
       onRequestStatusChanged: applyRequestStatusChange,
+      onPushNotificationReceived: addPushNotification,
     });
 
     return () => {
@@ -236,13 +327,13 @@ export function AppProvider({ children }) {
     };
   // Push callbacks read the current token from refs so they stay valid after refreshes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, authState]);
+  }, [token, authState, addPushNotification, applyRequestStatusChange, refreshRequests, refreshSupplyTypes]);
 
   useEffect(() => {
     if (!token || authState !== "authenticated") return;
 
     refreshSupplyTypes();
-    const intervalId = setInterval(refreshSupplyTypes, 15000);
+    const intervalId = setInterval(refreshSupplyTypes, 60000);
     const appStateSubscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         refreshSupplyTypes();
@@ -261,7 +352,7 @@ export function AppProvider({ children }) {
     if (!token || authState !== "authenticated") return;
 
     refreshRequests();
-    const intervalId = setInterval(refreshRequests, 10000);
+    const intervalId = setInterval(refreshRequests, 30000);
     const appStateSubscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         refreshRequests();
@@ -280,7 +371,7 @@ export function AppProvider({ children }) {
     if (!token || authState !== "authenticated") return;
 
     refreshCommunications();
-    const intervalId = setInterval(refreshCommunications, 15000);
+    const intervalId = setInterval(refreshCommunications, 45000);
     const appStateSubscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         refreshCommunications();
@@ -388,7 +479,7 @@ export function AppProvider({ children }) {
                 id:        n.id ?? n.Id ?? n.notificationId ?? n.NotificationId,
                 title:     n.title ?? n.Title ?? "",
                 message:   n.message ?? n.Message ?? n.body ?? n.Body ?? n.content ?? n.Content ?? "",
-                type:      String(n.type ?? n.Type ?? "info").toLowerCase(),
+                type:      normalizeNotificationType(n.type ?? n.Type ?? n.status ?? n.Status),
                 createdAt: n.createdAt ?? n.CreatedAt ?? n.createdDate ?? n.CreatedDate ?? n.sentAt ?? n.SentAt ?? null,
                 read:      n.isRead ?? n.IsRead ?? n.read ?? n.Read ?? false,
               }))

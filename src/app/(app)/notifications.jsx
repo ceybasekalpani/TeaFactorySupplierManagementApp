@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Animated, PanResponder, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Animated, PanResponder, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Card, EmptyState, ScreenHeader } from "../../components/ui";
@@ -92,15 +92,23 @@ function SwipeableNotif({ notif, onRemove, onMarkRead, fs }) {
 
 export default function NotificationsScreen() {
   const { fs, t } = useTheme();
-  const { notifications, markNotificationRead, markAllRead, removeNotification } = useApp();
+  const { notifications, markNotificationRead, markAllRead, removeNotification, refreshCommunications } = useApp();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    markAllRead();
+    refreshCommunications?.().finally(() => {
+      markAllRead();
+    });
   }, []);
 
   const handleRemove = (id) => removeNotification(id);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshCommunications?.();
+    setRefreshing(false);
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
@@ -109,6 +117,7 @@ export default function NotificationsScreen() {
       <ScrollView 
         className="flex-1"
         showsVerticalScrollIndicator={false} 
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="px-4 pt-5 pb-10">
           {notifications.length === 0 ? (

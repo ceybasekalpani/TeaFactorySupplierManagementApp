@@ -9,6 +9,45 @@ const DEVICE_ID_KEY = "pushDeviceId";
 
 let notificationHandlerConfigured = false;
 
+function normalizePushValue(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function getPushKind(data = {}) {
+  const type = normalizePushValue(data.type ?? data.Type ?? data.eventType ?? data.EventType);
+  const status = normalizePushValue(data.status ?? data.Status);
+
+  if (type === "request_status_changed" || type === "disbursement_status_changed") return type;
+  if (status === "approved" || status === "rejected") return "request_status_changed";
+  if (type === "configuration_changed") return "configuration_changed";
+  if (type === "news") return "news";
+  if (type === "notification") return "notification";
+  return type || "notification";
+}
+
+function createDebouncedRefresh(fn, delay = 500) {
+  let timeoutId = null;
+
+  const refresh = (...args) => {
+    if (!fn) return;
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      fn(...args);
+    }, delay);
+  };
+
+  refresh.cancel = () => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
+  return refresh;
+}
+
 function canUseNativePush() {
   return Platform.OS !== "web" && Constants.appOwnership !== "expo";
 }
@@ -56,7 +95,7 @@ async function saveFcmToken(authToken, fcmToken) {
     },
     body: JSON.stringify({
       fcmToken,
-      platform: Platform.OS === "android" ? "Android" : "iOS",
+      platform: Platform.OS === "android" ? "android" : "ios",
       deviceId: await getDeviceId(),
     }),
   });
@@ -131,6 +170,7 @@ export function setupNotificationListeners({
   refreshRequests,
   refreshConfiguration,
   onRequestStatusChanged,
+  onPushNotificationReceived,
 } = {}) {
   const Notifications = getNotificationsModule();
 
@@ -138,73 +178,57 @@ export function setupNotificationListeners({
     return () => {};
   }
 
-  const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
-    const data = notification.request.content.data || {};
-    const type = String(data.type ?? data.Type ?? "").toLowerCase();
+  const refreshNotificationsSoon = createDebouncedRefresh(refreshNotifications);
+  const refreshNewsSoon = createDebouncedRefresh(refreshNews);
+  const refreshRequestsSoon = createDebouncedRefresh(refreshRequests);
+  const refreshConfigurationSoon = createDebouncedRefresh(refreshConfiguration);
 
-    if (type === "request_status_changed" || type === "disbursement_status_changed") {
+  const handlePush = ({ content, data, opened = false }) => {
+    const kind = getPushKind(data);
+
+    if (kind === "request_status_changed" || kind === "disbursement_status_changed") {
+      onPushNotificationReceived?.({ content, data });
       onRequestStatusChanged?.(data);
-      refreshRequests?.();
-      refreshNotifications?.();
+      refreshRequestsSoon();
+      refreshNotificationsSoon();
+      if (opened) router.push("/(app)/notifications");
       return;
     }
 
-    if (type === "configuration_changed") {
-      refreshConfiguration?.(data);
+    if (kind === "configuration_changed") {
+      refreshConfigurationSoon(data);
+      if (opened) router.push("/(app)/fertilizerItem-request");
       return;
     }
 
-    if (type === "news") {
-      refreshNews?.();
+    if (kind === "news") {
+      refreshNewsSoon();
+      if (opened) router.push("/(app)/home");
       return;
     }
 
-    if (type === "notification") {
-      refreshNotifications?.();
-      return;
-    }
+    onPushNotificationReceived?.({ content, data });
+    refreshNotificationsSoon();
+    if (opened) router.push("/(app)/notifications");
+  };
 
-    refreshNotifications?.();
-    refreshNews?.();
+  const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+    const content = notification.request.content;
+    const data = content.data || {};
+    handlePush({ content, data });
   });
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    const data = response.notification.request.content.data || {};
-    const type = String(data.type ?? data.Type ?? "").toLowerCase();
-
-    if (type === "request_status_changed" || type === "disbursement_status_changed") {
-      onRequestStatusChanged?.(data);
-      refreshRequests?.();
-      refreshNotifications?.();
-      const requestType = String(data.requestType ?? data.RequestType ?? "").toLowerCase();
-      router.push(requestType === "advance" ? "/(app)/cash-request" : "/(app)/fertilizerItem-request");
-      return;
-    }
-
-    if (type === "configuration_changed") {
-      refreshConfiguration?.(data);
-      router.push("/(app)/fertilizerItem-request");
-      return;
-    }
-
-    if (type === "news") {
-      refreshNews?.();
-      router.push("/(app)/home");
-      return;
-    }
-
-    if (type === "notification") {
-      refreshNotifications?.();
-      router.push("/(app)/notifications");
-      return;
-    }
-
-    refreshNotifications?.();
-    refreshNews?.();
-    router.push("/(app)/notifications");
+    const content = response.notification.request.content;
+    const data = content.data || {};
+    handlePush({ content, data, opened: true });
   });
 
   return () => {
+    refreshNotificationsSoon.cancel();
+    refreshNewsSoon.cancel();
+    refreshRequestsSoon.cancel();
+    refreshConfigurationSoon.cancel();
     receivedSubscription.remove();
     responseSubscription.remove();
   };

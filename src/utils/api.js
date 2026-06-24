@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/config";
 
 const TOKEN_KEY = "authToken";
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 30000;
 
 export const tokenStorage = {
   get: () => AsyncStorage.getItem(TOKEN_KEY),
