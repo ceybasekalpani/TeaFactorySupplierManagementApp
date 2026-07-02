@@ -25,6 +25,7 @@ const AppContext = createContext(null);
 
 const PROFILE_IMAGE_PATH_KEY = "profileImageLocalPath";
 const PROFILE_IMAGE_DIR = (FileSystem.documentDirectory ?? "") + "profiles/";
+const REQUEST_HISTORY_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const profileImagePathKey = (regNo) => `profileImageLocalPath_${regNo}`;
 
@@ -60,6 +61,17 @@ function formatStatus(value) {
   if (status === "approved") return "Approved";
   if (status === "rejected") return "Rejected";
   return status ? status.charAt(0).toUpperCase() + status.slice(1) : "Updated";
+}
+
+function getRequestTime(request) {
+  const value = request?.requestedDate || request?.createdAt || request?.date || request?.updatedAt;
+  const time = value ? new Date(value).getTime() : NaN;
+  return Number.isNaN(time) ? Date.now() : time;
+}
+
+function keepRecentRequests(requests) {
+  const cutoff = Date.now() - REQUEST_HISTORY_MAX_AGE_MS;
+  return requests.filter((request) => getRequestTime(request) >= cutoff);
 }
 
 async function getStoredLocalImagePath(regNo) {
@@ -493,21 +505,21 @@ export function AppProvider({ children }) {
   const loadCashRequests = async (tok) => {
     try {
       const data = await cashApi.list(tok);
-      setCashRequests(Array.isArray(data) ? data.map(mapCashRequest) : []);
+      setCashRequests(Array.isArray(data) ? keepRecentRequests(data.map(mapCashRequest)) : []);
     } catch (_) {}
   };
 
   const loadFertilizerRequests = async (tok) => {
     try {
       const data = await fertilizerApi.list(tok);
-      setFertilizerRequests(Array.isArray(data) ? data.map(mapFertilizerRequest) : []);
+      setFertilizerRequests(Array.isArray(data) ? keepRecentRequests(data.map(mapFertilizerRequest)) : []);
     } catch (_) {}
   };
 
   const loadItemRequests = async (tok) => {
     try {
       const data = await itemApi.list(tok);
-      setItemRequests(Array.isArray(data) ? data.map(mapItemRequest) : []);
+      setItemRequests(Array.isArray(data) ? keepRecentRequests(data.map(mapItemRequest)) : []);
     } catch (_) {}
   };
 
@@ -879,7 +891,7 @@ export function AppProvider({ children }) {
       amount:      Number(requestData.amount),
     });
     const mapped = mapCashRequest(result);
-    setCashRequests((prev) => [mapped, ...prev]);
+    setCashRequests((prev) => keepRecentRequests([mapped, ...prev]));
     // Refresh summary so the new request appears immediately
     loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
     return mapped;
@@ -899,7 +911,7 @@ export function AppProvider({ children }) {
       quantity:       Number(requestData.quantity),
     });
     const mapped = mapFertilizerRequest(result);
-    setFertilizerRequests((prev) => [mapped, ...prev]);
+    setFertilizerRequests((prev) => keepRecentRequests([mapped, ...prev]));
     loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
     return mapped;
   };
@@ -918,7 +930,7 @@ export function AppProvider({ children }) {
       unit:     requestData.unit ?? "units",
     });
     const mapped = mapItemRequest(result);
-    setItemRequests((prev) => [mapped, ...prev]);
+    setItemRequests((prev) => keepRecentRequests([mapped, ...prev]));
     loadMonthlyRequestsSummary(tokenRef.current).catch(() => {});
     return mapped;
   };
