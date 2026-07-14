@@ -65,14 +65,17 @@ export default function ProfileScreen() {
   };
 
   const pickImage = async () => {
-    pauseSessionLock?.();
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(t.permissionNeeded || "Permission needed", 
-                  t.allowPhotoAccess || "Please allow photo library access to change your profile picture.");
-      return;
-    }
+    // Suspend indefinitely for the whole native picker/crop flow — its
+    // duration is user-controlled (browsing the gallery, cropping) and can't
+    // be bounded by a fixed timer without racing slower interactions.
+    pauseSessionLock?.(Infinity);
     try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(t.permissionNeeded || "Permission needed",
+                    t.allowPhotoAccess || "Please allow photo library access to change your profile picture.");
+        return;
+      }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
@@ -81,13 +84,14 @@ export default function ProfileScreen() {
         exif: false,
         base64: true,
       });
-      pauseSessionLock?.(5000);
       if (!result.canceled) {
         setImageAsset(result.assets[0]);
       }
     } catch (err) {
-      pauseSessionLock?.(5000);
       showToast(err.message || t.selectImageFailed, "error");
+    } finally {
+      // Back to a normal timed grace window covering review + Save.
+      pauseSessionLock?.();
     }
   };
 
@@ -120,8 +124,9 @@ export default function ProfileScreen() {
     }
 
     setLoading(true);
+    pauseSessionLock?.();
     try {
-      await updateProfile({ 
+      await updateProfile({
         imageAsset, 
         name, 
         address, 
