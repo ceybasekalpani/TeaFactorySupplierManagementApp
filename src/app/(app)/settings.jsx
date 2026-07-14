@@ -7,6 +7,7 @@ import SidebarMenu from "../../components/SidebarMenu";
 import { Card, ScreenHeader } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
+import { buildPinChangeSchema } from "../../schemas/pinChangeSchema";
 
 const SLIDER_MIN = 10;
 const SLIDER_MAX = 100;
@@ -127,29 +128,22 @@ export default function SettingsScreen() {
     setPinError("");
     setPinSuccess("");
 
-    if (!currentPin || !newPin || !confirmPin) {
-      setPinError("Please fill in all fields.");
-      return;
-    }
-    if (newPin.length < 4) {
-      setPinError("New PIN must be exactly 4 digits.");
-      return;
-    }
-    if (newPin !== confirmPin) {
-      setPinError("New PIN and Confirm PIN do not match.");
+    const validation = buildPinChangeSchema(t).safeParse({ currentPin, newPin, confirmPin });
+    if (!validation.success) {
+      setPinError(validation.error.issues[0].message);
       return;
     }
 
     setIsChangingPin(true);
     try {
       await changePin(currentPin, newPin);
-      setPinSuccess("PIN successfully changed!");
+      setPinSuccess(t.pinChangedSuccess);
       setTimeout(() => {
         setPinModalVisible(false);
         resetPinState();
       }, 2000);
     } catch (err) {
-      setPinError(err.message || "Failed to change PIN. Ensure your current PIN is correct.");
+      setPinError(err.message || t.pinChangeFailed);
     } finally {
       setIsChangingPin(false);
     }
@@ -166,14 +160,14 @@ export default function SettingsScreen() {
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-4 pt-4 pb-10">
-          <SectionHeader title="Account" />
+          <SectionHeader title={t.accountSectionHeader} />
           <Card>
             <SettingRow
               icon="person"
               iconBgClass="bg-[#dbeafe]"
               iconColor="#2563eb"
               title={t.profile}
-              subtitle={currentUser ? `${currentUser.name} - ${currentUser.phone}` : "Update photo, address & phone"}
+              subtitle={currentUser ? `${currentUser.name} - ${currentUser.phone}` : t.profileSubtitleDefault}
               onPress={() => router.push("/(app)/profile")}
             />
             <View className="h-px bg-[#e0e0e0] dark:bg-[#333333]" />
@@ -182,7 +176,7 @@ export default function SettingsScreen() {
               iconBgClass="bg-[#dcfce7]"
               iconColor="#16a34a"
               title={t.accountDetails}
-              subtitle={currentUser ? `${currentUser.bankName} - ${currentUser.accountNumber}` : "Bank name, account number"}
+              subtitle={currentUser ? `${currentUser.bankName} - ${currentUser.accountNumber}` : t.accountDetailsSubtitleDefault}
               onPress={() => router.push("/(app)/account-details")}
             />
             <View className="h-px bg-[#e0e0e0] dark:bg-[#333333]" />
@@ -190,8 +184,8 @@ export default function SettingsScreen() {
               icon="keypad"
               iconBgClass="bg-[#fef08a]"
               iconColor="#ca8a04"
-              title="Change PIN"
-              subtitle="Update your 4-digit security PIN"
+              title={t.changePin}
+              subtitle={t.changePinSubtitle}
               onPress={() => {
                 resetPinState();
                 setPinModalVisible(true);
@@ -199,7 +193,7 @@ export default function SettingsScreen() {
             />
           </Card>
 
-          <SectionHeader title="Appearance" />
+          <SectionHeader title={t.appearanceSectionHeader} />
           <Card>
             <SettingRow
               icon={isDark ? "moon" : "sunny"}
@@ -241,7 +235,7 @@ export default function SettingsScreen() {
             </View>
           </Card>
 
-          <SectionHeader title="Language" />
+          <SectionHeader title={t.language} />
           <Card>
             <View className="flex-row gap-2.5">
               {[
@@ -277,7 +271,7 @@ export default function SettingsScreen() {
         <View className="flex-1 justify-end bg-black/50">
           <View className="rounded-t-[28px] bg-white p-6 shadow-lg dark:bg-[#242424]">
             <View className="mb-5 flex-row items-center justify-between">
-              <Text className="text-[19px] font-bold text-[#212121] dark:text-white">Change Security PIN</Text>
+              <Text className="text-[19px] font-bold text-[#212121] dark:text-white">{t.changeSecurityPin}</Text>
               <TouchableOpacity onPress={() => setPinModalVisible(false)}>
                 <Ionicons name="close-circle" size={28} color={colors.textMuted} />
               </TouchableOpacity>
@@ -296,9 +290,9 @@ export default function SettingsScreen() {
             )}
 
             <View className="mb-6 gap-4">
-              <PinInput label="Current PIN" value={currentPin} onChangeText={setCurrentPin} placeholder="Enter current PIN" colors={colors} />
-              <PinInput label="New PIN" value={newPin} onChangeText={setNewPin} placeholder="Enter new 4-digit PIN" colors={colors} />
-              <PinInput label="Confirm New PIN" value={confirmPin} onChangeText={setConfirmPin} placeholder="Confirm new 4-digit PIN" colors={colors} />
+              <PinInput label={t.currentPin} value={currentPin} onChangeText={setCurrentPin} placeholder={t.enterCurrentPin} colors={colors} />
+              <PinInput label={t.newPin} value={newPin} onChangeText={setNewPin} placeholder={t.enterNewPin4Digit} colors={colors} />
+              <PinInput label={t.confirmNewPin} value={confirmPin} onChangeText={setConfirmPin} placeholder={t.confirmNewPin4Digit} colors={colors} />
             </View>
 
             <TouchableOpacity
@@ -309,10 +303,10 @@ export default function SettingsScreen() {
               {isChangingPin ? (
                 <>
                   <ActivityIndicator color="#fff" size="small" />
-                  <Text className="text-[15px] font-bold text-white">Updating...</Text>
+                  <Text className="text-[15px] font-bold text-white">{t.updatingEllipsis}</Text>
                 </>
               ) : (
-                <Text className="text-[15px] font-bold text-white">Change PIN</Text>
+                <Text className="text-[15px] font-bold text-white">{t.changePin}</Text>
               )}
             </TouchableOpacity>
           </View>

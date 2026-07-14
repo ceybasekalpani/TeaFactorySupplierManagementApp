@@ -17,19 +17,19 @@ const iconMap = {
 
 const DISMISS_THRESHOLD = 80;
 
-function timeAgo(isoString) {
+function timeAgo(isoString, t) {
   if (!isoString) return "";
   const diff = Date.now() - new Date(isoString).getTime();
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  return "Just now";
+  if (days > 0) return `${days}${t.timeUnitDayAbbr} ${t.timeAgoSuffix}`;
+  if (hours > 0) return `${hours}${t.timeUnitHourAbbr} ${t.timeAgoSuffix}`;
+  if (minutes > 0) return `${minutes}${t.timeUnitMinuteAbbr} ${t.timeAgoSuffix}`;
+  return t.justNow;
 }
 
-function SwipeableNotif({ notif, onRemove, onMarkRead, fs }) {
+function SwipeableNotif({ notif, onRemove, onMarkRead, fs, t }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
   const ic = iconMap[notif.type] || iconMap.info;
@@ -82,7 +82,7 @@ function SwipeableNotif({ notif, onRemove, onMarkRead, fs }) {
               {!notif.read && <View className="h-2 w-2 rounded-full bg-[#2e7d32] dark:bg-[#66bb6a]" />}
             </View>
             <Text className="mt-0.5 text-[11px] text-[#757575] dark:text-[#b0b0b0]">{notif.message}</Text>
-            <Text className="mt-1.5 text-[10px] text-[#9e9e9e]">{timeAgo(notif.createdAt)}</Text>
+            <Text className="mt-1.5 text-[10px] text-[#9e9e9e]">{timeAgo(notif.createdAt, t)}</Text>
           </View>
         </Card>
       </TouchableOpacity>
@@ -130,6 +130,7 @@ export default function NotificationsScreen() {
                 onRemove={handleRemove}
                 onMarkRead={markNotificationRead}
                 fs={fs}
+                t={t}
               />
             ))
           )}

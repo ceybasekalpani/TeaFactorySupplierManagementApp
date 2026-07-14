@@ -10,6 +10,7 @@ import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 import { authApi, tokenStorage } from "../../utils/api";
+import { buildChangePasswordSchema, buildProfileSchema } from "../../schemas/profileSchema";
 
 export default function ProfileScreen() {
   const { colors, fs, t } = useTheme();
@@ -58,7 +59,7 @@ export default function ProfileScreen() {
         message.includes("No such host") ||
         message.includes("HttpRequestException"))
     ) {
-      return "Profile image storage is not reachable. Please check backend Supabase settings.";
+      return t.imageStorageUnreachable;
     }
     return message || (t.updateFailed || "Update failed");
   };
@@ -86,17 +87,14 @@ export default function ProfileScreen() {
       }
     } catch (err) {
       pauseSessionLock?.(5000);
-      showToast(err.message || "Failed to select image", "error");
+      showToast(err.message || t.selectImageFailed, "error");
     }
   };
 
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast(t.fillAllFields || "Please fill all password fields", "error");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      showToast(t.passwordsDoNotMatch || "New passwords do not match", "error");
+    const validation = buildChangePasswordSchema(t).safeParse({ currentPassword, newPassword, confirmPassword });
+    if (!validation.success) {
+      showToast(validation.error.issues[0].message, "error");
       return;
     }
     setPwLoading(true);
@@ -115,11 +113,12 @@ export default function ProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!name.trim() || !address.trim() || !phone.trim()) {
-      showToast(t.fillNameAddressPhone || "Please fill Name, Address, and Primary Phone", "error");
+    const validation = buildProfileSchema(t).safeParse({ name, address, phone });
+    if (!validation.success) {
+      showToast(validation.error.issues[0].message, "error");
       return;
     }
-    
+
     setLoading(true);
     try {
       await updateProfile({ 

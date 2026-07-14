@@ -8,6 +8,7 @@ import KeyboardView from "../../components/KeyboardView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
 import { useTheme } from "../../hooks/useTheme";
+import { buildLandInfoSchema } from "../../schemas/landInfoSchema";
 
 const LAND_INFO_KEY = "landInfo";
 
@@ -64,17 +65,10 @@ export default function LandInfoScreen() {
   };
 
   const handleSave = async () => {
-    if (!landName.trim()) {
-      showToast(t.errorLandName, "error");
+    const validation = buildLandInfoSchema(t).safeParse({ landName, maxLeaves, minLeaves });
+    if (!validation.success) {
+      showToast(validation.error.issues[0].message, "error");
       return;
-    }
-    if (maxLeaves && minLeaves) {
-      const maxNum = parseFloat(maxLeaves);
-      const minNum = parseFloat(minLeaves);
-      if (!isNaN(maxNum) && !isNaN(minNum) && minNum > maxNum) {
-        showToast(t.errorMinMax, "error");
-        return;
-      }
     }
     setLoading(true);
     try {

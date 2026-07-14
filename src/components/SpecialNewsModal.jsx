@@ -32,7 +32,7 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
                   {t.specialNews}
                 </Text>
                 <Text className="mt-px text-[11px] text-white/75">
-                  Important Announcement
+                  {t.importantAnnouncement}
                 </Text>
               </View>
             </View>

@@ -6,6 +6,7 @@ import KeyboardView from "../../components/KeyboardView";
 import { Button, Card, Input, Picker, ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
+import { buildAccountDetailsSchema } from "../../schemas/accountDetailsSchema";
 
 const BANK_OPTIONS = [
   { value: "Bank of Ceylon", label: "Bank of Ceylon" },
@@ -36,13 +37,9 @@ export default function AccountDetailsScreen() {
   };
 
   const handleSave = async () => {
-    if (!bankName || !accountNumber || !accountHolder || !branch) {
-      showToast(t.fillAllFields, "error");
-      return;
-    }
-
-    if (accountNumber.length < 8 || accountNumber.length > 16) {
-      showToast("Account number must be 8-16 digits", "error");
+    const validation = buildAccountDetailsSchema(t).safeParse({ bankName, accountNumber, accountHolder, branch });
+    if (!validation.success) {
+      showToast(validation.error.issues[0].message, "error");
       return;
     }
 

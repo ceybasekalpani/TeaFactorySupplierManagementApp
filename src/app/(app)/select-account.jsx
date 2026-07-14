@@ -31,7 +31,7 @@ export default function SelectAccountScreen() {
 
   const handleOpen = async () => {
     if (!selectedReg) {
-      setError("Please select a registration number");
+      setError(t.selectRegNoError);
       return;
     }
     setLoading(true);
@@ -39,7 +39,7 @@ export default function SelectAccountScreen() {
       await login(selectedReg);
       router.replace("/(app)/home");
     } catch (err) {
-      setError(err.message || "Failed to load account. Please try again.");
+      setError(err.message || t.loadAccountFailedRetry);
     } finally {
       setLoading(false);
     }
@@ -64,10 +64,10 @@ export default function SelectAccountScreen() {
 
             <Card>
               <Text className="mb-1 text-[19px] font-bold text-[#212121] dark:text-white">
-                Select Your Account
+                {t.selectYourAccount}
               </Text>
               <Text className="mb-5 text-[13px] text-[#757575] dark:text-[#b0b0b0]">
-                You have multiple registrations. Please select one to continue.
+                {t.multipleRegistrationsMessage}
               </Text>
 
               <Picker
@@ -95,7 +95,7 @@ export default function SelectAccountScreen() {
               ) : null}
 
               <Button
-                title={loading ? "Loading..." : t.open}
+                title={loading ? t.loadingEllipsis : t.open}
                 onPress={handleOpen}
                 icon="checkmark-circle-outline"
                 disabled={loading}

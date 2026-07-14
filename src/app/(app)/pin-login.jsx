@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Text, TouchableOpacity, Vibration, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
+import { useTheme } from "../../hooks/useTheme";
 
 const PIN_LENGTH = 4;
 
@@ -61,6 +62,7 @@ function NumPad({ onPress, onDelete }) {
 }
 
 export default function PinLoginScreen() {
+  const { t } = useTheme();
   const { savedRegNo, savedName, pinLogin, login } = useApp();
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -101,7 +103,7 @@ export default function PinLoginScreen() {
       const result = await pinLogin(activeRegNo, entered);
       if (!result) {
         Vibration.vibrate(300);
-        setError("Wrong PIN. Please try again.");
+        setError(t.wrongPinRetry);
         setPin("");
         setLoading(false);
         return;
@@ -117,7 +119,7 @@ export default function PinLoginScreen() {
       }
     } catch (err) {
       Vibration.vibrate(300);
-      setError(err.message || "Wrong PIN. Please try again.");
+      setError(err.message || t.wrongPinRetry);
       setPin("");
       setLoading(false);
     }
@@ -133,13 +135,13 @@ export default function PinLoginScreen() {
         </View>
 
         <Text className="mb-0.5 text-[13px] text-[#757575] dark:text-[#b0b0b0]">
-          Welcome back
+          {t.welcomeBackLower}
         </Text>
         <Text className="text-center text-[26px] font-extrabold text-[#212121] dark:text-white">
           {displayName}
         </Text>
         <Text className="mt-1.5 text-[13px] text-[#9e9e9e]">
-          Enter your PIN to continue
+          {t.enterPinToContinue}
         </Text>
 
         <PinDots value={pin} hasError={!!error} />
@@ -153,7 +155,7 @@ export default function PinLoginScreen() {
 
         {loading ? (
           <View className="mt-6">
-            <Text className="text-[13px] text-[#757575] dark:text-[#b0b0b0]">Verifying...</Text>
+            <Text className="text-[13px] text-[#757575] dark:text-[#b0b0b0]">{t.verifying}</Text>
           </View>
         ) : (
           <>
@@ -165,7 +167,7 @@ export default function PinLoginScreen() {
               activeOpacity={0.7}
             >
               <Text className="text-[13px] font-semibold text-[#2e7d32] dark:text-[#66bb6a]">
-                Forgot / Reset PIN?
+                {t.forgotResetPin}
               </Text>
             </TouchableOpacity>
           </>

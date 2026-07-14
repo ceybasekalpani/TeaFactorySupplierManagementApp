@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
+import { buildLoginSchema } from "../../schemas/loginSchema";
 
 function Field({ icon, placeholder, value, onChangeText, secureTextEntry, right, hasError, keyboardType }) {
   const { colors } = useTheme();
@@ -46,23 +47,20 @@ export default function LandingScreen() {
 
   const handleSignIn = async () => {
     setError("");
-    if (!username.trim()) {
-      setError("Please enter your username (Registration No)");
-      return;
-    }
-    if (!password.trim()) {
-      setError("Please enter your password");
+    const validation = buildLoginSchema(t).safeParse({ username, password });
+    if (!validation.success) {
+      setError(validation.error.issues[0].message);
       return;
     }
     setLoading(true);
     try {
-      const result = await signIn(username.trim(), password.trim());
+      const result = await signIn(validation.data.username, validation.data.password);
       if (!result) {
-        setError("Invalid username or password. Please try again.");
+        setError(t.invalidCredentialsRetry);
         return;
       }
       if (!result.registrations || result.registrations.length === 0) {
-        setError("No active registration found for this account. Please contact the factory.");
+        setError(t.noActiveRegistrationContact);
         return;
       }
 
@@ -80,7 +78,7 @@ export default function LandingScreen() {
       }
 
     } catch (err) {
-      setError(err.message || "Login failed. Please check your credentials and try again.");
+      setError(err.message || t.loginFailedRetry);
     } finally {
       setLoading(false);
     }
@@ -107,20 +105,20 @@ export default function LandingScreen() {
               </View>
 
               <Text className="text-center text-[32px] font-black tracking-[0.5px] text-white">
-                Tea Factory
+                {t.appName}
               </Text>
               <Text className="mt-1.5 text-center text-[13px] tracking-[0.3px] text-white/75">
-                Supplier Management Portal
+                {t.supplierPortalSubtitle}
               </Text>
             </View>
 
             <View className="-mt-11 flex-1 px-5 pb-7">
               <View className="rounded-[28px] border border-[#e0e0e0] bg-white p-[26px] shadow-lg dark:border-[#333333] dark:bg-[#242424]">
                 <Text className="text-[22px] font-extrabold text-[#212121] dark:text-white">
-                  Welcome Back {"\uD83D\uDC4B"}
+                  {t.welcomeBackWave}
                 </Text>
                 <Text className="mb-[26px] mt-1 text-[13px] text-[#757575] dark:text-[#b0b0b0]">
-                  Sign in to your supplier account
+                  {t.signInSubtitle}
                 </Text>
 
                 <Text className="mb-2 text-[13px] font-semibold text-[#757575] dark:text-[#b0b0b0]">
@@ -128,7 +126,7 @@ export default function LandingScreen() {
                 </Text>
                 <Field
                   icon="person-outline"
-                  placeholder="Enter your username"
+                  placeholder={t.usernamePlaceholder}
                   value={username}
                   onChangeText={(v) => { setUsername(v); setError(""); }}
                   hasError={!!error}
@@ -139,7 +137,7 @@ export default function LandingScreen() {
                 </Text>
                 <Field
                   icon="lock-closed-outline"
-                  placeholder="Enter your password"
+                  placeholder={t.passwordPlaceholder}
                   value={password}
                   onChangeText={(v) => { setPassword(v); setError(""); }}
                   secureTextEntry={!showPassword}
@@ -171,7 +169,7 @@ export default function LandingScreen() {
                   {loading ? (
                     <>
                       <Ionicons name="sync-outline" size={fs.md} color="#fff" />
-                      <Text className="text-[17px] font-bold text-white">Signing in...</Text>
+                      <Text className="text-[17px] font-bold text-white">{t.signingIn}</Text>
                     </>
                   ) : (
                     <>

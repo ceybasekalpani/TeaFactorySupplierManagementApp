@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Text, TouchableOpacity, Vibration, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
+import { useTheme } from "../../hooks/useTheme";
 
 const PIN_LENGTH = 4;
 
@@ -61,6 +62,7 @@ function NumPad({ onPress, onDelete }) {
 }
 
 export default function PinSetupScreen() {
+  const { t } = useTheme();
   const { setupPin, login, registrations } = useApp();
   const router = useRouter();
 
@@ -93,7 +95,7 @@ export default function PinSetupScreen() {
     } else {
       if (entered !== firstPin) {
         Vibration.vibrate(300);
-        setError("PINs do not match. Try again.");
+        setError(t.pinsMismatchRetry);
         setPin("");
         setStep("enter");
         setFirstPin("");
@@ -113,7 +115,7 @@ export default function PinSetupScreen() {
         }
       } catch (err) {
         Vibration.vibrate(300);
-        setError(err.message || "Failed to save PIN. Try again.");
+        setError(err.message || t.savePinFailedRetry);
         setPin("");
         setStep("enter");
         setFirstPin("");
@@ -131,12 +133,12 @@ export default function PinSetupScreen() {
         </View>
 
         <Text className="text-center text-[26px] font-extrabold text-[#212121] dark:text-white">
-          {step === "enter" ? "Create Your PIN" : "Confirm Your PIN"}
+          {step === "enter" ? t.createYourPin : t.confirmYourPin}
         </Text>
         <Text className="mt-2 text-center text-[13px] leading-5 text-[#757575] dark:text-[#b0b0b0]">
           {step === "enter"
-            ? "Set a 4-digit PIN for quick access next time"
-            : "Re-enter your PIN to confirm"}
+            ? t.setupPinSubtitle
+            : t.reenterPinSubtitle}
         </Text>
 
         <PinDots value={pin} hasError={!!error} />
@@ -158,7 +160,7 @@ export default function PinSetupScreen() {
         </View>
 
         {loading ? (
-          <Text className="text-[13px] text-[#757575] dark:text-[#b0b0b0]">Saving PIN...</Text>
+          <Text className="text-[13px] text-[#757575] dark:text-[#b0b0b0]">{t.savingPin}</Text>
         ) : (
           <NumPad onPress={handlePress} onDelete={handleDelete} />
         )}
