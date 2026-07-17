@@ -156,6 +156,7 @@ export function useApp() {
     pinLogin: auth.pinLogin,
     resetPin: auth.resetPin,
     updateProfile: auth.updateProfile,
+    updateLandInfo: auth.updateLandInfo,
     lockSession: auth.lockSession,
     pauseSessionLock: auth.pauseSessionLock,
 

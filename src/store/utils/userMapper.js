@@ -14,5 +14,8 @@ export function mapUser(u) {
     accountNumber: u.accountNumber ?? u.AccountNumber ?? "",
     accountHolder: u.accountHolder ?? u.AccountHolder ?? "",
     branch:        u.branch        ?? u.Branch        ?? "",
+    landAcre:      u.landAcre      ?? u.LandAcre      ?? null,
+    landRood:      u.landRood      ?? u.LandRood      ?? null,
+    landPerch:     u.landPerch     ?? u.LandPerch     ?? null,
   };
 }

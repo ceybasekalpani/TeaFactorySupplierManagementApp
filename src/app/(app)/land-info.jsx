@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
+import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 import { buildLandInfoSchema } from "../../schemas/landInfoSchema";
 
@@ -15,6 +16,7 @@ const LAND_INFO_KEY = "landInfo";
 export default function LandInfoScreen() {
   const { colors, fs, t } = useTheme();
   const router = useRouter();
+  const { currentUser, updateLandInfo } = useApp();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [landName, setLandName] = useState("");
@@ -47,10 +49,16 @@ export default function LandInfoScreen() {
           setMaxLeaves(data.maxLeaves || "");
           setMinLeaves(data.minLeaves || "");
         }
+
+        // Database values (Land_Acre/Rood/Perch) take precedence over the local draft.
+        if (currentUser?.landAcre != null) setAcres(String(currentUser.landAcre));
+        if (currentUser?.landRood != null) setRood(String(currentUser.landRood));
+        if (currentUser?.landPerch != null) setPerches(String(currentUser.landPerch));
+
         setDataLoaded(true);
       })
       .catch(() => setDataLoaded(true));
-  }, []);
+  }, [currentUser?.landAcre, currentUser?.landRood, currentUser?.landPerch]);
 
   useEffect(() => {
     return () => {
@@ -81,6 +89,13 @@ export default function LandInfoScreen() {
         maxLeaves: maxLeaves.trim(),
         minLeaves: minLeaves.trim(),
       }));
+
+      await updateLandInfo(
+        acres.trim() === "" ? null : Number(acres),
+        rood.trim() === "" ? null : Number(rood),
+        perches.trim() === "" ? null : Number(perches)
+      );
+
       showToast(t.saveSuccess);
     } catch {
       showToast(t.saveError, "error");

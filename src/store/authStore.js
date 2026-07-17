@@ -309,4 +309,10 @@ export const useAuthStore = create((set, get) => ({
 
     return uploadedImageUrl;
   },
+
+  updateLandInfo: async (landAcre, landRood, landPerch) => {
+    const { token, setCurrentUser } = get();
+    await authApi.updateLandInfo(token, landAcre, landRood, landPerch);
+    setCurrentUser((prev) => (prev ? { ...prev, landAcre, landRood, landPerch } : prev));
+  },
 }));

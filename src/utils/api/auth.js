@@ -17,4 +17,6 @@ export const authApi = {
     request("POST", "/api/auth/pin-login", { regNo, pin }),
   changePin: (token, currentPin, newPin) =>
     request("POST", "/api/auth/change-pin", { currentPin, newPin }, token),
+  updateLandInfo: (token, landAcre, landRood, landPerch) =>
+    request("PUT", "/api/auth/land-info", { landAcre, landRood, landPerch }, token),
 };
