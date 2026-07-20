@@ -1,22 +1,19 @@
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { Redirect } from "expo-router";
 import { ActivityIndicator, Text, View } from "react-native";
 import { useApp } from "../context/AppContext";
 
 export default function Index() {
   const { authState } = useApp();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (authState === "loading") return;
-    if (authState === "authenticated") {
-      router.replace("/(app)/home");
-    } else if (authState === "pin-required") {
-      router.replace("/(auth)/pin-login");
-    } else {
-      router.replace("/(auth)/landing");
-    }
-  }, [authState]);
+  if (authState === "authenticated") {
+    return <Redirect href="/(app)/home" />;
+  }
+  if (authState === "pin-required") {
+    return <Redirect href="/(auth)/pin-login" />;
+  }
+  if (authState !== "loading") {
+    return <Redirect href="/(auth)/landing" />;
+  }
 
   return (
     <View className="flex-1 items-center justify-center gap-5 bg-[#2D6A4F]">

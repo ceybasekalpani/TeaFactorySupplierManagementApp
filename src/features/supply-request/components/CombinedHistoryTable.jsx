@@ -3,7 +3,7 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Card, EmptyState, StatusBadge } from "../../../components/ui";
 import { formatDate, formatQty } from "../utils/formatters";
 
-export function CombinedHistoryTable({ t, combinedHistory, fertilizerRequests, itemRequests, onRequestDelete }) {
+export function CombinedHistoryTable({ t, combinedHistory, onRequestDelete }) {
   if (combinedHistory.length === 0) {
     return (
       <Card>
@@ -23,13 +23,10 @@ export function CombinedHistoryTable({ t, combinedHistory, fertilizerRequests, i
         showsHorizontalScrollIndicator={false}
         bounces={false}
       >
-        <View className="min-w-[588px]">
+        <View className="min-w-[508px]">
           <View className="flex-row border-b-2 border-[#2e7d32] bg-[#2e7d32]/10 px-3.5 py-3 dark:border-[#66bb6a] dark:bg-[#66bb6a]/10">
             <Text className="w-[150px] text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
               {t.colDate?.charAt(0).toUpperCase() + t.colDate?.slice(1).toLowerCase() || "Date"}
-            </Text>
-            <Text className="w-[80px] text-center text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
-              {t.colCategory?.charAt(0).toUpperCase() + t.colCategory?.slice(1).toLowerCase() || "Category"}
             </Text>
             <Text className="w-[110px] text-center text-[13px] font-bold text-[#2e7d32] dark:text-[#66bb6a]">
               {t.colType?.charAt(0).toUpperCase() + t.colType?.slice(1).toLowerCase() || "Type"}
@@ -53,13 +50,6 @@ export function CombinedHistoryTable({ t, combinedHistory, fertilizerRequests, i
               <Text numberOfLines={1} className="w-[150px] text-[11px] font-medium text-[#212121] dark:text-white">
                 {formatDate(req.createdAt)}
               </Text>
-              <View className="w-[80px] items-center">
-                <View className={`rounded-lg px-1.5 py-0.5 ${req.category === "Fertilizer" ? "bg-[#dcfce7]" : "bg-[#fef3c7]"}`}>
-                  <Text className={`text-[10px] font-semibold ${req.category === "Fertilizer" ? "text-[#16a34a]" : "text-[#d97706]"}`}>
-                    {req.category === "Fertilizer" ? t.fertilizer : t.item}
-                  </Text>
-                </View>
-              </View>
               <Text numberOfLines={1} className="w-[110px] text-center text-[11px] text-[#757575] dark:text-[#b0b0b0]">
                 {req.displayType}
               </Text>
@@ -88,7 +78,7 @@ export function CombinedHistoryTable({ t, combinedHistory, fertilizerRequests, i
               {t.total}: {combinedHistory.length}
             </Text>
             <Text className="text-[11px] text-[#757575] dark:text-[#b0b0b0]">
-              {fertilizerRequests?.length || 0} {t.fertilizerLower} - {itemRequests?.length || 0} {t.itemsLower}
+              {combinedHistory.length} {combinedHistory[0]?.category === "Fertilizer" ? t.fertilizerLower : t.itemsLower}
             </Text>
           </View>
         </View>

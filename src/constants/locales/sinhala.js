@@ -127,7 +127,7 @@ export const sinhala = {
   selectDay: "දිනය තෝරන්න",
   max: "උපරිම",
   enterAmount: "මුදල ඇතුළත් කරන්න",
-  autoRejectWarning: "පැය 24 ක් තුළ අනුමත නොවන අත්තිකාරම් ඉල්ලීම් ස්වයංක්‍රීයව ප්‍රතික්ෂේප කෙරේ.",
+  autoRejectWarning: "අත්තිකාරම් ඉල්ලීම් තිබෙන ප්‍රතිපාදන මත රඳා පවතින අතර වැඩකරන දින 3-5ක් තුළ සකසනු ලැබේ.",
   submitRequest: "ඉල්ලීම යොමු කරන්න",
   advanceRequestHistory: "අත්තිකාරම් ඉල්ලීම් ඉතිහාසය",
   noAdvanceRequestsYet: "තවම අත්තිකාරම් ඉල්ලීම් නොමැත",

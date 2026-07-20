@@ -113,10 +113,11 @@ export default function SupplyRequestScreen() {
       category: "Other Item",
       displayType: r.itemType || "-",
     }));
-    return [...fReqs, ...iReqs]
+    const list = category === "fertilizer" ? fReqs : iReqs;
+    return list
       .filter(Boolean)
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-  }, [fertilizerRequests, itemRequests]);
+  }, [fertilizerRequests, itemRequests, category]);
 
   const handleDelete = async (req) => {
     setDeleteLoading(true);
@@ -177,8 +178,6 @@ export default function SupplyRequestScreen() {
             <CombinedHistoryTable
               t={t}
               combinedHistory={combinedHistory}
-              fertilizerRequests={fertilizerRequests}
-              itemRequests={itemRequests}
               onRequestDelete={setDeleteConfirm}
             />
           </View>

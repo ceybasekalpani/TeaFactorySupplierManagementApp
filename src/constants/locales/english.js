@@ -127,7 +127,7 @@ export const english = {
   selectDay: "Select day",
   max: "Max",
   enterAmount: "Enter amount",
-  autoRejectWarning: "Advance requests not approved within 24 hours will be automatically rejected.",
+  autoRejectWarning: "Advance requests are subject to availability and processed within 3-5 working days.",
   submitRequest: "Submit Request",
   advanceRequestHistory: "Advance Request History",
   noAdvanceRequestsYet: "No advance requests yet",
