@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { router } from "expo-router";
 import { Platform } from "react-native";
-import { API_BASE_URL } from "../constants/config";
+import { request } from "../utils/api/client";
 
 const DEVICE_ID_KEY = "pushDeviceId";
 
@@ -87,23 +87,11 @@ async function getDeviceId() {
 async function saveFcmToken(authToken, fcmToken) {
   if (!authToken || !fcmToken) return;
 
-  const response = await fetch(`${API_BASE_URL}/api/mobile/device-token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${authToken}`,
-    },
-    body: JSON.stringify({
-      fcmToken,
-      platform: Platform.OS === "android" ? "android" : "ios",
-      deviceId: await getDeviceId(),
-    }),
-  });
-
-  if (!response.ok) {
-    const message = await response.text().catch(() => "");
-    throw new Error(message || `Device token save failed (${response.status})`);
-  }
+  await request("POST", "/api/mobile/device-token", {
+    fcmToken,
+    platform: Platform.OS === "android" ? "android" : "ios",
+    deviceId: await getDeviceId(),
+  }, authToken);
 }
 
 export async function registerForPushNotificationsAsync(authToken) {

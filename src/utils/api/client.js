@@ -1,3 +1,4 @@
+import axios from "axios";
 import { API_BASE_URL } from "../../constants/config";
 
 const REQUEST_TIMEOUT_MS = 30000;
@@ -26,56 +27,54 @@ function releaseRequestSlot() {
   }
 }
 
+const httpClient = axios.create({ baseURL: API_BASE_URL });
+
+function extractErrorMessage(data, fallback) {
+  if (!data) return fallback;
+  if (typeof data === "string") return data || fallback;
+  return data.message || data.title || data.errors
+    ? (data.message || data.title || JSON.stringify(data.errors))
+    : fallback;
+}
+
+function normalizeResponseData(data) {
+  return data === undefined || data === null || data === "" ? null : data;
+}
+
+async function throwForAxiosError(error, method, path) {
+  if (error.code === "ECONNABORTED") {
+    const timeoutError = new Error(`Request timed out: ${path}`);
+    timeoutError.status = 408;
+    throw timeoutError;
+  }
+  if (error.response) {
+    const { status, data, statusText } = error.response;
+    const message = extractErrorMessage(data, statusText);
+    console.error(`API ${method} ${path} → ${status}`, message || "(empty body)");
+    const err = new Error(message || `HTTP ${status}`);
+    err.status = status;
+    throw err;
+  }
+  throw error;
+}
+
 export async function request(method, path, body, token) {
   await acquireRequestSlot();
   try {
     const headers = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    let res;
-
     try {
-      res = await fetch(`${API_BASE_URL}${path}`, {
+      const res = await httpClient.request({
+        url: path,
         method,
         headers,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
+        data: body,
+        timeout: REQUEST_TIMEOUT_MS,
       });
+      return normalizeResponseData(res.data);
     } catch (error) {
-      if (error?.name === "AbortError") {
-        const timeoutError = new Error(`Request timed out: ${path}`);
-        timeoutError.status = 408;
-        throw timeoutError;
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    if (!res.ok) {
-      let message = res.statusText;
-      let rawBody = "";
-      try {
-        rawBody = await res.text();
-        const err = JSON.parse(rawBody);
-        message = err.message || err.title || err.errors
-          ? (err.message || err.title || JSON.stringify(err.errors))
-          : message;
-      } catch (_) {
-        if (rawBody) message = rawBody;
-      }
-      console.error(`API ${method} ${path} → ${res.status}`, message || "(empty body)");
-      const error = new Error(message || `HTTP ${res.status}`);
-      error.status = res.status;
-      throw error;
-    }
-
-    try {
-      return await res.json();
-    } catch (_) {
-      return null;
+      await throwForAxiosError(error, method, path);
     }
   } finally {
     releaseRequestSlot();
@@ -100,33 +99,15 @@ export async function uploadFile(method, path, formData, token) {
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers,
-    body: formData,
-  });
-
-  if (!res.ok) {
-    let message = res.statusText;
-    let rawBody = "";
-    try {
-      rawBody = await res.text();
-      const err = JSON.parse(rawBody);
-      message = err.message || err.title || err.errors
-        ? (err.message || err.title || JSON.stringify(err.errors))
-        : message;
-    } catch (_) {
-      if (rawBody) message = rawBody;
-    }
-    console.error(`API ${method} ${path} → ${res.status}`, message || "(empty body)");
-    const error = new Error(message || `HTTP ${res.status}`);
-    error.status = res.status;
-    throw error;
-  }
-
   try {
-    return await res.json();
-  } catch (_) {
-    return null;
+    const res = await httpClient.request({
+      url: path,
+      method,
+      headers,
+      data: formData,
+    });
+    return normalizeResponseData(res.data);
+  } catch (error) {
+    await throwForAxiosError(error, method, path);
   }
 }
