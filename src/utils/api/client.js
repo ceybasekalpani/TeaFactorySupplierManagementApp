@@ -3,9 +3,7 @@ import { API_BASE_URL } from "../../constants/config";
 
 const REQUEST_TIMEOUT_MS = 30000;
 
-// Caps how many requests can be in flight at once so a burst (e.g. several
-// polling loops firing together on app-foreground) can't hammer the backend
-// all at the same instant; excess calls simply wait their turn in order.
+
 const MAX_CONCURRENT_REQUESTS = 4;
 let activeRequestCount = 0;
 const pendingRequestQueue = [];

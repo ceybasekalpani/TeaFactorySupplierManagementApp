@@ -66,8 +66,7 @@ export function AppProvider({ children }) {
     let foregroundTimeoutId = null;
     const appStateSubscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
-        // Staggered so a foreground resume doesn't burst all three polling
-        // loops' requests at the exact same instant.
+       
         foregroundTimeoutId = setTimeout(refreshSupplyTypes, 3000);
       }
     });
@@ -77,7 +76,7 @@ export function AppProvider({ children }) {
       clearTimeout(foregroundTimeoutId);
       appStateSubscription.remove();
     };
-  // Polling keeps fertilizer/item configuration current in Expo Go, where native FCM is unavailable.
+  
   }, [token, authState, refreshSupplyTypes]);
 
   useEffect(() => {
@@ -95,7 +94,7 @@ export function AppProvider({ children }) {
       clearInterval(intervalId);
       appStateSubscription.remove();
     };
-  // Polling keeps request approval/rejection state current in Expo Go, where native FCM is unavailable.
+  
   }, [token, authState, refreshRequests]);
 
   useEffect(() => {
@@ -106,8 +105,7 @@ export function AppProvider({ children }) {
     let foregroundTimeoutId = null;
     const appStateSubscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
-        // Staggered so a foreground resume doesn't burst all three polling
-        // loops' requests at the exact same instant.
+       
         foregroundTimeoutId = setTimeout(refreshCommunications, 1500);
       }
     });
@@ -117,7 +115,7 @@ export function AppProvider({ children }) {
       clearTimeout(foregroundTimeoutId);
       appStateSubscription.remove();
     };
-  // Polling keeps in-app notifications current in Expo Go, where native FCM is unavailable.
+ 
   }, [token, authState, refreshCommunications]);
 
   return children;
