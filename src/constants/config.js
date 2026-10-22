@@ -5,6 +5,6 @@
 //  • Physical device   → http://<YOUR_MACHINE_IP>:5000  (e.g. http://192.168.1.10:5000)
 //  • Production        → https://api.yourapp.com
 
-// Physical device / Expo Go on same WiFi network
-// export const API_BASE_URL = "http://192.168.8.108:5295"; 192.168.43.210
-export const API_BASE_URL = "http://192.168.8.108:5295"; 
+// Local web development. Override with EXPO_PUBLIC_API_BASE_URL when needed.
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || "http://localhost:5295";
