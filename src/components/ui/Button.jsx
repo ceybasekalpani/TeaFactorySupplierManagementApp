@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Text, TouchableOpacity } from "react-native";
+import { ActivityIndicator, TouchableOpacity } from "react-native";
+import { Text } from "../Text";
 import { useTheme } from "../../hooks/useTheme";
 
 export function Button({ title, onPress, variant = "primary", disabled, loading, icon, style }) {
@@ -37,7 +38,7 @@ export function Button({ title, onPress, variant = "primary", disabled, loading,
       ) : (
         <>
           {icon && <Ionicons name={icon} size={fs.md} color={textColor} />}
-          <Text style={{ color: textColor, fontWeight: "700", fontSize: fs.md }}>
+          <Text style={{ color: textColor, fontWeight: "700", fontSize: fs.md, flexShrink: 1, textAlign: "center" }}>
             {title}
           </Text>
         </>

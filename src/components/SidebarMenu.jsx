@@ -6,9 +6,10 @@ import {
   Dimensions, Image,
   Modal,
   ScrollView,
-  Text, TouchableOpacity,
+  TouchableOpacity,
   View,
 } from "react-native";
+import { Text } from "./Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
 import { useTheme } from "../hooks/useTheme";
@@ -103,13 +104,13 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
             </Text>
             <View className="mt-1 flex-row items-center gap-1.5">
               <Ionicons name="card-outline" size={fs.sm} color="rgba(255,255,255,0.7)" />
-              <Text className="text-[13px] text-white/70">
+              <Text style={{ flex: 1, minWidth: 0 }} className="text-[13px] text-white/70">
                 {activeReg?.regNo}
               </Text>
             </View>
             <View className="mt-0.5 flex-row items-center gap-1.5">
               <Ionicons name="map-outline" size={fs.sm} color="rgba(255,255,255,0.7)" />
-              <Text className="text-[13px] text-white/70">
+              <Text style={{ flex: 1, minWidth: 0 }} className="text-[13px] text-white/70">
                 {activeReg?.route}
               </Text>
             </View>
@@ -158,7 +159,7 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
             <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-[#fee2e2]">
               <Ionicons name="log-out-outline" size={fs.lg} color={colors.error} />
             </View>
-            <Text className="text-[15px] font-semibold text-[#b71c1c] dark:text-[#ef5350]">
+            <Text style={{ flex: 1, minWidth: 0 }} className="text-[15px] font-semibold text-[#b71c1c] dark:text-[#ef5350]">
               {t.logout}
             </Text>
           </TouchableOpacity>

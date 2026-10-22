@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Card, EmptyState, StatusBadge } from "../../../components/ui";
 import { formatDate, formatQty } from "../utils/formatters";
 
@@ -45,15 +46,15 @@ export function CombinedHistoryTable({ t, combinedHistory, onRequestDelete }) {
           {combinedHistory.map((req, i) => (
             <View
               key={`${req.category}-${req.id || i}`}
-              className={`flex-row items-center px-3.5 py-3.5 ${i < combinedHistory.length - 1 ? "border-b border-[#e0e0e0] dark:border-[#333333]" : ""} ${i % 2 === 0 ? "bg-transparent" : "bg-[#f5f5f5]/40 dark:bg-[#1e1e1e]/40"}`}
+              className={`flex-row items-start px-3.5 py-3.5 ${i < combinedHistory.length - 1 ? "border-b border-[#e0e0e0] dark:border-[#333333]" : ""} ${i % 2 === 0 ? "bg-transparent" : "bg-[#f5f5f5]/40 dark:bg-[#1e1e1e]/40"}`}
             >
-              <Text numberOfLines={1} className="w-[150px] text-[11px] font-medium text-[#212121] dark:text-white">
+              <Text className="w-[150px] text-[11px] font-medium text-[#212121] dark:text-white">
                 {formatDate(req.createdAt)}
               </Text>
-              <Text numberOfLines={1} className="w-[110px] text-center text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+              <Text className="w-[110px] text-center text-[11px] text-[#757575] dark:text-[#b0b0b0]">
                 {req.displayType}
               </Text>
-              <Text numberOfLines={1} className="w-[80px] text-center text-[11px] font-semibold text-[#212121] dark:text-white">
+              <Text className="w-[80px] text-center text-[11px] font-semibold text-[#212121] dark:text-white">
                 {formatQty(
                   req.quantity,
                   req.category === "Other Item" ? "units" : (req.unit ?? "kg"),
@@ -74,10 +75,10 @@ export function CombinedHistoryTable({ t, combinedHistory, onRequestDelete }) {
           ))}
 
           <View className="flex-row items-center justify-between border-t border-[#e0e0e0] bg-[#f5f5f5] px-3.5 py-3 dark:border-[#333333] dark:bg-[#1e1e1e]">
-            <Text className="text-[13px] text-[#757575] dark:text-[#b0b0b0]">
+            <Text className="flex-1 text-[13px] text-[#757575] dark:text-[#b0b0b0]">
               {t.total}: {combinedHistory.length}
             </Text>
-            <Text className="text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+            <Text className="flex-1 text-right text-[11px] text-[#757575] dark:text-[#b0b0b0]">
               {combinedHistory.length} {combinedHistory[0]?.category === "Fertilizer" ? t.fertilizerLower : t.itemsLower}
             </Text>
           </View>

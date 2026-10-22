@@ -1,5 +1,6 @@
 import { useRef } from "react";
-import { Animated, Dimensions, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Dimensions, TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -17,7 +18,7 @@ export function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs, t }) {
     setLeafPeriod(val);
   };
 
-  const TRACK_H = 52;
+  const TRACK_H = 64;
   const PILL_W  = (SCREEN_W - 32 - 8) / 2;
 
   const pillLeft = slideAnim.interpolate({
@@ -95,13 +96,14 @@ export function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs, t }) {
               }}
             >
               <Text style={{ fontSize: 16 }}>{o.icon}</Text>
-              <View>
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
                   style={{
                     fontSize:   fs.sm,
                     fontWeight: "700",
                     color:      active ? "#fff" : colors.text,
                     lineHeight: 18,
+                    textAlign:  "center",
                   }}
                 >
                   {o.label}
@@ -111,6 +113,7 @@ export function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs, t }) {
                     fontSize:   10,
                     color:      active ? "rgba(255,255,255,0.72)" : colors.textMuted,
                     lineHeight: 13,
+                    textAlign:  "center",
                   }}
                 >
                   {o.sub}

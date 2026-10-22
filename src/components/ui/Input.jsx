@@ -1,4 +1,5 @@
-import { Text, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
+import { Text } from "../Text";
 import { useTheme } from "../../hooks/useTheme";
 
 export function Input({ label, value, onChangeText, placeholder, keyboardType, secureTextEntry, style, editable = true, right }) {

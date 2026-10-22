@@ -27,7 +27,10 @@ export function usePdfDownload({ t, currentUser, activeReg }) {
         FileSystem.documentDirectory +
         `LeafStatement_${activeReg?.regNo || "supplier"}_${suffix}_${Date.now()}.pdf`;
 
-      await FileSystem.moveAsync({ from: uri, to: dest });
+      // Copying is more reliable than moving a Print-generated cache file on
+      // Android 15/SDK 57, where the cache and document providers can differ.
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      await FileSystem.deleteAsync(uri, { idempotent: true });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) await Sharing.shareAsync(dest);
       else          Alert.alert(t("downloadStatement"), dest);

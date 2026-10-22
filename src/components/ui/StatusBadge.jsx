@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../Text";
 import { useTheme } from "../../hooks/useTheme";
 
 export function StatusBadge({ status }) {
@@ -13,8 +14,8 @@ export function StatusBadge({ status }) {
   };
   const c = config[status] || config.pending;
   return (
-    <View style={{ backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
-      <Text style={{ color: c.text, fontSize: fs.xs, fontWeight: "700" }}>{c.label}</Text>
+    <View style={{ backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, maxWidth: "100%" }}>
+      <Text style={{ color: c.text, fontSize: fs.xs, fontWeight: "700", textAlign: "center" }}>{c.label}</Text>
     </View>
   );
 }

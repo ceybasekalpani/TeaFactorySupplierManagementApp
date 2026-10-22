@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
+import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import SpecialNewsModal from "../../components/SpecialNewsModal";
@@ -66,7 +67,7 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={() => setMenuOpen(true)} style={{ padding: 4, marginRight: 12 }}>
           <Ionicons name="menu" size={fs["2xl"]} color={colors.text} />
         </TouchableOpacity>
-        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
           <View style={{
             width: 32, height: 32, borderRadius: 10,
             backgroundColor: colors.primary + "20",
@@ -74,7 +75,7 @@ export default function HomeScreen() {
           }}>
             <Text style={{ fontSize: 18 }}>🍃</Text>
           </View>
-          <Text style={{ fontSize: fs.lg, fontWeight: "800", color: colors.text }}>{t.appName}</Text>
+          <Text style={{ flex: 1, minWidth: 0, fontSize: fs.lg, fontWeight: "800", color: colors.text }}>{t.appName}</Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push("/(app)/notifications")}

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Text, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Card } from "../../../components/ui";
 import { notificationIconMap } from "../config/quickActions";
 import { timeAgo } from "../utils/timeAgo";
@@ -11,11 +12,11 @@ export function RecentNotificationsList({ colors, fs, t, notifications }) {
 
   return (
     <View style={{ paddingHorizontal: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <Text style={{ fontSize: fs.md, fontWeight: "700", color: colors.text }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>
+        <Text textBreakStrategy="simple" style={{ flex: 1, minWidth: 0, fontSize: fs.md, fontWeight: "700", color: colors.text }}>
           {t.notificationsAndNews}
         </Text>
-        <TouchableOpacity onPress={() => router.push("/(app)/notifications")}>
+        <TouchableOpacity style={{ flexShrink: 0 }} onPress={() => router.push("/(app)/notifications")}>
           <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "600" }}>{t.viewAll}</Text>
         </TouchableOpacity>
       </View>
@@ -53,7 +54,7 @@ export function RecentNotificationsList({ colors, fs, t, notifications }) {
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Text style={{ color: colors.text, fontSize: fs.sm, fontWeight: notif.read ? "500" : "700", flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: fs.sm, fontWeight: notif.read ? "500" : "700", flex: 1, minWidth: 0, flexShrink: 1 }}>
                       {notif.title}
                     </Text>
                     {!notif.read && (

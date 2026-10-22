@@ -3,7 +3,8 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
+import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
@@ -117,7 +118,7 @@ export default function ProfileScreen() {
   };
 
   const handleSave = async () => {
-    const validation = buildProfileSchema(t).safeParse({ name, address, phone });
+    const validation = buildProfileSchema(t).safeParse({ name, address, phone, phone2, phone3 });
     if (!validation.success) {
       showToast(validation.error.issues[0].message, "error");
       return;
@@ -188,11 +189,11 @@ export default function ProfileScreen() {
                   { label: t.fullName || "Full Name", value: currentUser?.name, icon: "person-outline" },
                   { label: t.supplierID || "Supplier ID", value: currentUser?.id, icon: "card-outline" },
                 ].map((item) => (
-                  <View key={item.label} className="flex-row items-center gap-2.5">
+                    <View key={item.label} className="flex-row items-start gap-2.5">
                     <Ionicons name={item.icon} size={fs.lg} color={colors.textMuted} />
-                    <View>
+                    <View className="flex-1">
                       <Text className="text-[11px] text-[#9e9e9e]">{item.label}</Text>
-                      <Text className="text-[13px] font-semibold text-[#212121] dark:text-white">{item.value}</Text>
+                      <Text className="text-[13px] font-semibold text-[#212121] dark:text-white">{item.value || "-"}</Text>
                     </View>
                   </View>
                 ))}
@@ -221,7 +222,7 @@ export default function ProfileScreen() {
               <Input
                 label={t.primaryPhone || "Primary Phone"}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(value) => setPhone(value.replace(/\D/g, "").slice(0, 10))}
                 placeholder={t.phoneExample || "e.g. 0771234567"}
                 keyboardType="phone-pad"
               />
@@ -229,7 +230,7 @@ export default function ProfileScreen() {
               <Input
                 label={t.secondaryPhone || "Secondary Phone (Optional)"}
                 value={phone2}
-                onChangeText={setPhone2}
+                onChangeText={(value) => setPhone2(value.replace(/\D/g, "").slice(0, 10))}
                 placeholder={t.phoneExample || "e.g. 0771112223"}
                 keyboardType="phone-pad"
               />
@@ -237,7 +238,7 @@ export default function ProfileScreen() {
               <Input
                 label={t.additionalPhone || "Additional Phone (Optional)"}
                 value={phone3}
-                onChangeText={setPhone3}
+                onChangeText={(value) => setPhone3(value.replace(/\D/g, "").slice(0, 10))}
                 placeholder={t.phoneExample || "e.g. 0112223334"}
                 keyboardType="phone-pad"
               />

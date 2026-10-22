@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Button, Card, Input, Picker } from "../../../components/ui";
 import { CategoryToggle } from "./CategoryToggle";
 
@@ -26,7 +27,7 @@ export function RequestFormCard({
             color={category === "fertilizer" ? "#16a34a" : "#d97706"}
           />
         </View>
-        <View>
+        <View className="flex-1 min-w-0">
           <Text className={titleText}>
             {t.newFertilizerItemRequest}
           </Text>
@@ -99,7 +100,7 @@ export function RequestFormCard({
       <Input
         label={quantityLabel}
         value={quantity}
-        onChangeText={setQuantity}
+        onChangeText={(value) => setQuantity(value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))}
         placeholder={quantityPlaceholder}
         keyboardType="numeric"
       />

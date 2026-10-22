@@ -4,6 +4,7 @@ export function buildCashRequestSchema(t, advanceLimit, formatCurrency) {
   return z.object({
     amount: z
       .string()
+      .trim()
       .min(1, t.pleaseEnterAmount)
       .superRefine((val, ctx) => {
         const num = parseFloat(val);

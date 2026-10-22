@@ -1,5 +1,6 @@
 import { Redirect } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
+import { Text } from "../components/Text";
 import { useApp } from "../context/AppContext";
 
 export default function Index() {

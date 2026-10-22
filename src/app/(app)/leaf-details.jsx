@@ -2,9 +2,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
-  Text,
   View
 } from "react-native";
+import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Card, EmptyState, Picker, ScreenHeader, ToggleTabs } from "../../components/ui";
@@ -82,7 +82,7 @@ export default function LeafDetailsScreen() {
 
       {/* Summary row */}
       {leafData.length > 0 && (
-        <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, marginBottom: 12 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, marginBottom: 12 }}>
           {[
             { label: t.totalGross || "Total Gross", value: `${totalGross} kg`, color: "#16a34a" },
             { label: t.totalWater || "Total Water", value: `${totalWater} kg`, color: "#0891b2" },
@@ -97,7 +97,9 @@ export default function LeafDetailsScreen() {
             <View
               key={stat.label}
               style={{
-                flex: 1,
+                flexGrow: 1,
+                flexBasis: "46%",
+                minWidth: 0,
                 backgroundColor: colors.card,
                 borderRadius: 12,
                 padding: 10,

@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
 import { Button, Card, Input, Picker, ScreenHeader, Toast } from "../../components/ui";
@@ -100,7 +101,7 @@ export default function AccountDetailsScreen() {
               <Input
                 label={t.accountNumber}
                 value={accountNumber}
-                onChangeText={setAccountNumber}
+                onChangeText={(value) => setAccountNumber(value.replace(/\D/g, "").slice(0, 16))}
                 placeholder={t.accountNumber}
                 keyboardType="number-pad"
               />
@@ -125,7 +126,7 @@ export default function AccountDetailsScreen() {
                   onPress={handleSave}
                   loading={loading}
                   icon="checkmark-circle"
-                  disabled={true}
+                  disabled={disabled}
                 />
               )}
             </Card>

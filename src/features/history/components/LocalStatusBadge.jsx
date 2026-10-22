@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../../../components/Text";
 
 // Distinct from the shared components/ui StatusBadge — this one supports
 // paid/dispatched/issued in addition to pending/approved/rejected, and takes
@@ -27,6 +28,7 @@ export function LocalStatusBadge({ status, fs, colors, t }) {
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 2,
+        maxWidth: "100%",
       }}
     >
       <Text
@@ -35,6 +37,7 @@ export function LocalStatusBadge({ status, fs, colors, t }) {
           fontSize:      fs.xs,
           fontWeight:    "700",
           textTransform: "capitalize",
+          textAlign:     "center",
         }}
       >
         {label}

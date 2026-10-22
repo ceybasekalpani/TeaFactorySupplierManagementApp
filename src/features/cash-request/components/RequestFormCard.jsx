@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Button, Card, Input } from "../../../components/ui";
 import { formatCurrency, formatDisplayDate } from "../utils/formatters";
 
@@ -94,6 +95,7 @@ export function RequestFormCard({
         label={`${t.amountRs}${advanceLimit !== null ? `  ·  ${t.max} Rs. ${formatCurrency(advanceLimit)}` : ""}`}
         value={amount}
         onChangeText={(v) => {
+          v = v.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
           if (advanceLimit !== null) {
             const num = parseFloat(v);
             if (!isNaN(num) && num > advanceLimit) return;

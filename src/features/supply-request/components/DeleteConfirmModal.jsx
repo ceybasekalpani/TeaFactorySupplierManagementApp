@@ -1,4 +1,5 @@
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import { Modal, TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 
 const titleText = "text-[19px] font-bold text-[#212121] dark:text-white";
 const mutedText = "text-[11px] text-[#757575] dark:text-[#b0b0b0]";

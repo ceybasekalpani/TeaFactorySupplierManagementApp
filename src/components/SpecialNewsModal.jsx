@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Modal, ScrollView, TouchableOpacity, View } from "react-native";
+import { Text } from "./Text";
 import { useTheme } from "../hooks/useTheme";
 
 export default function SpecialNewsModal({ news, visible, onClose }) {
@@ -27,7 +28,7 @@ export default function SpecialNewsModal({ news, visible, onClose }) {
               <View className="h-9 w-9 items-center justify-center rounded-full bg-white/20">
                 <Ionicons name="megaphone" size={fs.lg} color="#fff" />
               </View>
-              <View>
+              <View className="flex-1 min-w-0">
                 <Text className="text-[17px] font-extrabold tracking-[0.5px] text-white">
                   {t.specialNews}
                 </Text>

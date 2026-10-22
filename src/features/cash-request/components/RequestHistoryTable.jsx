@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Card, EmptyState, StatusBadge } from "../../../components/ui";
 import { formatCurrency, formatDate } from "../utils/formatters";
 
@@ -103,10 +104,10 @@ export function RequestHistoryTable({ colors, fs, t, advanceRequests, onRequestD
                 paddingVertical: 14, paddingHorizontal: 14,
                 backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border,
               }}>
-                <Text style={{ color: colors.textSecondary, fontSize: fs.sm }}>
+                <Text style={{ color: colors.textSecondary, fontSize: fs.sm, flex: 1, minWidth: 0 }}>
                   {t.totalRequests}: {advanceRequests.length}
                 </Text>
-                <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700" }}>
+                <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: "700", flex: 1, minWidth: 0, textAlign: "right" }}>
                   {t.total}: Rs. {formatCurrency(advanceRequests.reduce((sum, req) => sum + (parseFloat(req.amount) || 0), 0))}
                 </Text>
               </View>

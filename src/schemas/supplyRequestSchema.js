@@ -9,7 +9,7 @@ export function buildSupplyRequestSchema(t, category) {
       .min(1, t.pleaseEnterQuantity)
       .superRefine((val, ctx) => {
         const num = parseFloat(val);
-        if (isNaN(num) || num <= 0) {
+        if (!/^\d+(\.\d+)?$/.test(val) || isNaN(num) || num <= 0) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: t.pleaseEnterValidQuantity });
         }
       }),

@@ -1,4 +1,5 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
+import { Text } from "../Text";
 import { useTheme } from "../../hooks/useTheme";
 
 export function ToggleTabs({ tabs, activeTab, onSelect }) {
@@ -30,6 +31,9 @@ export function ToggleTabs({ tabs, activeTab, onSelect }) {
               color: active ? colors.white : colors.textSecondary,
               fontWeight: active ? "700" : "500",
               fontSize: fs.sm,
+              textAlign: "center",
+              flexShrink: 1,
+              minWidth: 0,
             }}>
               {tab.label}
             </Text>

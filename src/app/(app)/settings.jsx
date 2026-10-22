@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Modal, PanResponder, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Modal, PanResponder, ScrollView, Switch, TextInput, TouchableOpacity, View } from "react-native";
+import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Card, ScreenHeader } from "../../components/ui";
@@ -67,7 +68,7 @@ function SettingRow({ icon, title, subtitle, onPress, rightElement, iconBgClass,
       <View className={`h-10 w-10 items-center justify-center rounded-[10px] ${iconBgClass || "bg-[#f5f5f5] dark:bg-[#1e1e1e]"}`}>
         <Ionicons name={icon} size={fs.lg} color={iconColor || colors.primary} />
       </View>
-      <View className="flex-1">
+      <View className="flex-1 min-w-0">
         <Text className="text-[15px] font-semibold text-[#212121] dark:text-white">{title}</Text>
         {subtitle ? <Text className="mt-0.5 text-[11px] text-[#757575] dark:text-[#b0b0b0]">{subtitle}</Text> : null}
       </View>
@@ -90,7 +91,7 @@ function PinInput({ label, value, onChangeText, placeholder, colors }) {
       <Text className="mb-1.5 text-[13px] font-semibold text-[#757575] dark:text-[#b0b0b0]">{label}</Text>
       <TextInput
         value={value}
-        onChangeText={onChangeText}
+        onChangeText={(value) => onChangeText(value.replace(/\D/g, "").slice(0, 4))}
         secureTextEntry
         keyboardType="numeric"
         maxLength={4}
@@ -217,7 +218,7 @@ export default function SettingsScreen() {
                 <View className="h-10 w-10 items-center justify-center rounded-[10px] bg-[#f3e8ff]">
                   <Ionicons name="text" size={fs.lg} color="#7c3aed" />
                 </View>
-                <View className="flex-1">
+                <View className="flex-1 min-w-0">
                   <Text className="text-[15px] font-semibold text-[#212121] dark:text-white">{t.fontSize}</Text>
                   <Text className="mt-0.5 text-[11px] text-[#757575] dark:text-[#b0b0b0]">
                     {typeof fontSize === "number" ? `Size ${fontSize}` : t[fontSize]}
@@ -250,7 +251,7 @@ export default function SettingsScreen() {
                     className={`flex-1 flex-row items-center gap-2 rounded-xl border-[1.5px] px-3.5 py-3 ${isActive ? "border-[#2e7d32] bg-[#2e7d32] dark:border-[#66bb6a] dark:bg-[#66bb6a]" : "border-[#e0e0e0] bg-[#f5f5f5] dark:border-[#333333] dark:bg-[#1e1e1e]"}`}
                   >
                     <Text className="text-[19px]">{lang.flag}</Text>
-                    <Text className={`flex-1 text-[13px] ${isActive ? "font-bold text-white" : "font-medium text-[#212121] dark:text-white"}`}>
+                    <Text className={`flex-1 min-w-0 text-[13px] ${isActive ? "font-bold text-white" : "font-medium text-[#212121] dark:text-white"}`}>
                       {lang.label}
                     </Text>
                     {isActive && <Ionicons name="checkmark-circle" size={fs.lg} color="#fff" />}

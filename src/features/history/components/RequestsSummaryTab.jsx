@@ -1,4 +1,5 @@
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Card } from "../../../components/ui";
 import { EmptyNote } from "./EmptyNote";
 import { RequestRow } from "./RequestRow";
@@ -49,6 +50,7 @@ export function RequestsSummaryTab({ colors, fs, t, summaryMonths, activeSummary
                     color:      active ? "#fff" : colors.textSecondary,
                     fontSize:   fs.sm,
                     fontWeight: "600",
+                    flexShrink: 0,
                   }}
                 >
                   {m.label}

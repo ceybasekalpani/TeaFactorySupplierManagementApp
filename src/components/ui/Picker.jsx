@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Modal, ScrollView, TouchableOpacity, View } from "react-native";
+import { Text } from "../Text";
 import { useTheme } from "../../hooks/useTheme";
 
 export function Picker({ label, value, options, onSelect, placeholder }) {
@@ -33,7 +34,7 @@ export function Picker({ label, value, options, onSelect, placeholder }) {
           justifyContent: "space-between",
         }}
       >
-        <Text style={{ color: value ? colors.text : colors.textMuted, fontSize: fs.base, flex: 1 }}>
+        <Text style={{ color: value ? colors.text : colors.textMuted, fontSize: fs.base, flex: 1, minWidth: 0, flexShrink: 1 }}>
           {displayLabel}
         </Text>
         <Ionicons name="chevron-down" size={fs.md} color={colors.textMuted} />
@@ -65,7 +66,7 @@ export function Picker({ label, value, options, onSelect, placeholder }) {
                       justifyContent: "space-between",
                     }}
                   >
-                    <Text style={{ color: isSelected ? colors.primary : colors.text, fontSize: fs.base, fontWeight: isSelected ? "700" : "400" }}>
+                    <Text style={{ color: isSelected ? colors.primary : colors.text, fontSize: fs.base, fontWeight: isSelected ? "700" : "400", flex: 1, minWidth: 0, flexShrink: 1 }}>
                       {lbl}
                     </Text>
                     {isSelected && <Ionicons name="checkmark-circle" size={fs.lg} color={colors.primary} />}

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../../../components/Text";
 import { getGreeting } from "../utils/greeting";
 
 export function WelcomeBanner({ colors, fs, t, currentUser, activeReg, dateStr }) {
@@ -24,11 +25,11 @@ export function WelcomeBanner({ colors, fs, t, currentUser, activeReg, dateStr }
           {activeReg?.route && (
             <View style={{
               backgroundColor: "rgba(255,255,255,0.18)", paddingHorizontal: 10, paddingVertical: 5,
-              borderRadius: 20, flexDirection: "row", alignItems: "center", gap: 4,
+              borderRadius: 20, flexDirection: "row", alignItems: "center", gap: 4, width: "100%",
             }}>
               <Ionicons name="map-outline" size={fs.xs} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: fs.xs, fontWeight: "600" }}>
-                {activeReg.route.split(" - ")[0]}
+              <Text textBreakStrategy="simple" style={{ flex: 1, minWidth: 0, color: "#fff", fontSize: fs.xs, fontWeight: "600" }}>
+                {activeReg.route}
               </Text>
             </View>
           )}

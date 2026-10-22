@@ -1,4 +1,5 @@
-import { Text, TouchableOpacity } from "react-native";
+import { TouchableOpacity } from "react-native";
+import { Text } from "../../../components/Text";
 
 export function MainTabBtn({ id, icon, label, mainTab, setMainTab, colors, fs }) {
   const active = mainTab === id;
@@ -23,6 +24,9 @@ export function MainTabBtn({ id, icon, label, mainTab, setMainTab, colors, fs })
           fontSize:   fs.sm,
           fontWeight: "700",
           color:      active ? "#fff" : colors.textSecondary,
+          textAlign:  "center",
+          flexShrink: 1,
+          minWidth:   0,
         }}
       >
         {label}

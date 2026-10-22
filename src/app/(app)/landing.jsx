@@ -3,11 +3,11 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ScrollView,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
 import { useApp } from "../../context/AppContext";
@@ -27,6 +27,8 @@ function Field({ icon, placeholder, value, onChangeText, secureTextEntry, right,
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize="none"
+        autoCorrect={false}
+        spellCheck={false}
         className="flex-1 py-0 text-[15px] text-[#212121] dark:text-white"
       />
       {right}
@@ -104,10 +106,10 @@ export default function LandingScreen() {
                 <Text className="text-[50px]">{"\uD83C\uDF43"}</Text>
               </View>
 
-              <Text className="text-center text-[32px] font-black tracking-[0.5px] text-white">
+              <Text style={{ alignSelf: "stretch" }} className="text-center text-[32px] font-black tracking-[0.5px] text-white">
                 {t.appName}
               </Text>
-              <Text className="mt-1.5 text-center text-[13px] tracking-[0.3px] text-white/75">
+              <Text style={{ alignSelf: "stretch" }} className="mt-1.5 text-center text-[13px] tracking-[0.3px] text-white/75">
                 {t.supplierPortalSubtitle}
               </Text>
             </View>

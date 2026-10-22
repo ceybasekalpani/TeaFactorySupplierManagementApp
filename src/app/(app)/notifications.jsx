@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Animated, PanResponder, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Animated, PanResponder, RefreshControl, ScrollView, TouchableOpacity, View } from "react-native";
+import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Card, EmptyState, ScreenHeader } from "../../components/ui";

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Text, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 
 export function CategoryToggle({ colors, t, category, onSelect }) {
   const categories = [
@@ -24,7 +25,7 @@ export function CategoryToggle({ colors, t, category, onSelect }) {
                 color={isActive ? cat.iconColor : colors.textMuted}
               />
             </View>
-            <Text className={`text-center text-[11px] ${isActive ? "font-bold" : "font-medium"} ${cat.key === "fertilizer" && isActive ? "text-[#16a34a]" : ""}${cat.key === "item" && isActive ? "text-[#d97706]" : ""}${!isActive ? " text-[#212121] dark:text-white" : ""}`}>
+            <Text className={`w-full text-center text-[11px] ${isActive ? "font-bold" : "font-medium"} ${cat.key === "fertilizer" && isActive ? "text-[#16a34a]" : ""}${cat.key === "item" && isActive ? "text-[#d97706]" : ""}${!isActive ? " text-[#212121] dark:text-white" : ""}`}>
               {cat.label}
             </Text>
             {isActive && (

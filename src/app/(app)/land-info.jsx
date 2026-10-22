@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, Text, TextInput, View } from "react-native";
+import { ScrollView, TextInput, View } from "react-native";
+import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
 import SidebarMenu from "../../components/SidebarMenu";
@@ -73,7 +74,7 @@ export default function LandInfoScreen() {
   };
 
   const handleSave = async () => {
-    const validation = buildLandInfoSchema(t).safeParse({ landName, maxLeaves, minLeaves });
+    const validation = buildLandInfoSchema(t).safeParse({ landName, acres, rood, perches, maxLeaves, minLeaves });
     if (!validation.success) {
       showToast(validation.error.issues[0].message, "error");
       return;
@@ -265,7 +266,7 @@ export default function LandInfoScreen() {
                   <Input
                     label={t.minLeaves}
                     value={minLeaves}
-                    onChangeText={setMinLeaves}
+                    onChangeText={(value) => setMinLeaves(value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))}
                     placeholder="e.g. 50"
                     keyboardType="numeric"
                   />
@@ -274,7 +275,7 @@ export default function LandInfoScreen() {
                   <Input
                     label={t.maxLeaves}
                     value={maxLeaves}
-                    onChangeText={setMaxLeaves}
+                    onChangeText={(value) => setMaxLeaves(value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))}
                     placeholder="e.g. 200"
                     keyboardType="numeric"
                   />

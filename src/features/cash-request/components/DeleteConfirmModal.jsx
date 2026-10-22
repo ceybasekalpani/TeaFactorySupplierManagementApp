@@ -1,4 +1,5 @@
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import { Modal, TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 
 export function DeleteConfirmModal({ colors, fs, t, deleteConfirm, deleteLoading, onCancel, onConfirm }) {
   return (

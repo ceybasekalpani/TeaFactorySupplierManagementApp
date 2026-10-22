@@ -4,8 +4,11 @@ export function buildLandInfoSchema(t) {
   return z
     .object({
       landName: z.string().trim().min(1, t.errorLandName),
-      maxLeaves: z.string(),
-      minLeaves: z.string(),
+      acres: z.string().refine((v) => !v || /^\d+$/.test(v), t.invalidLandSize || "Acres must contain numbers only"),
+      rood: z.string().refine((v) => !v || /^\d+$/.test(v), t.invalidLandSize || "Rood must contain numbers only"),
+      perches: z.string().refine((v) => !v || /^\d+$/.test(v), t.invalidLandSize || "Perches must contain numbers only"),
+      maxLeaves: z.string().refine((v) => !v || /^\d+(\.\d+)?$/.test(v), t.invalidLeafCapacity || "Leaf capacity must be a valid number"),
+      minLeaves: z.string().refine((v) => !v || /^\d+(\.\d+)?$/.test(v), t.invalidLeafCapacity || "Leaf capacity must be a valid number"),
     })
     .superRefine((data, ctx) => {
       if (data.maxLeaves && data.minLeaves) {

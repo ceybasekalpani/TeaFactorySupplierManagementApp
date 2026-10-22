@@ -1,4 +1,5 @@
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import { Modal, TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Calendar } from "react-native-calendars";
 
 export function DatePickerModal({ colors, fs, t, visible, onClose, calendarMonth, onMonthChange, selectedDate, onDayPress }) {

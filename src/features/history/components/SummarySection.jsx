@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../../../components/Text";
 
 export function SummarySection({ icon, title, accentColor, count, colors, fs, children }) {
   return (
@@ -28,6 +29,7 @@ export function SummarySection({ icon, title, accentColor, count, colors, fs, ch
         <Text
           style={{
             flex:       1,
+            minWidth:   0,
             fontSize:   fs.sm,
             fontWeight: "700",
             color:      accentColor,

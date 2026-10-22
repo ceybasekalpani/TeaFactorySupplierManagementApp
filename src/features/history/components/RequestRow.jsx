@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../../../components/Text";
 import { formatFullDate } from "../utils/dateHelpers";
 import { LocalStatusBadge } from "./LocalStatusBadge";
 
@@ -20,7 +21,7 @@ export function RequestRow({ left, requestDate, status, colors, fs, t }) {
         style={{
           flexDirection:  "row",
           justifyContent: "space-between",
-          alignItems:     "center",
+          alignItems:     "flex-start",
         }}
       >
         <Text
@@ -29,9 +30,10 @@ export function RequestRow({ left, requestDate, status, colors, fs, t }) {
             fontSize:    fs.xs,
             fontWeight:  "600",
             flex:        1,
+            minWidth:    0,
+            flexShrink:  1,
             marginRight: 10,
           }}
-          numberOfLines={1}
         >
           {left}
         </Text>

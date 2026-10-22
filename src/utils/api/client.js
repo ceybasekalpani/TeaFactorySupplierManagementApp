@@ -48,7 +48,13 @@ async function throwForAxiosError(error, method, path) {
   if (error.response) {
     const { status, data, statusText } = error.response;
     const message = extractErrorMessage(data, statusText);
-    console.error(`API ${method} ${path} → ${status}`, message || "(empty body)");
+    // Rejected credentials are displayed by the login screen. Logging them as
+    // errors also opens React Native's developer overlay for a handled response.
+    const rejectedCredentials = status === 401 && method === "POST" &&
+      (path === "/api/auth/login" || path === "/api/auth/pin-login");
+    if (!rejectedCredentials) {
+      console.error(`API ${method} ${path} → ${status}`, message || "(empty body)");
+    }
     const err = new Error(message || `HTTP ${status}`);
     err.status = status;
     throw err;

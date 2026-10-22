@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Text, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
+import { Text } from "../../../components/Text";
 import { Card } from "../../../components/ui";
 
 export function StatsRow({ colors, fs, t, todayLeafData, unreadCount, totalLeaf }) {
@@ -47,9 +48,9 @@ export function StatsRow({ colors, fs, t, todayLeafData, unreadCount, totalLeaf 
               <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: item.bg, alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
                 {item.content}
               </View>
-              <Text style={{ color: colors.textSecondary, fontSize: 9, textAlign: "center" }}>{item.label}</Text>
-              <Text style={{ color: colors.text, fontSize: fs.lg, fontWeight: "800", marginTop: 2 }}>{item.value}</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 9 }}>{item.sub}</Text>
+              <Text style={{ alignSelf: "stretch", color: colors.textSecondary, fontSize: 9, textAlign: "center" }}>{item.label}</Text>
+              <Text style={{ alignSelf: "stretch", textAlign: "center", color: colors.text, fontSize: fs.lg, fontWeight: "800", marginTop: 2 }}>{item.value}</Text>
+              <Text style={{ alignSelf: "stretch", textAlign: "center", color: colors.textMuted, fontSize: 9 }}>{item.sub}</Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -64,9 +65,9 @@ export function StatsRow({ colors, fs, t, todayLeafData, unreadCount, totalLeaf 
           <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#dcfce7", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
             <Text style={{ fontSize: 22 }}>🍃</Text>
           </View>
-          <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>{t.totalLeaf}</Text>
-          <Text style={{ color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>{totalLeaf}</Text>
-          <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>{t.kgToday || "kg · today"}</Text>
+          <Text style={{ alignSelf: "stretch", color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>{t.totalLeaf}</Text>
+          <Text style={{ alignSelf: "stretch", textAlign: "center", color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>{totalLeaf}</Text>
+          <Text style={{ alignSelf: "stretch", textAlign: "center", color: colors.textMuted, fontSize: fs.xs }}>{t.kgToday || "kg · today"}</Text>
         </Card>
       </TouchableOpacity>
 
@@ -75,9 +76,9 @@ export function StatsRow({ colors, fs, t, todayLeafData, unreadCount, totalLeaf 
           <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#dbeafe", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
             <Ionicons name="notifications" size={22} color="#2563eb" />
           </View>
-          <Text style={{ color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>{t.notifications}</Text>
-          <Text style={{ color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>{unreadCount}</Text>
-          <Text style={{ color: colors.textMuted, fontSize: fs.xs }}>{t.unread}</Text>
+          <Text style={{ alignSelf: "stretch", color: colors.textSecondary, fontSize: fs.xs, textAlign: "center" }}>{t.notifications}</Text>
+          <Text style={{ alignSelf: "stretch", textAlign: "center", color: colors.text, fontSize: fs.xl, fontWeight: "800", marginTop: 2 }}>{unreadCount}</Text>
+          <Text style={{ alignSelf: "stretch", textAlign: "center", color: colors.textMuted, fontSize: fs.xs }}>{t.unread}</Text>
         </Card>
       </TouchableOpacity>
     </View>

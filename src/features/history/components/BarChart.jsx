@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import { Text } from "../../../components/Text";
 
 export function BarChart({ historyArray, maxNet, colors, fs, t }) {
   if (!historyArray.length)
@@ -9,14 +10,14 @@ export function BarChart({ historyArray, maxNet, colors, fs, t }) {
     );
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "flex-end", height: 180, gap: 8 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ minWidth: "100%" }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", height: 205, gap: 10, minWidth: historyArray.length * 70 }}>
       {historyArray.map((month, index) => {
         const totalNet   = month?.totalNet ?? 0;
         const barHeight  = maxNet > 0 ? (totalNet / maxNet) * 135 : 0;
         const monthLabel = month?.label || `Month ${index + 1}`;
-        const shortMonth = monthLabel.split(" ")[0];
         return (
-          <View key={month?.key || index} style={{ flex: 1, alignItems: "center" }}>
+          <View key={month?.key || index} style={{ width: 60, alignItems: "center" }}>
             <Text
               style={{
                 color:        colors.primary,
@@ -45,11 +46,12 @@ export function BarChart({ historyArray, maxNet, colors, fs, t }) {
                 fontWeight: "500",
               }}
             >
-              {shortMonth}
+              {monthLabel.replace(/\s+/, "\n")}
             </Text>
           </View>
         );
       })}
-    </View>
+      </View>
+    </ScrollView>
   );
 }
