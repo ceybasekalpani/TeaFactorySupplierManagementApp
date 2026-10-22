@@ -3,19 +3,17 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import {
   Animated,
-  Dimensions, Image,
+  Image,
   Modal,
   ScrollView,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Text } from "./Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
 import { useTheme } from "../hooks/useTheme";
-
-const { width } = Dimensions.get("window");
-const MENU_WIDTH = width * 0.82;
 
 const menuItems = (t) => [
   { key: "home",             label: t.home,             icon: "home",      route: "/(app)/home" },
@@ -30,10 +28,12 @@ const menuItems = (t) => [
 
 export default function SidebarMenu({ visible, onClose, activeKey }) {
   const { colors, fs, t } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const menuWidth = Math.min(Math.max(screenWidth * 0.82, 280), 420);
   const { currentUser, activeReg, logout, getFeatureFlags } = useApp();
   const featureFlags = getFeatureFlags();
   const router = useRouter();
-  const slideAnim = useRef(new Animated.Value(-MENU_WIDTH)).current;
+  const slideAnim = useRef(new Animated.Value(-menuWidth)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -44,11 +44,11 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(slideAnim, { toValue: -MENU_WIDTH, duration: 250, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: -menuWidth, duration: 250, useNativeDriver: true }),
         Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, menuWidth]);
 
   const navigate = (route) => {
     onClose();
@@ -80,7 +80,7 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
       {/* Drawer */}
       <Animated.View
         className="absolute bottom-0 left-0 top-0 bg-white shadow-2xl dark:bg-[#242424]"
-        style={{ width: MENU_WIDTH, transform: [{ translateX: slideAnim }] }}
+        style={{ width: menuWidth, transform: [{ translateX: slideAnim }] }}
       >
         <SafeAreaView className="flex-1">
           {/* User Header */}

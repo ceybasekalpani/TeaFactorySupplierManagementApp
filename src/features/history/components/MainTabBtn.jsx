@@ -33,9 +33,10 @@ export function MainTabBtn({ id, icon, label, mainTab, setMainTab, colors, fs })
           fontWeight: "700",
           color:      active ? "#fff" : colors.textSecondary,
           textAlign:  "center",
+          flex:       1,
           flexShrink: 1,
           minWidth:   0,
-          width:      "auto",
+          maxWidth:   "100%",
         }}
       >
         {label}

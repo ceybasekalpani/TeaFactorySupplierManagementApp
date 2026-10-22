@@ -1,11 +1,10 @@
 import { useRef } from "react";
-import { Animated, Dimensions, TouchableOpacity, View } from "react-native";
+import { Animated, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { Text } from "../../../components/Text";
-
-const { width: SCREEN_W } = Dimensions.get("window");
 
 // Creative Period Selector (animated sliding pill)
 export function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs, t }) {
+  const { width: screenWidth } = useWindowDimensions();
   const slideAnim = useRef(new Animated.Value(leafPeriod === "6m" ? 0 : 1)).current;
 
   const handleSelect = (val) => {
@@ -19,7 +18,7 @@ export function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs, t }) {
   };
 
   const TRACK_H = 64;
-  const PILL_W  = (SCREEN_W - 32 - 8) / 2;
+  const PILL_W  = Math.max(120, (screenWidth - 32 - 8) / 2);
 
   const pillLeft = slideAnim.interpolate({
     inputRange:  [0, 1],
