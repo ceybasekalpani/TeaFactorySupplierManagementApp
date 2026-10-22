@@ -21,19 +21,23 @@ export function ToggleTabs({ tabs, activeTab, onSelect }) {
             activeOpacity={0.8}
             style={{
               flex: 1,
+              minHeight: 52,
               paddingVertical: 10,
               alignItems: "center",
+              justifyContent: "center",
               borderRadius: 10,
               backgroundColor: active ? colors.primary : "transparent",
             }}
           >
-            <Text style={{
+            <Text adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.72} style={{
               color: active ? colors.white : colors.textSecondary,
               fontWeight: active ? "700" : "500",
               fontSize: fs.sm,
               textAlign: "center",
               flexShrink: 1,
               minWidth: 0,
+              width: "100%",
+              alignSelf: "stretch",
             }}>
               {tab.label}
             </Text>

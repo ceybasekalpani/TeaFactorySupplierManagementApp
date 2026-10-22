@@ -57,11 +57,16 @@ export function LeafHistoryTab({ colors, fs, t, leafPeriod, setLeafPeriod, histo
               {kpi.value.toLocaleString()}
             </Text>
             <Text
+              adjustsFontSizeToFit
+              numberOfLines={2}
+              minimumFontScale={0.72}
               style={{
                 color:     colors.textSecondary,
                 fontSize:  fs.xs,
                 textAlign: "center",
                 marginTop: 4,
+                width:     "100%",
+                flexShrink: 0,
               }}
             >
               {kpi.label}

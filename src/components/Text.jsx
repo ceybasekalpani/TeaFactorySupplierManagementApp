@@ -36,7 +36,7 @@ function getDisplayChildren(children) {
 }
 
 const CompatibleText = forwardRef(function CompatibleText({ children, style, ...props }, ref) {
-  return <NativeText {...props} ref={ref} style={[legacyTextStyle, style]}>{getDisplayChildren(children)}</NativeText>;
+  return <NativeText {...props} ref={ref} textBreakStrategy={props.textBreakStrategy ?? "simple"} style={[legacyTextStyle, style]}>{getDisplayChildren(children)}</NativeText>;
 });
 
 // Resolve className before forwarding the style, keeping explicit styles and

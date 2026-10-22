@@ -2,10 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
 import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
+import KeyboardAwareScrollView from "../../components/KeyboardAwareScrollView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
@@ -145,7 +146,7 @@ export default function LandInfoScreen() {
       />
 
       <KeyboardView>
-        <ScrollView
+        <KeyboardAwareScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -299,7 +300,7 @@ export default function LandInfoScreen() {
               icon="save-outline"
             />
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardView>
 
       <Toast

@@ -32,6 +32,9 @@ export function LocalStatusBadge({ status, fs, colors, t }) {
       }}
     >
       <Text
+        adjustsFontSizeToFit
+        numberOfLines={2}
+        minimumFontScale={0.72}
         style={{
           color:         s.text,
           fontSize:      fs.xs,

@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ScrollView,
   TextInput,
   TouchableOpacity,
   View,
@@ -10,6 +9,7 @@ import {
 import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
+import KeyboardAwareScrollView from "../../components/KeyboardAwareScrollView";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
 import { buildLoginSchema } from "../../schemas/loginSchema";
@@ -89,7 +89,7 @@ export default function LandingScreen() {
   return (
     <SafeAreaView className="flex-1 bg-[#f5f1ea] dark:bg-[#121212]">
       <KeyboardView>
-        <ScrollView
+        <KeyboardAwareScrollView
           className="flex-1"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -106,7 +106,7 @@ export default function LandingScreen() {
                 <Text className="text-[50px]">{"\uD83C\uDF43"}</Text>
               </View>
 
-              <Text style={{ alignSelf: "stretch" }} className="text-center text-[32px] font-black tracking-[0.5px] text-white">
+              <Text adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.72} style={{ alignSelf: "stretch" }} className="text-center text-[32px] font-black tracking-[0.5px] text-white">
                 {t.appName}
               </Text>
               <Text style={{ alignSelf: "stretch" }} className="mt-1.5 text-center text-[13px] tracking-[0.3px] text-white/75">
@@ -183,7 +183,7 @@ export default function LandingScreen() {
               </View>
             </View>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardView>
     </SafeAreaView>
   );

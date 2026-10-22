@@ -5,6 +5,7 @@ import { ActivityIndicator, Modal, PanResponder, ScrollView, Switch, TextInput, 
 import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SidebarMenu from "../../components/SidebarMenu";
+import KeyboardAwareScrollView from "../../components/KeyboardAwareScrollView";
 import { Card, ScreenHeader } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
@@ -87,8 +88,21 @@ function SectionHeader({ title }) {
 
 function PinInput({ label, value, onChangeText, placeholder, colors }) {
   return (
-    <View>
-      <Text className="mb-1.5 text-[13px] font-semibold text-[#757575] dark:text-[#b0b0b0]">{label}</Text>
+    <View style={{ width: "100%", minWidth: 0 }}>
+      <Text
+        adjustsFontSizeToFit
+        numberOfLines={2}
+        minimumFontScale={0.72}
+        style={{
+          marginBottom: 6,
+          color: colors.textSecondary,
+          fontSize: 13,
+          fontWeight: "600",
+          flexShrink: 1,
+        }}
+      >
+        {label}
+      </Text>
       <TextInput
         value={value}
         onChangeText={(value) => onChangeText(value.replace(/\D/g, "").slice(0, 4))}
@@ -97,7 +111,19 @@ function PinInput({ label, value, onChangeText, placeholder, colors }) {
         maxLength={4}
         placeholder={placeholder}
         placeholderTextColor={colors.placeholder}
-        className="h-12 rounded-xl border border-[#e0e0e0] bg-[#f5f5f5] px-3.5 text-[15px] text-[#212121] dark:border-[#333333] dark:bg-[#252525] dark:text-white"
+        style={{
+          width: "100%",
+          height: 48,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.inputBg,
+          paddingHorizontal: 14,
+          color: colors.text,
+          fontSize: 15,
+          flexShrink: 1,
+          textAlignVertical: "center",
+        }}
       />
     </View>
   );
@@ -270,9 +296,21 @@ export default function SettingsScreen() {
         onRequestClose={() => setPinModalVisible(false)}
       >
         <View className="flex-1 justify-end bg-black/50">
-          <View className="rounded-t-[28px] bg-white p-6 shadow-lg dark:bg-[#242424]">
-            <View className="mb-5 flex-row items-center justify-between">
-              <Text className="text-[19px] font-bold text-[#212121] dark:text-white">{t.changeSecurityPin}</Text>
+          <KeyboardAwareScrollView
+            keyboardShouldPersistTaps="handled"
+            style={{ maxHeight: "90%" }}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }}
+          >
+          <View style={{ width: "100%", borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, backgroundColor: colors.card }}>
+            <View className="mb-5 flex-row items-center justify-between gap-3">
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={2}
+                minimumFontScale={0.68}
+                style={{ flex: 1, minWidth: 0, color: colors.text, fontSize: 19, lineHeight: 24, fontWeight: "700" }}
+              >
+                {t.changeSecurityPin}
+              </Text>
               <TouchableOpacity onPress={() => setPinModalVisible(false)}>
                 <Ionicons name="close-circle" size={28} color={colors.textMuted} />
               </TouchableOpacity>
@@ -280,13 +318,13 @@ export default function SettingsScreen() {
 
             {!!pinError && (
               <View className="mb-4 rounded-lg bg-[#fee2e2] p-2.5">
-                <Text className="text-[13px] font-semibold text-[#ef4444]">{pinError}</Text>
+                <Text style={{ color: "#ef4444", fontSize: 13, lineHeight: 18, fontWeight: "600", flexShrink: 1 }}>{pinError}</Text>
               </View>
             )}
 
             {!!pinSuccess && (
               <View className="mb-4 rounded-lg bg-[#dcfce7] p-2.5">
-                <Text className="text-[13px] font-semibold text-[#16a34a]">{pinSuccess}</Text>
+                <Text style={{ color: "#16a34a", fontSize: 13, lineHeight: 18, fontWeight: "600", flexShrink: 1 }}>{pinSuccess}</Text>
               </View>
             )}
 
@@ -304,13 +342,14 @@ export default function SettingsScreen() {
               {isChangingPin ? (
                 <>
                   <ActivityIndicator color="#fff" size="small" />
-                  <Text className="text-[15px] font-bold text-white">{t.updatingEllipsis}</Text>
+                  <Text adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.68} style={{ flex: 1, minWidth: 0, textAlign: "center", color: "#fff", fontSize: 15, lineHeight: 20, fontWeight: "700" }}>{t.updatingEllipsis}</Text>
                 </>
               ) : (
-                <Text className="text-[15px] font-bold text-white">{t.changePin}</Text>
+                <Text adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.68} style={{ width: "100%", textAlign: "center", color: "#fff", fontSize: 15, lineHeight: 20, fontWeight: "700" }}>{t.changePin}</Text>
               )}
             </TouchableOpacity>
           </View>
+          </KeyboardAwareScrollView>
         </View>
       </Modal>
 

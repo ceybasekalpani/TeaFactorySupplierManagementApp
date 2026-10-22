@@ -6,6 +6,7 @@ export function buildCashRequestSchema(t, advanceLimit, formatCurrency) {
       .string()
       .trim()
       .min(1, t.pleaseEnterAmount)
+      .max(12, t.pleaseEnterValidAmount)
       .superRefine((val, ctx) => {
         const num = parseFloat(val);
         if (isNaN(num) || num <= 0) {

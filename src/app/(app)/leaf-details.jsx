@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
+  useWindowDimensions,
   View
 } from "react-native";
 import { Text } from "../../components/Text";
@@ -18,6 +19,7 @@ function getDaysInMonth(yearMonth) {
 
 export default function LeafDetailsScreen() {
   const { colors, fs, t } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const { getLeafData, fetchLeafData } = useApp();
   const router = useRouter();
   const { tab } = useLocalSearchParams();
@@ -59,6 +61,8 @@ export default function LeafDetailsScreen() {
   const totalNet   = leafData.reduce((s, d) => s + (d.netWeight ?? 0), 0);
   const totalSuper = leafData.reduce((s, d) => s + (d.superNetWeight ?? 0), 0);
   const totalWater = leafData.reduce((s, d) => s + (d.water ?? 0), 0);
+  const cardGap = 4;
+  const summaryCardWidth = Math.max(1, (screenWidth - 32 - cardGap * 3) / 4);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -82,7 +86,7 @@ export default function LeafDetailsScreen() {
 
       {/* Summary row */}
       {leafData.length > 0 && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 16, marginBottom: 12 }}>
+        <View style={{ flexDirection: "row", gap: cardGap, paddingHorizontal: 16, marginBottom: 6 }}>
           {[
             { label: t.totalGross || "Total Gross", value: `${totalGross} kg`, color: "#16a34a" },
             { label: t.totalWater || "Total Water", value: `${totalWater} kg`, color: "#0891b2" },
@@ -97,19 +101,27 @@ export default function LeafDetailsScreen() {
             <View
               key={stat.label}
               style={{
-                flexGrow: 1,
-                flexBasis: "46%",
-                minWidth: 0,
+                width: summaryCardWidth,
+                height: 54,
                 backgroundColor: colors.card,
                 borderRadius: 12,
-                padding: 10,
+                paddingHorizontal: 5,
+                paddingVertical: 3,
                 alignItems: "center",
+                justifyContent: "center",
                 borderWidth: 1,
                 borderColor: colors.cardBorder,
               }}
             >
-              <Text style={{ color: stat.color, fontSize: fs.md, fontWeight: "800" }}>{stat.value}</Text>
-              <Text style={{ color: colors.textMuted, fontSize: fs.xs, marginTop: 2, textAlign: "center" }}>{stat.label}</Text>
+              <Text style={{ color: stat.color, fontSize: fs.xs, fontWeight: "800", lineHeight: 14 }}>{stat.value}</Text>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                minimumFontScale={0.62}
+                style={{ color: colors.textMuted, fontSize: 8, lineHeight: 10, marginTop: 1, textAlign: "center", width: "100%" }}
+              >
+                {stat.label}
+              </Text>
             </View>
           ))}
         </View>

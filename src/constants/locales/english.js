@@ -53,8 +53,8 @@ export const english = {
   monthlyNetLeafCollection: "Monthly Net Leaf Collection (kg)",
   sixMonthSummary:        "6 Month Summary",
   twelveMonthSummary:     "12 Month Summary",
-  totalNetSixMo:          "Total Net (6 mo)",
-  totalNetTwelveMo:       "Total Net (12 mo)",
+  totalNetSixMo:          "Total Net (6 months)",
+  totalNetTwelveMo:       "Total Net (12 months)",
   collectionDays:         "Collection Days",
   noDataAvailable:        "No data available",
   noDataForPeriod:        "No data available for the selected period",
@@ -230,6 +230,7 @@ export const english = {
   // History (legacy kept for backward compat)
   history: "6 Month History",
   downloadStatement: "Download Statement (PDF)",
+  statementSaved: "Statement saved to Downloads",
   totalNetWeight: "Total Net Weight",
 
   // Special news

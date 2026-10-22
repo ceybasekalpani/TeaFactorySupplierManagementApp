@@ -106,14 +106,6 @@ export function RequestFormCard({
         keyboardType="numeric"
       />
 
-      <View style={{
-        backgroundColor: "#fef3c7", borderRadius: 10, padding: 12,
-        flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 20,
-      }}>
-        <Ionicons name="information-circle" size={fs.lg} color="#d97706" />
-        <Text style={{ color: "#92400e", fontSize: fs.xs, flex: 1 }}>{t.autoRejectWarning}</Text>
-      </View>
-
       <Button title={t.submitRequest} onPress={onSubmit} loading={loading} icon="send-outline" />
     </Card>
   );

@@ -105,13 +105,6 @@ export function RequestFormCard({
         keyboardType="numeric"
       />
 
-      <View className="mb-5 flex-row items-start gap-2 rounded-[10px] bg-[#dbeafe] p-3">
-        <Ionicons name="information-circle" size={19} color="#2563eb" />
-        <Text className="flex-1 text-[11px] text-[#1e40af]">
-          {category === "fertilizer" ? t.fertilizerInfoNote : t.itemInfoNote}
-        </Text>
-      </View>
-
       <Button
         title={t.submitRequest}
         onPress={onSubmit}

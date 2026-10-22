@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { RefreshControl, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
+import KeyboardAwareScrollView from "../../components/KeyboardAwareScrollView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
@@ -155,7 +156,7 @@ export default function SupplyRequestScreen() {
       />
 
       <KeyboardView>
-        <ScrollView
+        <KeyboardAwareScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -181,7 +182,7 @@ export default function SupplyRequestScreen() {
               onRequestDelete={setDeleteConfirm}
             />
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardView>
 
       <Toast

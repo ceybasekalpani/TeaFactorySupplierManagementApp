@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
+import KeyboardAwareScrollView from "../../components/KeyboardAwareScrollView";
 import { Button, Card, Input, Picker, ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
@@ -66,7 +67,7 @@ export default function AccountDetailsScreen() {
       <ScreenHeader title={t.accountDetails} onBack={() => router.back()} />
 
       <KeyboardView>
-        <ScrollView
+        <KeyboardAwareScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -131,7 +132,7 @@ export default function AccountDetailsScreen() {
               )}
             </Card>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardView>
 
       <Toast message={toast.message} visible={toast.visible} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />

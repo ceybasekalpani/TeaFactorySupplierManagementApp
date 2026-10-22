@@ -99,7 +99,7 @@ export default function SidebarMenu({ visible, onClose, activeKey }) {
               )}
             </View>
 
-            <Text className="text-[19px] font-bold text-white">
+            <Text adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.72} className="text-[19px] font-bold text-white">
               {currentUser?.name}
             </Text>
             <View className="mt-1 flex-row items-center gap-1.5">

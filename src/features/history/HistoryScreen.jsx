@@ -71,8 +71,8 @@ export default function HistoryScreen() {
           padding:          4,
         }}
       >
-        <MainTabBtn id="leaf"     icon="🍃" label={t("leafHistory")}     mainTab={mainTab} setMainTab={setMainTab} colors={colors} fs={fs} />
-        <MainTabBtn id="requests" icon="📋" label={t("requestSummary")} mainTab={mainTab} setMainTab={setMainTab} colors={colors} fs={fs} />
+        <MainTabBtn id="leaf"     icon="leaf-outline"     label={t("leafHistory")}     mainTab={mainTab} setMainTab={setMainTab} colors={colors} fs={fs} />
+        <MainTabBtn id="requests" icon="clipboard-outline" label={t("requestSummary")} mainTab={mainTab} setMainTab={setMainTab} colors={colors} fs={fs} />
       </View>
 
       <ScrollView

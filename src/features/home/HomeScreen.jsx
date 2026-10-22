@@ -75,7 +75,7 @@ export default function HomeScreen() {
           }}>
             <Text style={{ fontSize: 18 }}>🍃</Text>
           </View>
-          <Text style={{ flex: 1, minWidth: 0, fontSize: fs.lg, fontWeight: "800", color: colors.text }}>{t.appName}</Text>
+          <Text adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.72} style={{ flex: 1, minWidth: 0, fontSize: fs.lg, fontWeight: "800", color: colors.text }}>{t.appName}</Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push("/(app)/notifications")}

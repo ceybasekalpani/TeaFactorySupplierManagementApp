@@ -88,32 +88,43 @@ export function PeriodSelector({ leafPeriod, setLeafPeriod, colors, fs, t }) {
               style={{
                 flex:           1,
                 height:         TRACK_H,
-                flexDirection:  "row",
+                flexDirection:  "column",
                 alignItems:     "center",
                 justifyContent: "center",
-                gap:            8,
                 zIndex:         1,
               }}
             >
-              <Text style={{ fontSize: 16 }}>{o.icon}</Text>
-              <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ height: 18, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ fontSize: 16, textAlign: "center" }}>{o.icon}</Text>
+              </View>
+              <View style={{ width: "100%", minWidth: 0, alignItems: "center" }}>
                 <Text
+                  adjustsFontSizeToFit
+                  numberOfLines={2}
+                  minimumFontScale={0.72}
                   style={{
                     fontSize:   fs.sm,
                     fontWeight: "700",
                     color:      active ? "#fff" : colors.text,
                     lineHeight: 18,
                     textAlign:  "center",
+                    width: "100%",
+                    flexShrink: 0,
                   }}
                 >
                   {o.label}
                 </Text>
                 <Text
+                  adjustsFontSizeToFit
+                  numberOfLines={2}
+                  minimumFontScale={0.72}
                   style={{
                     fontSize:   10,
                     color:      active ? "rgba(255,255,255,0.72)" : colors.textMuted,
                     lineHeight: 13,
                     textAlign:  "center",
+                    width: "100%",
+                    flexShrink: 0,
                   }}
                 >
                   {o.sub}

@@ -63,7 +63,7 @@ function NumPad({ onPress, onDelete }) {
 }
 
 export default function PinLoginScreen() {
-  const { t } = useTheme();
+  const { t, colors } = useTheme();
   const { savedRegNo, savedName, pinLogin, login } = useApp();
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -135,22 +135,37 @@ export default function PinLoginScreen() {
           </Text>
         </View>
 
-        <Text className="mb-0.5 text-[13px] text-[#757575] dark:text-[#b0b0b0]">
+        <Text
+          adjustsFontSizeToFit
+          numberOfLines={2}
+          minimumFontScale={0.72}
+          style={{ width: "100%", maxWidth: 360, marginBottom: 2, color: colors.textSecondary, fontSize: 13, lineHeight: 18, textAlign: "center" }}
+        >
           {t.welcomeBackLower}
         </Text>
-        <Text className="text-center text-[26px] font-extrabold text-[#212121] dark:text-white">
+        <Text
+          adjustsFontSizeToFit
+          numberOfLines={2}
+          minimumFontScale={0.68}
+          style={{ width: "100%", maxWidth: 360, color: colors.text, fontSize: 26, lineHeight: 32, fontWeight: "800", textAlign: "center" }}
+        >
           {displayName}
         </Text>
-        <Text className="mt-1.5 text-[13px] text-[#9e9e9e]">
+        <Text
+          adjustsFontSizeToFit
+          numberOfLines={2}
+          minimumFontScale={0.72}
+          style={{ width: "100%", maxWidth: 360, marginTop: 6, color: colors.textMuted, fontSize: 13, lineHeight: 18, textAlign: "center" }}
+        >
           {t.enterPinToContinue}
         </Text>
 
         <PinDots value={pin} hasError={!!error} />
 
         {!!error && (
-          <View className="mb-4 flex-row items-center gap-1.5 rounded-[10px] bg-[#b71c1c]/15 px-3.5 py-2 dark:bg-[#ef5350]/15">
+          <View className="mb-4 w-full max-w-[360px] flex-row items-center gap-1.5 rounded-[10px] bg-[#b71c1c]/15 px-3.5 py-2 dark:bg-[#ef5350]/15">
             <Ionicons name="alert-circle" size={15} color="#b71c1c" />
-            <Text className="text-[13px] text-[#b71c1c] dark:text-[#ef5350]">{error}</Text>
+            <Text style={{ flex: 1, minWidth: 0, color: "#b71c1c", fontSize: 13, lineHeight: 18 }}>{error}</Text>
           </View>
         )}
 
@@ -167,7 +182,12 @@ export default function PinLoginScreen() {
               className="mt-8 px-4 py-2"
               activeOpacity={0.7}
             >
-              <Text className="text-[13px] font-semibold text-[#2e7d32] dark:text-[#66bb6a]">
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={2}
+                minimumFontScale={0.72}
+                style={{ width: "100%", maxWidth: 360, color: "#2e7d32", fontSize: 13, lineHeight: 18, fontWeight: "600", textAlign: "center" }}
+              >
                 {t.forgotResetPin}
               </Text>
             </TouchableOpacity>

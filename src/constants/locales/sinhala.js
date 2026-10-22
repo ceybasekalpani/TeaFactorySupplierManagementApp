@@ -82,6 +82,7 @@ export const sinhala = {
   downloadAnnual:           "සම්පූර්ණ වාර්ෂික දළු ප්‍රකාශය PDF ලෙස බාගන්න",
   downloadSixMonthBtn:      "මාස 6 ප්‍රකාශය බාගන්න",
   downloadAnnualBtn:        "වාර්ෂික ප්‍රකාශය බාගන්න",
+  statementSaved:           "ප්‍රකාශය Downloads වෙත සුරැකිනි",
   noHistoryForPdf:          "PDF නිර්මාණයට ඉතිහාසයක් නොමැත.",
   pdfError:                 "PDF නිර්මාණයට අපොහොසත් විය.",
 

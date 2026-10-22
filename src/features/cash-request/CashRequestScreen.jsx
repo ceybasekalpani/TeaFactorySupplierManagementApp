@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { RefreshControl, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
+import KeyboardAwareScrollView from "../../components/KeyboardAwareScrollView";
 import SidebarMenu from "../../components/SidebarMenu";
 import { ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
@@ -137,7 +138,7 @@ export default function CashRequestScreen() {
       />
 
       <KeyboardView>
-        <ScrollView
+        <KeyboardAwareScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
@@ -160,7 +161,7 @@ export default function CashRequestScreen() {
             advanceRequests={advanceRequests}
             onRequestDelete={setDeleteConfirm}
           />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardView>
 
       <DatePickerModal

@@ -3,10 +3,11 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
+import { Alert, TouchableOpacity, View } from "react-native";
 import { Text } from "../../components/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardView from "../../components/KeyboardView";
+import KeyboardAwareScrollView from "../../components/KeyboardAwareScrollView";
 import { Button, Card, Input, ScreenHeader, Toast } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../hooks/useTheme";
@@ -149,7 +150,7 @@ export default function ProfileScreen() {
       <ScreenHeader title={t.profile} onBack={() => router.back()} />
 
       <KeyboardView>
-        <ScrollView
+        <KeyboardAwareScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -175,7 +176,7 @@ export default function ProfileScreen() {
                   <Ionicons name="camera" size={fs.base} color="#fff" />
                 </View>
               </TouchableOpacity>
-              <Text className="mt-2 text-[11px] text-[#757575] dark:text-[#b0b0b0]">
+              <Text adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.72} style={{ width: "100%", textAlign: "center" }} className="mt-2 text-[11px] text-[#757575] dark:text-[#b0b0b0]">
                 {t.changeProfileImage}
               </Text>
             </View>
@@ -298,7 +299,7 @@ export default function ProfileScreen() {
               />
             </Card>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardView>
 
       <Toast message={toast.message} visible={toast.visible} type={toast.type} onDismiss={() => setToast({ ...toast, visible: false })} />

@@ -20,7 +20,7 @@ export function ScreenHeader({ title, onBack, rightIcon, onRightPress }) {
           <Ionicons name="arrow-back" size={fs.xl} color={colors.text} />
         </TouchableOpacity>
       )}
-      <Text style={{ flex: 1, minWidth: 0, fontSize: fs.lg, fontWeight: "700", color: colors.text }}>{title}</Text>
+      <Text adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.72} style={{ flex: 1, minWidth: 0, fontSize: fs.lg, fontWeight: "700", color: colors.text }}>{title}</Text>
       {rightIcon && (
         <TouchableOpacity onPress={onRightPress} style={{ padding: 4 }}>
           <Ionicons name={rightIcon} size={fs.xl} color={colors.text} />

@@ -21,7 +21,7 @@ export default function Index() {
       <View className="h-[100px] w-[100px] items-center justify-center rounded-full border-2 border-white/25 bg-white/15">
         <Text className="text-[52px]">{"\uD83C\uDF43"}</Text>
       </View>
-      <Text className="text-[26px] font-black tracking-[0.5px] text-white">
+      <Text adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.72} style={{ width: "100%", textAlign: "center" }} className="text-[26px] font-black tracking-[0.5px] text-white">
         Tea Factory
       </Text>
       <Text className="-mt-2.5 text-[13px] text-white/65">

@@ -17,8 +17,9 @@ export function Toast({ message, visible, type = "success" }) {
       borderRadius: 12,
       padding: 14,
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
       gap: 10,
+      minWidth: 0,
       zIndex: 9999,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 4 },
@@ -30,8 +31,21 @@ export function Toast({ message, visible, type = "success" }) {
         name={type === "success" ? "checkmark-circle" : type === "error" ? "close-circle" : "information-circle"}
         size={fs.xl}
         color="#fff"
+        style={{ marginTop: 1, flexShrink: 0 }}
       />
-      <Text style={{ color: "#fff", fontSize: fs.sm, flex: 1, fontWeight: "600" }}>{message}</Text>
+      <Text
+        style={{
+          color: "#fff",
+          fontSize: fs.sm,
+          lineHeight: Math.max(18, fs.sm * 1.45),
+          flex: 1,
+          minWidth: 0,
+          flexShrink: 1,
+          fontWeight: "600",
+        }}
+      >
+        {message}
+      </Text>
     </View>
   );
 }

@@ -15,7 +15,7 @@ export function StatusBadge({ status }) {
   const c = config[status] || config.pending;
   return (
     <View style={{ backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, maxWidth: "100%" }}>
-      <Text style={{ color: c.text, fontSize: fs.xs, fontWeight: "700", textAlign: "center" }}>{c.label}</Text>
+      <Text adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.72} style={{ color: c.text, fontSize: fs.xs, fontWeight: "700", textAlign: "center" }}>{c.label}</Text>
     </View>
   );
 }

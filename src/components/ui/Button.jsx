@@ -38,7 +38,12 @@ export function Button({ title, onPress, variant = "primary", disabled, loading,
       ) : (
         <>
           {icon && <Ionicons name={icon} size={fs.md} color={textColor} />}
-          <Text style={{ color: textColor, fontWeight: "700", fontSize: fs.md, flexShrink: 1, textAlign: "center" }}>
+          <Text
+            adjustsFontSizeToFit
+            numberOfLines={2}
+            minimumFontScale={0.72}
+            style={{ color: textColor, fontWeight: "700", fontSize: fs.md, flexShrink: 1, textAlign: "center" }}
+          >
             {title}
           </Text>
         </>

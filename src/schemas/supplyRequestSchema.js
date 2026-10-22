@@ -7,6 +7,7 @@ export function buildSupplyRequestSchema(t, category) {
       .string()
       .trim()
       .min(1, t.pleaseEnterQuantity)
+      .max(12, t.pleaseEnterValidQuantity)
       .superRefine((val, ctx) => {
         const num = parseFloat(val);
         if (!/^\d+(\.\d+)?$/.test(val) || isNaN(num) || num <= 0) {
